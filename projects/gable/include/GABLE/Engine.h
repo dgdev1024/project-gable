@@ -10,7 +10,8 @@
  * "Game Boy-like" games on PC and other platforms.
  * 
  * The GABLE Engine also includes some of its own emulated hardware components, such as a real-time
- * clock (RTC) and a data store, which are not present in the original Game Boy hardware:
+ * clock (RTC), a data store, and a network interface, which are not present in the original Game
+ * Boy hardware.
  * 
  * - The Real-Time Clock (RTC) is a simple clock which keeps track of the current time in hours and
  *   minutes. It can be read from and written to by the game software, and can be used to implement
@@ -18,6 +19,10 @@
  * 
  * - The Data Store is a large, variable-sized, banked memory area which is used to store game
  *   assets, such as graphics, sound effects, music, and level data.
+ * 
+ * - The Network Interface replaces the Game Boy's serial port with a simple network interface which
+ *   allows for the transfer of data between the game software and another source, such as a server
+ *   or another game instance.
  */
 
 #pragma once
