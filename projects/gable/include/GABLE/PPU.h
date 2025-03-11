@@ -305,7 +305,7 @@
  */
 
 #pragma once
-#include <GABLE/Common.h>
+#include <GABLE/DataStore.h>
 
 // Constants ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -381,6 +381,9 @@
 /** @brief The number of PPU cycles needed to process a complete frame (including the `VBLANK` period). */
 #define GABLE_DOTS_PER_FRAME 70224
 
+/** @brief The number of tiles that can be stored in the tile data region of a VRAM bank. */
+#define GABLE_PPU_VRAM_TILE_COUNT 384
+
 // Typedefs and Forward Declarations ///////////////////////////////////////////////////////////////
 
 /** @brief A forward-declaration of the GABLE Engine structure. */
@@ -390,7 +393,7 @@ typedef struct GABLE_Engine GABLE_Engine;
 typedef struct GABLE_PPU GABLE_PPU;
 
 /** @brief A pointer to a callback function that is called when a frame is rendered by the PPU. */
-typedef void (*GABLE_FrameRenderedCallback) (GABLE_Engine*);
+typedef void (*GABLE_FrameRenderedCallback) (GABLE_Engine*, GABLE_PPU*);
 
 // Display Mode Enumeration ////////////////////////////////////////////////////////////////////////
 
@@ -797,275 +800,6 @@ Bool GABLE_WriteVRAMByte (GABLE_PPU* p_PPU, Uint16 p_Address, Uint8 p_Value);
  */
 Bool GABLE_WriteOAMByte (GABLE_PPU* p_PPU, Uint16 p_Address, Uint8 p_Value);
 
-// Public Functions - Color ////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief Gets the RGBA color value of a color in the background color RAM (CRAM) buffer.
- * 
- * @param p_PPU             A pointer to the GABLE PPU structure.
- * @param p_PaletteIndex    The index of the color palette in the CRAM buffer (0-7).
- * @param p_ColorIndex      The index of the color in the color palette (0-3).
- * @param p_Color           A pointer to a GABLE_Color structure to store the RGB555 color data, if not NULL.
- * 
- * @return The RGBA color value of the specified color in the CRAM buffer.
- */
-Uint32 GABLE_GetBackgroundColor (const GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_Color);
-
-/**
- * @brief Gets the RGBA color value of a color in the object color RAM (CRAM) buffer.
- * 
- * @param p_PPU             A pointer to the GABLE PPU structure.
- * @param p_PaletteIndex    The index of the color palette in the CRAM buffer (0-7).
- * @param p_ColorIndex      The index of the color in the color palette (0-3).
- * @param p_Color           A pointer to a GABLE_Color structure to store the RGB555 color data, if not NULL.
- * 
- * @return The RGBA color value of the specified color in the CRAM buffer.
- */
-Uint32 GABLE_GetObjectColor (const GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_Color);
-
-/**
- * @brief Sets the RGBA color value of a color in the background color RAM (CRAM) buffer.
- * 
- * @param p_PPU             A pointer to the GABLE PPU structure.
- * @param p_PaletteIndex    The index of the color palette in the CRAM buffer (0-7).
- * @param p_ColorIndex      The index of the color in the color palette (0-3).
- * @param p_RGB555          A pointer to a GABLE_Color structure containing the RGB555 color data.
- * @param p_RGBA            If `p_RGB555` is NULL, the RGBA color value to set.
- * 
- * @return `true` if the color was set successfully; `false` otherwise.
- */
-Bool GABLE_SetBackgroundColor (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_Color* p_RGB555, Uint32 p_RGBA);
-
-/**
- * @brief Sets the RGBA color value of a color in the object color RAM (CRAM) buffer.
- * 
- * @param p_PPU             A pointer to the GABLE PPU structure.
- * @param p_PaletteIndex    The index of the color palette in the CRAM buffer (0-7).
- * @param p_ColorIndex      The index of the color in the color palette (0-3).
- * @param p_RGB555          A pointer to a GABLE_Color structure containing the RGB555 color data.
- * @param p_RGBA            If `p_RGB555` is NULL, the RGBA color value to set.
- * 
- * @return `true` if the color was set successfully; `false` otherwise.
- */
-Bool GABLE_SetObjectColor (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_Color* p_RGB555, Uint32 p_RGBA);
-
-// Public Functions - Object Attribute Memory (OAM) ////////////////////////////////////////////////
-
-/**
- * @brief Gets the object at the specified index in the object attribute memory (OAM) buffer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_Index    The index of the object in the OAM buffer.
- * 
- * @return A pointer to the object at the specified index in the OAM buffer.
- */
-GABLE_Object* GABLE_GetObject (GABLE_PPU* p_PPU, Uint8 p_Index);
-
-/**
- * @brief Retrieves the position of an object in the object attribute memory (OAM) buffer.
- * 
- * @param p_Object  A pointer to the object in the OAM buffer.
- * @param p_X       A pointer to a variable to store the X-coordinate of the object.
- * @param p_Y       A pointer to a variable to store the Y-coordinate of the object.
- */
-void GABLE_GetObjectPosition (const GABLE_Object* p_Object, Uint8* p_X, Uint8* p_Y);
-
-/**
- * @brief Retrieves the tile index of an object in the object attribute memory (OAM) buffer.
- * 
- * @param p_Object      A pointer to the object in the OAM buffer.
- * 
- * @return The tile index of the object.
- */
-Uint8 GABLE_GetObjectTileIndex (const GABLE_Object* p_Object);
-
-/**
- * @brief Retrieves the attributes of an object in the object attribute memory (OAM) buffer.
- * 
- * @param p_Object      A pointer to the object in the OAM buffer.
- * 
- * @return The attributes of the object.
- */
-GABLE_TileAttributes GABLE_GetObjectAttributes (const GABLE_Object* p_Object);
-
-/**
- * @brief Sets the position of an object in the object attribute memory (OAM) buffer.
- * 
- * @param p_Object  A pointer to the object in the OAM buffer.
- * @param p_X       The new X-coordinate of the object.
- * @param p_Y       The new Y-coordinate of the object.
- */
-void GABLE_SetObjectPosition (GABLE_Object* p_Object, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Sets the tile index of an object in the object attribute memory (OAM) buffer.
- * 
- * @param p_Object      A pointer to the object in the OAM buffer.
- * @param p_TileIndex   The new tile index of the object.
- */
-void GABLE_SetObjectTileIndex (GABLE_Object* p_Object, Uint8 p_TileIndex);
-
-/**
- * @brief Sets the attributes of an object in the object attribute memory (OAM) buffer.
- * 
- * @param p_Object      A pointer to the object in the OAM buffer.
- * @param p_Attributes  The new attributes of the object.
- */
-void GABLE_SetObjectAttributes (GABLE_Object* p_Object, GABLE_TileAttributes p_Attributes);
-
-/**
- * @brief Moves an object in the object attribute memory (OAM) buffer by a specified delta.
- * 
- * @param p_Object  A pointer to the object in the OAM buffer.
- * @param p_DeltaX  The change in the X-coordinate of the object.
- * @param p_DeltaY  The change in the Y-coordinate of the object.
- */
-void GABLE_MoveObject (GABLE_Object* p_Object, Int8 p_DeltaX, Int8 p_DeltaY);
-
-// Public Functions - Tilemaps /////////////////////////////////////////////////////////////////////
-
-/**
- * @brief Gets the tile index at the specified position in the specified tilemap.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_MapIndex The index of the tilemap to access (0 or 1).
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * 
- * @return The tile index at the specified position in the specified tilemap.
- */
-Uint8 GABLE_GetTileIndex (const GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Gets the tile index at the specified position in the tilemap currently used for rendering
- *        the background layer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * 
- * @return The tile index at the specified position in the tilemap currently used for rendering
- *         the background layer.
- */
-Uint8 GABLE_GetBackgroundTileIndex (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Gets the tile index at the specified position in the tilemap currently used for rendering
- *        the window layer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * 
- * @return The tile index at the specified position in the tilemap currently used for rendering
- *         the window layer.
- */
-Uint8 GABLE_GetWindowTileIndex (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Gets the attributes of the tile at the specified position in the specified tilemap.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_MapIndex The index of the tilemap to access (0 or 1).
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * 
- * @return The attributes of the tile at the specified position in the specified tilemap.
- */
-GABLE_TileAttributes GABLE_GetTileAttributes (const GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Gets the attributes of the tile at the specified position in the tilemap currently used for rendering
- *        the background layer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * 
- * @return The attributes of the tile at the specified position in the tilemap currently used for rendering
- *         the background layer.
- */
-GABLE_TileAttributes GABLE_GetBackgroundTileAttributes (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Gets the attributes of the tile at the specified position in the tilemap currently used for rendering
- *        the window layer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * 
- * @return The attributes of the tile at the specified position in the tilemap currently used for rendering
- *         the window layer.
- */
-GABLE_TileAttributes GABLE_GetWindowTileAttributes (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y);
-
-/**
- * @brief Sets the tile index at the specified position in the specified tilemap.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_MapIndex The index of the tilemap to access (0 or 1).
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * @param p_Tile     The new tile index to set.
- */
-void GABLE_SetTileIndex (GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y, Uint8 p_Tile);
-
-/**
- * @brief Sets the tile index at the specified position in the tilemap currently used for rendering
- *        the background layer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * @param p_Tile     The new tile index to set.
- */
-void GABLE_SetBackgroundTileIndex (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, Uint8 p_Tile);
-
-/**
- * @brief Sets the tile index at the specified position in the tilemap currently used for rendering
- *        the window layer.
- * 
- * @param p_PPU      A pointer to the GABLE PPU structure.
- * @param p_X        The X-coordinate of the tile in the tilemap.
- * @param p_Y        The Y-coordinate of the tile in the tilemap.
- * @param p_Tile     The new tile index to set.
- */
-void GABLE_SetWindowTileIndex (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, Uint8 p_Tile);
-
-/**
- * @brief Sets the attributes of the tile at the specified position in the specified tilemap.
- * 
- * @param p_PPU         A pointer to the GABLE PPU structure.
- * @param p_MapIndex    The index of the tilemap to access (0 or 1).
- * @param p_X           The X-coordinate of the tile in the tilemap.
- * @param p_Y           The Y-coordinate of the tile in the tilemap.
- * @param p_Attributes  The new attributes to set.
- */
-void GABLE_SetTileAttributes (GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y, GABLE_TileAttributes p_Attributes);
-
-/**
- * @brief Sets the attributes of the tile at the specified position in the tilemap currently used for rendering
- *        the background layer.
- * 
- * @param p_PPU         A pointer to the GABLE PPU structure.
- * @param p_X           The X-coordinate of the tile in the tilemap.
- * @param p_Y           The Y-coordinate of the tile in the tilemap.
- * @param p_Attributes  The new attributes to set.
- */
-void GABLE_SetBackgroundTileAttributes (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, GABLE_TileAttributes p_Attributes);
-
-/**
- * @brief Sets the attributes of the tile at the specified position in the tilemap currently used for rendering
- *        the window layer.
- * 
- * @param p_PPU         A pointer to the GABLE PPU structure.
- * @param p_X           The X-coordinate of the tile in the tilemap.
- * @param p_Y           The Y-coordinate of the tile in the tilemap.
- * @param p_Attributes  The new attributes to set.
- */
-void GABLE_SetWindowTileAttributes (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, GABLE_TileAttributes p_Attributes);
-
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
 /**
@@ -1442,3 +1176,29 @@ void GABLE_WriteOPRI (GABLE_PPU* p_PPU, Uint8 p_Value);
  * @param p_Value   The new value to set.
  */
 void GABLE_WriteGRPM (GABLE_PPU* p_PPU, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+
+
+/**
+ * @brief Sets the function to be called when the PPU finishes rendering the visible portion of the
+ *        current frame.
+ * 
+ * @param p_Engine   A pointer to the GABLE Engine structure.
+ * @param p_Callback A pointer to the function to call when the frame is rendered.
+ * 
+ * @note  This callback function is called at the start of the `VBLANK` period, regardless of whether
+ *        the `VBLANK` interrupt is enabled or disabled.
+ */
+void GABLE_SetFrameRenderedCallback (GABLE_Engine* p_Engine, GABLE_FrameRenderedCallback p_Callback);
+
+/**
+ * @brief Gets the PPU's screen buffer, containing the RGBA color values of the pixels to be displayed
+ *        on the screen.
+ * 
+ * @param p_Engine A pointer to the GABLE Engine structure.
+ * 
+ * @return A pointer to the screen buffer.
+ */
+const Uint32* GABLE_GetScreenBuffer (GABLE_Engine* p_Engine);

@@ -78,42 +78,6 @@ GABLE_Joypad* GABLE_CreateJoypad (GABLE_Engine* p_Engine);
  */
 void GABLE_DestroyJoypad (GABLE_Joypad* p_Joypad);
 
-/**
- * @brief      Sets whether or not the joypad buttons (A, B, Select, and Start) should be mapped to
- *             the low nibble of the `JOYP` register.
- * 
- * @param      p_Joypad   A pointer to the GABLE Engine joypad instance.
- * @param      p_Selected `true` if the joypad buttons should be mapped to the low nibble of the `JOYP`
- *                        register; `false` if not.
- */
-void GABLE_SelectButtons (GABLE_Joypad* p_Joypad, Bool p_Selected);
-
-/**
- * @brief      Sets whether or not the joypad directional pad (Right, Left, Up, and Down) should be
- *             mapped to the low nibble of the `JOYP` register.
- * 
- * @param      p_Joypad   A pointer to the GABLE Engine joypad instance.
- * @param      p_Selected `true` if the joypad directional pad should be mapped to the low nibble of the
- *                        `JOYP` register; `false` if not.
- */
-void GABLE_SelectDirectionalPad (GABLE_Joypad* p_Joypad, Bool p_Selected);
-
-/**
- * @brief      Presses a button on the GABLE Engine joypad.
- * 
- * @param      p_Joypad  A pointer to the GABLE Engine joypad instance.
- * @param      p_Button  The button to press.
- */
-void GABLE_PressButton (GABLE_Joypad* p_Joypad, GABLE_JoypadButton p_Button);
-
-/**
- * @brief      Releases a button on the GABLE Engine joypad.
- * 
- * @param      p_Joypad  A pointer to the GABLE Engine joypad instance.
- * @param      p_Button  The button to release.
- */
-void GABLE_ReleaseButton (GABLE_Joypad* p_Joypad, GABLE_JoypadButton p_Button);
-
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
 /**
@@ -134,3 +98,9 @@ Uint8 GABLE_ReadJOYP (const GABLE_Joypad* p_Joypad);
  * @param      p_Value   The new value of the `JOYP` register.
  */
 void GABLE_WriteJOYP (GABLE_Joypad* p_Joypad, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+Bool GABLE_IsButtonPressed (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
+void GABLE_PressButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
+void GABLE_ReleaseButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);

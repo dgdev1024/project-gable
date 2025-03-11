@@ -84,7 +84,7 @@ void GABLE_LatchRealtime (GABLE_Realtime* p_Realtime, GABLE_Engine* p_Engine)
         (l_OldRTCDL != p_Realtime->m_RTCDL)
     )
     {
-        GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_RTC);
+        GABLE_RequestInterrupt(p_Engine, GABLE_INT_RTC);
     }
 }
 

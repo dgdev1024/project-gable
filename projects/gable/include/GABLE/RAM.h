@@ -71,6 +71,11 @@
 // Typedefs and Forward Declarations ///////////////////////////////////////////////////////////////
 
 /**
+ * @brief A forward declaration of the GABLE Engine structure.
+ */
+typedef struct GABLE_Engine GABLE_Engine;
+
+/**
  * @brief The GABLE Engine's RAM structure.
  */
 typedef struct GABLE_RAM GABLE_RAM;
@@ -91,73 +96,7 @@ GABLE_RAM* GABLE_CreateRAM ();
  */
 void GABLE_DestroyRAM (GABLE_RAM* p_RAM);
 
-/**
- * @brief      Sets the number of working RAM banks in the RAM component.
- * 
- * @param      p_RAM       A pointer to the GABLE Engine RAM instance.
- * @param      p_BankCount The number of working RAM banks to set.
- */
-void GABLE_SetWRAMBankCount (GABLE_RAM* p_RAM, Uint8 p_BankCount);
-
-/**
- * @brief      Sets the number of static RAM banks in the RAM component.
- * 
- * @param      p_RAM       A pointer to the GABLE Engine RAM instance.
- * @param      p_BankCount The number of static RAM banks to set.
- */
-void GABLE_SetSRAMBankCount (GABLE_RAM* p_RAM, Uint8 p_BankCount);
-
-/**
- * @brief      Sets the current working RAM bank number.
- * 
- * @param      p_RAM         A pointer to the GABLE Engine RAM instance.
- * @param      p_BankNumber  The new working RAM bank number to set.
- */
-void GABLE_SetWRAMBankNumber (GABLE_RAM* p_RAM, Uint8 p_BankNumber);
-
-/**
- * @brief      Sets the current static RAM bank number.
- * 
- * @param      p_RAM         A pointer to the GABLE Engine RAM instance.
- * @param      p_BankNumber  The new static RAM bank number to set.
- */
-void GABLE_SetSRAMBankNumber (GABLE_RAM* p_RAM, Uint8 p_BankNumber);
-
-/**
- * @brief      Gets the number of working RAM banks in the RAM component.
- * 
- * @param      p_RAM  A pointer to the GABLE Engine RAM instance.
- * 
- * @return     The number of working RAM banks.
- */
-Uint8 GABLE_GetWRAMBankCount (const GABLE_RAM* p_RAM);
-
-/**
- * @brief      Gets the number of static RAM banks in the RAM component.
- * 
- * @param      p_RAM  A pointer to the GABLE Engine RAM instance.
- * 
- * @return     The number of static RAM banks.
- */
-Uint8 GABLE_GetSRAMBankCount (const GABLE_RAM* p_RAM);
-
-/**
- * @brief      Gets the current working RAM bank number.
- * 
- * @param      p_RAM  A pointer to the GABLE Engine RAM instance.
- * 
- * @return     The current working RAM bank number.
- */
-Uint8 GABLE_GetWRAMBankNumber (const GABLE_RAM* p_RAM);
-
-/**
- * @brief      Gets the current static RAM bank number.
- * 
- * @param      p_RAM  A pointer to the GABLE Engine RAM instance.
- * 
- * @return     The current static RAM bank number.
- */
-Uint8 GABLE_GetSRAMBankNumber (const GABLE_RAM* p_RAM);
+// Public Functions - Memory Access ////////////////////////////////////////////////////////////////
 
 /**
  * @brief      Reads a byte from the specified address in the current WRAM bank.
@@ -225,34 +164,6 @@ Bool GABLE_WriteSRAMByte (GABLE_RAM* p_RAM, Uint16 p_Address, Uint8 p_Value);
  */
 Bool GABLE_WriteHRAMByte (GABLE_RAM* p_RAM, Uint16 p_Address, Uint8 p_Value);
 
-/**
- * @brief      Loads a save file into save RAM.
- * 
- * The file's size must be a multiple of the size of a single SRAM bank, and cannot exceed the
- * maximum size of the save RAM buffer (256 banks * 8 KB = 2 MB). The SRAM buffer will be resized
- * to accommodate the size of the save file, if necessary.
- * 
- * @param      p_RAM       A pointer to the GABLE Engine RAM instance.
- * @param      p_FilePath  The path to the save file to load.
- * 
- * @return     `true` if the save file was loaded successfully; `false` otherwise.
- */
-Bool GABLE_LoadSRAMFile (GABLE_RAM* p_RAM, const Char* p_FilePath);
-
-/**
- * @brief      Saves the current save RAM to a file.
- * 
- * The save file will be created or overwritten with the contents of the current save RAM buffer in
- * save RAM. The save file will be the size of the current save RAM buffer, and will be written in
- * binary format.
- * 
- * @param      p_RAM       A pointer to the GABLE Engine RAM instance.
- * @param      p_FilePath  The path to the save file to save.
- * 
- * @return     `true` if the save file was saved successfully; `false` otherwise.
- */
-Bool GABLE_SaveSRAMFile (GABLE_RAM* p_RAM, const Char* p_FilePath);
-
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
 /**
@@ -290,3 +201,35 @@ void GABLE_WriteSVBK (GABLE_RAM* p_RAM, Uint8 p_Value);
  * @param      p_Value  The new value of the `SSBK` register.
  */
 void GABLE_WriteSSBK (GABLE_RAM* p_RAM, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+void GABLE_SetSRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount);
+
+/**
+ * @brief      Loads a save file into save RAM.
+ * 
+ * The file's size must be a multiple of the size of a single SRAM bank, and cannot exceed the
+ * maximum size of the save RAM buffer (256 banks * 8 KB = 2 MB). The SRAM buffer will be resized
+ * to accommodate the size of the save file, if necessary.
+ * 
+ * @param      p_Engine    A pointer to the GABLE Engine instance.
+ * @param      p_FilePath  The path to the save file to load.
+ * 
+ * @return     `true` if the save file was loaded successfully; `false` otherwise.
+ */
+Bool GABLE_LoadSRAMFile (GABLE_Engine* p_Engine, const Char* p_FilePath);
+
+/**
+ * @brief      Saves the current save RAM to a file.
+ * 
+ * The save file will be created or overwritten with the contents of the current save RAM buffer in
+ * save RAM. The save file will be the size of the current save RAM buffer, and will be written in
+ * binary format.
+ * 
+ * @param      p_Engine    A pointer to the GABLE Engine instance.
+ * @param      p_FilePath  The path to the save file to save.
+ * 
+ * @return     `true` if the save file was saved successfully; `false` otherwise.
+ */
+Bool GABLE_SaveSRAMFile (GABLE_Engine* p_Engine, const Char* p_FilePath);

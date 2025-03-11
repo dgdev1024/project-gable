@@ -97,67 +97,6 @@ GABLE_DataStore* GABLE_CreateDataStore ();
  */
 void GABLE_DestroyDataStore (GABLE_DataStore* p_DataStore);
 
-/**
- * @brief      Sets the number of banks in the data store, reallocating memory if necessary.
- * 
- * @param      p_DataStore  A pointer to the GABLE Engine data store instance.
- * @param      p_BankCount  The new number of banks to allocate.
- */
-void GABLE_SetDataStoreBankCount (GABLE_DataStore* p_DataStore, Uint16 p_BankCount);
-
-/**
- * @brief      Sets the current bank number of the data store.
- * 
- * @param      p_DataStore   A pointer to the GABLE Engine data store instance.
- * @param      p_BankNumber  The new current bank number.
- */
-void GABLE_SetDataStoreBankNumber (GABLE_DataStore* p_DataStore, Uint16 p_BankNumber);
-
-/**
- * @brief      Gets a data handle from the data store by name.
- * 
- * @param      p_DataStore  A pointer to the GABLE Engine data store instance.
- * @param      p_Name       The name of the data handle to retrieve.
- * 
- * @return     A pointer to the data handle with the specified name, or `NULL` if no such handle exists.
- */
-const GABLE_DataHandle* GABLE_GetDataHandle (const GABLE_DataStore* p_DataStore, const Char* p_Name);
-
-/**
- * @brief      Loads data into the data store from an external source into the current bank.
- * 
- * @param      p_DataStore  A pointer to the GABLE Engine data store instance.
- * @param      p_Bank0      `true` if the data should be loaded into bank 0, `false` if it should be loaded into the current bank.
- * @param      p_Name       The name to assign to the data handle.
- * @param      p_Data       A pointer to the data to load into the data store.
- * @param      p_Length     The length of the data to load, in bytes.
- * 
- * @return     A pointer to the data handle for the loaded data, or `NULL` if the load operation failed.
- */
-const GABLE_DataHandle* GABLE_LoadData (GABLE_DataStore* p_DataStore, Bool p_Bank0, const Char* p_Name, const Uint8* p_Data, Uint16 p_Length);
-
-/**
- * @brief      Loads data into the data store from a file on disk into the current bank.
- * 
- * @param      p_DataStore  A pointer to the GABLE Engine data store instance.
- * @param      p_Bank0      `true` if the data should be loaded into bank 0, `false` if it should be loaded into the current bank.
- * @param      p_Name       The name to assign to the data handle.
- * @param      p_FilePath   The path to the file to load data from.
- * 
- * @return     A pointer to the data handle for the loaded data, or `NULL` if the load operation failed.
- */
-const GABLE_DataHandle* GABLE_LoadDataFile (GABLE_DataStore* p_DataStore, Bool p_Bank0, const Char* p_Name, const Char* p_FilePath);
-
-/**
- * @brief      Changes the current data store bank to the bank housing the data handle.
- * 
- * @param      p_DataStore  A pointer to the GABLE Engine data store instance.
- * @param      p_Handle     A pointer to the data handle to change the current bank to.
- * 
- * @return     `true` if the operation was successful, `false` if the handle's bank number is out of bounds.
- */
-Bool GABLE_GotoDataHandle (GABLE_DataStore* p_DataStore, const GABLE_DataHandle* p_Handle);
-
 // Public Functions - Memory Access ////////////////////////////////////////////////////////////////
 
 /**

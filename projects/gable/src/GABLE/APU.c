@@ -123,15 +123,140 @@ typedef struct GABLE_APU
 
 // Static Function Prototypes //////////////////////////////////////////////////////////////////////
 
+static void GABLE_TriggerChannelInternal (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel);
+static Uint8 GABLE_ReadWaveNibble (const GABLE_APU* p_APU, Uint8 p_Index);
+static void GABLE_WriteWaveNibble (GABLE_APU* p_APU, Uint8 p_Index, Uint8 p_Value);
 static void GABLE_TickPulseChannels (GABLE_APU* p_APU);
 static void GABLE_TickWaveChannel (GABLE_APU* p_APU);
 static void GABLE_TickNoiseChannel (GABLE_APU* p_APU);
 static void GABLE_TickLengthTimers (GABLE_APU* p_APU);
 static void GABLE_TickFrequencySweep (GABLE_APU* p_APU);
 static void GABLE_TickEnvelopeSweeps (GABLE_APU* p_APU);
-static void GABLE_UpdateAudioSample (GABLE_APU* p_APU);
+static void GABLE_UpdateAudioSample (GABLE_Engine* p_Engine, GABLE_APU* p_APU);
 
 // Static Functions ////////////////////////////////////////////////////////////////////////////////
+
+void GABLE_TriggerChannelInternal (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel)
+{
+    // Channels can only be triggered if the APU is enabled.
+    if (p_APU->m_MasterControl.m_Enable == false)
+    {
+        return;
+    }
+
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+        {
+            GABLE_PulseChannel* p_Channel = &p_APU->m_PulseChannel1;
+
+            // Trigger the channel
+            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthDuty.m_InitialLength;
+            p_Channel->m_CurrentVolume = p_Channel->m_VolumeEnvelope.m_InitialVolume;
+            p_Channel->m_CurrentPeriod = (p_Channel->m_PeriodHighControl.m_PeriodHigh << 8) | p_Channel->m_PeriodLow.m_PeriodLow;
+            p_Channel->m_PeriodDivider = p_Channel->m_CurrentPeriod;
+            p_Channel->m_CurrentWavePointer = 0;
+            p_Channel->m_CurrentFrequencyTicks = 0;
+            p_Channel->m_CurrentEnvelopeTicks = 0;
+
+            // Enable the channel only if its DAC is enabled.
+            p_APU->m_MasterControl.m_PC1Enable = p_Channel->m_DACEnabled;
+
+        } break;
+
+        case GABLE_AC_PULSE_2:
+        {
+            GABLE_PulseChannel* p_Channel = &p_APU->m_PulseChannel2;
+
+            // Trigger the channel
+            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthDuty.m_InitialLength;
+            p_Channel->m_CurrentVolume = p_Channel->m_VolumeEnvelope.m_InitialVolume;
+            p_Channel->m_CurrentPeriod = (p_Channel->m_PeriodHighControl.m_PeriodHigh << 8) | p_Channel->m_PeriodLow.m_PeriodLow;
+            p_Channel->m_PeriodDivider = p_Channel->m_CurrentPeriod;
+            p_Channel->m_CurrentWavePointer = 0;
+            p_Channel->m_CurrentFrequencyTicks = 0;
+            p_Channel->m_CurrentEnvelopeTicks = 0;
+
+            // Enable the channel only if its DAC is enabled.
+            p_APU->m_MasterControl.m_PC2Enable = p_Channel->m_DACEnabled;
+
+        } break;
+
+        case GABLE_AC_WAVE:
+        {
+            GABLE_WaveChannel* p_Channel = &p_APU->m_WaveChannel;
+
+            // Trigger the channel
+            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthTimer.m_InitialLength;
+            p_Channel->m_CurrentPeriod = (p_Channel->m_PeriodHighControl.m_PeriodHigh << 8) | p_Channel->m_PeriodLow.m_PeriodLow;
+            p_Channel->m_PeriodDivider = p_Channel->m_CurrentPeriod;
+            p_Channel->m_CurrentSampleIndex = 0;
+
+            // Enable the channel only if its DAC is enabled.
+            p_APU->m_MasterControl.m_WCEnable = p_Channel->m_DACEnable.m_DACPower;
+
+        } break;
+
+        case GABLE_AC_NOISE:
+        {
+            GABLE_NoiseChannel* p_Channel = &p_APU->m_NoiseChannel;
+
+            // Trigger the channel
+            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthTimer.m_InitialLength;
+            p_Channel->m_CurrentVolume = p_Channel->m_VolumeEnvelope.m_InitialVolume;
+            p_Channel->m_LFSR = 0;
+            p_Channel->m_CurrentEnvelopeTicks = 0;
+
+            // Enable the channel only if its DAC is enabled.
+            p_APU->m_MasterControl.m_NCEnable = p_Channel->m_DACEnabled;
+
+        } break;
+    }
+}
+
+Uint8 GABLE_ReadWaveNibble (const GABLE_APU* p_APU, Uint8 p_Index)
+{
+    GABLE_expect(p_APU != NULL, "APU context is NULL!");
+    GABLE_expect(p_Index < GABLE_WAVE_RAM_NIBBLES, "Wave RAM index out of bounds!");
+    
+    // Get the byte index and the nibble index.
+    Uint8 l_ByteIndex = p_Index / 2;
+    Uint8 l_NibbleIndex = p_Index % 2;
+
+    // Get the byte from the wave RAM buffer.
+    Uint8 l_Byte = p_APU->m_WaveChannel.m_WaveRAM[l_ByteIndex];
+
+    // Return the nibble from the byte.
+    return (l_NibbleIndex == 0) ? ((l_Byte >> 4) & 0xF) : (l_Byte & 0xF);
+}
+
+void GABLE_WriteWaveNibble (GABLE_APU* p_APU, Uint8 p_Index, Uint8 p_Value)
+{
+    GABLE_expect(p_APU != NULL, "APU context is NULL!");
+    GABLE_expect(p_Index < GABLE_WAVE_RAM_NIBBLES, "Wave RAM index out of bounds!");
+    
+    // Get the byte index and the nibble index.
+    Uint8 l_ByteIndex = p_Index / 2;
+    Uint8 l_NibbleIndex = p_Index % 2;
+
+    // Get the byte from the wave RAM buffer.
+    Uint8 l_Byte = p_APU->m_WaveChannel.m_WaveRAM[l_ByteIndex];
+
+    // Set the nibble in the byte.
+    if (l_NibbleIndex == 0)
+    {
+        l_Byte &= 0x0F;
+        l_Byte |= (p_Value << 4);
+    }
+    else
+    {
+        l_Byte &= 0xF0;
+        l_Byte |= p_Value;
+    }
+
+    // Write the byte back to the wave RAM buffer.
+    p_APU->m_WaveChannel.m_WaveRAM[l_ByteIndex] = l_Byte;
+}
 
 void GABLE_TickPulseChannels (GABLE_APU* p_APU)
 {
@@ -468,7 +593,7 @@ void GABLE_TickEnvelopeSweeps (GABLE_APU* p_APU)
 
 }
 
-void GABLE_UpdateAudioSample (GABLE_APU* p_APU)
+void GABLE_UpdateAudioSample (GABLE_Engine* p_Engine, GABLE_APU* p_APU)
 {
 
     // Reset the audio sample.
@@ -557,7 +682,7 @@ void GABLE_UpdateAudioSample (GABLE_APU* p_APU)
     // If the mix callback is set, then call it with the audio sample.
     if (p_APU->m_MixCallback != NULL)
     {
-        p_APU->m_MixCallback(&p_APU->m_AudioSample);
+        p_APU->m_MixCallback(p_Engine, &p_APU->m_AudioSample);
     }
 
 }
@@ -639,16 +764,12 @@ void GABLE_TickAPU (GABLE_APU* p_APU, GABLE_Engine* p_Engine)
     // audio sample.
     if (l_TickCycles % p_APU->m_MixClockFrequency == 0)
     {
-        GABLE_UpdateAudioSample(p_APU);
+        GABLE_UpdateAudioSample(p_Engine, p_APU);
     }
 
 }
 
-const GABLE_AudioSample* GABLE_GetLatestAudioSample (const GABLE_APU* p_APU)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    return &p_APU->m_AudioSample;
-}
+// Public Functions - Memory Access ////////////////////////////////////////////////////////////////
 
 Bool GABLE_ReadWaveByte (const GABLE_APU* p_APU, Uint8 p_Address, Uint8* p_Value)
 {
@@ -665,22 +786,6 @@ Bool GABLE_ReadWaveByte (const GABLE_APU* p_APU, Uint8 p_Address, Uint8* p_Value
     return true;
 }
 
-Uint8 GABLE_ReadWaveNibble (const GABLE_APU* p_APU, Uint8 p_Index)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    GABLE_expect(p_Index < GABLE_WAVE_RAM_NIBBLES, "Wave RAM index out of bounds!");
-    
-    // Get the byte index and the nibble index.
-    Uint8 l_ByteIndex = p_Index / 2;
-    Uint8 l_NibbleIndex = p_Index % 2;
-
-    // Get the byte from the wave RAM buffer.
-    Uint8 l_Byte = p_APU->m_WaveChannel.m_WaveRAM[l_ByteIndex];
-
-    // Return the nibble from the byte.
-    return (l_NibbleIndex == 0) ? ((l_Byte >> 4) & 0xF) : (l_Byte & 0xF);
-}
-
 Bool GABLE_WriteWaveByte (GABLE_APU* p_APU, Uint8 p_Address, Uint8 p_Value)
 {
     GABLE_expect(p_APU != NULL, "APU context is NULL!");
@@ -693,518 +798,6 @@ Bool GABLE_WriteWaveByte (GABLE_APU* p_APU, Uint8 p_Address, Uint8 p_Value)
 
     p_APU->m_WaveChannel.m_WaveRAM[p_Address] = p_Value;
     return true;
-}
-
-void GABLE_WriteWaveNibble (GABLE_APU* p_APU, Uint8 p_Index, Uint8 p_Value)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    GABLE_expect(p_Index < GABLE_WAVE_RAM_NIBBLES, "Wave RAM index out of bounds!");
-    
-    // Get the byte index and the nibble index.
-    Uint8 l_ByteIndex = p_Index / 2;
-    Uint8 l_NibbleIndex = p_Index % 2;
-
-    // Get the byte from the wave RAM buffer.
-    Uint8 l_Byte = p_APU->m_WaveChannel.m_WaveRAM[l_ByteIndex];
-
-    // Set the nibble in the byte.
-    if (l_NibbleIndex == 0)
-    {
-        l_Byte &= 0x0F;
-        l_Byte |= (p_Value << 4);
-    }
-    else
-    {
-        l_Byte &= 0xF0;
-        l_Byte |= p_Value;
-    }
-
-    // Write the byte back to the wave RAM buffer.
-    p_APU->m_WaveChannel.m_WaveRAM[l_ByteIndex] = l_Byte;
-}
-
-Bool GABLE_WriteWaveString (GABLE_APU* p_APU, const char* p_WaveString)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    GABLE_expect(p_WaveString != NULL, "Wave string is NULL!");
-
-    // Get the length of the wave string.
-    size_t l_Length = strlen(p_WaveString);
-
-    // Make sure the wave string is the correct length.
-    if (l_Length != GABLE_WAVE_RAM_NIBBLES)
-    {
-        GABLE_error("Wave string is not the correct length!");
-        return false;
-    }
-
-    // Each character in the wave string is a 4-bit nibble.
-    for (Index i = 0; i < GABLE_WAVE_RAM_NIBBLES; ++i)
-    {
-        // Get the character from the wave string.
-        char l_Character = p_WaveString[i];
-
-        // Ensure the character is a valid hexadecimal digit.
-        if (!isxdigit(l_Character))
-        {
-            GABLE_error("Wave string contains invalid characters!");
-            return false;
-        }
-
-        // Convert the character to a 4-bit nibble.
-        Uint8 l_Nibble = (Uint8) strtol(&l_Character, NULL, 16);
-
-        // Write the nibble to the wave RAM buffer.
-        GABLE_WriteWaveNibble(p_APU, i, l_Nibble);
-    }
-
-    return true;
-}
-
-void GABLE_SetAudioMixCallback (GABLE_APU* p_APU, GABLE_AudioMixCallback p_Callback)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    p_APU->m_MixCallback = p_Callback;
-}
-
-void GABLE_SetAudioMasterEnable (GABLE_APU* p_APU, Bool p_Enable)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    p_APU->m_MasterControl.m_Enable = p_Enable;
-}
-
-void GABLE_SetAudioPanning (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, Bool p_Left, Bool p_Right)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_SoundPanning.m_PC1Left = p_Left;
-            p_APU->m_SoundPanning.m_PC1Right = p_Right;
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_SoundPanning.m_PC2Left = p_Left;
-            p_APU->m_SoundPanning.m_PC2Right = p_Right;
-            break;
-        case GABLE_AC_WAVE:
-            p_APU->m_SoundPanning.m_WCLeft = p_Left;
-            p_APU->m_SoundPanning.m_WCRight = p_Right;
-            break;
-        case GABLE_AC_NOISE:
-            p_APU->m_SoundPanning.m_NCLeft = p_Left;
-            p_APU->m_SoundPanning.m_NCRight = p_Right;
-            break;
-    }
-}
-
-void GABLE_SetMasterVolume (GABLE_APU* p_APU, Uint8 p_Left, Uint8 p_Right)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    p_APU->m_MasterVolumeControl.m_LeftVolume = p_Left;
-    p_APU->m_MasterVolumeControl.m_RightVolume = p_Right;
-}
-
-void GABLE_SetPulseFrequencySweep (GABLE_APU* p_APU, Uint8 p_Step, GABLE_FrequencySweepDirection p_Direction, Uint8 p_Pace)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    p_APU->m_PulseChannel1.m_FrequencySweep.m_IndividualStep = p_Step;
-    p_APU->m_PulseChannel1.m_FrequencySweep.m_Direction = p_Direction;
-    p_APU->m_PulseChannel1.m_FrequencySweep.m_SweepPace = p_Pace;
-}
-
-void GABLE_SetPulseDutyCycle (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, GABLE_PulseDutyCycle p_Duty)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_PulseChannel1.m_LengthDuty.m_DutyCycle = p_Duty;
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_PulseChannel2.m_LengthDuty.m_DutyCycle = p_Duty;
-            break;
-        default: break;
-    }
-}
-
-void GABLE_SetAudioLengthTimer (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, Uint8 p_Length)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_PulseChannel1.m_LengthDuty.m_InitialLength = p_Length;
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_PulseChannel2.m_LengthDuty.m_InitialLength = p_Length;
-            break;
-        case GABLE_AC_WAVE:
-            p_APU->m_WaveChannel.m_LengthTimer.m_InitialLength = p_Length;
-            break;
-        case GABLE_AC_NOISE:
-            p_APU->m_NoiseChannel.m_LengthTimer.m_InitialLength = p_Length;
-            break;
-    }
-}
-
-void GABLE_SetAudioInitialVolume (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, Uint8 p_Volume)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_PulseChannel1.m_VolumeEnvelope.m_InitialVolume = p_Volume;
-
-            // If the volume is zero, and the sweep direction is decreasing, then the channel and
-            // its DAC are disabled.
-            if (p_Volume == 0 && p_APU->m_PulseChannel1.m_VolumeEnvelope.m_Direction == GABLE_ESD_DECREASE)
-            {
-                p_APU->m_PulseChannel1.m_DACEnabled = false;
-                p_APU->m_MasterControl.m_PC1Enable = false;
-            }
-            else
-            {
-                p_APU->m_PulseChannel1.m_DACEnabled = true;
-            }
-
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_PulseChannel2.m_VolumeEnvelope.m_InitialVolume = p_Volume;
-
-            // If the volume is zero, and the sweep direction is decreasing, then the channel and
-            // its DAC are disabled.
-            if (p_Volume == 0 && p_APU->m_PulseChannel2.m_VolumeEnvelope.m_Direction == GABLE_ESD_DECREASE)
-            {
-                p_APU->m_PulseChannel2.m_DACEnabled = false;
-                p_APU->m_MasterControl.m_PC2Enable = false;
-            }
-            else
-            {
-                p_APU->m_PulseChannel2.m_DACEnabled = true;
-            }
-
-            break;
-        case GABLE_AC_NOISE:
-            p_APU->m_NoiseChannel.m_VolumeEnvelope.m_InitialVolume = p_Volume;
-
-            // If the volume is zero, and the sweep direction is decreasing, then the channel and
-            // its DAC are disabled.
-            if (p_Volume == 0 && p_APU->m_NoiseChannel.m_VolumeEnvelope.m_Direction == GABLE_ESD_DECREASE)
-            {
-                p_APU->m_NoiseChannel.m_DACEnabled = false;
-                p_APU->m_MasterControl.m_NCEnable = false;
-            }
-            else
-            {
-                p_APU->m_NoiseChannel.m_DACEnabled = true;
-            }
-
-            break;
-        default: break;
-    }
-}
-
-void GABLE_SetAudioEnvelopeSweep (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, Uint8 p_Pace, GABLE_EnvelopeSweepDirection p_Direction)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_PulseChannel1.m_VolumeEnvelope.m_SweepPace = p_Pace;
-            p_APU->m_PulseChannel1.m_VolumeEnvelope.m_Direction = p_Direction;
-
-            // If the volume is zero, and the sweep direction is decreasing, then the channel and
-            // its DAC are disabled.
-            if (p_Direction == GABLE_ESD_DECREASE && p_APU->m_PulseChannel1.m_VolumeEnvelope.m_InitialVolume == 0)
-            {
-                p_APU->m_PulseChannel1.m_DACEnabled = false;
-                p_APU->m_MasterControl.m_PC1Enable = false;
-            }
-            else
-            {
-                p_APU->m_PulseChannel1.m_DACEnabled = true;
-            }
-
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_PulseChannel2.m_VolumeEnvelope.m_SweepPace = p_Pace;
-            p_APU->m_PulseChannel2.m_VolumeEnvelope.m_Direction = p_Direction;
-
-            // If the volume is zero, and the sweep direction is decreasing, then the channel and
-            // its DAC are disabled.
-            if (p_Direction == GABLE_ESD_DECREASE && p_APU->m_PulseChannel2.m_VolumeEnvelope.m_InitialVolume == 0)
-            {
-                p_APU->m_PulseChannel2.m_DACEnabled = false;
-                p_APU->m_MasterControl.m_PC2Enable = false;
-            }
-            else
-            {
-                p_APU->m_PulseChannel2.m_DACEnabled = true;
-            }
-
-            break;
-        case GABLE_AC_NOISE:
-            p_APU->m_NoiseChannel.m_VolumeEnvelope.m_SweepPace = p_Pace;
-            p_APU->m_NoiseChannel.m_VolumeEnvelope.m_Direction = p_Direction;
-
-            // If the volume is zero, and the sweep direction is decreasing, then the channel and
-            // its DAC are disabled.
-            if (p_Direction == GABLE_ESD_DECREASE && p_APU->m_NoiseChannel.m_VolumeEnvelope.m_InitialVolume == 0)
-            {
-                p_APU->m_NoiseChannel.m_DACEnabled = false;
-                p_APU->m_MasterControl.m_NCEnable = false;
-            }
-            else
-            {
-                p_APU->m_NoiseChannel.m_DACEnabled = true;
-            }
-
-            break;
-        default: break;
-    }
-}
-
-void GABLE_SetAudioPeriod (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, Uint16 p_Period)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_PulseChannel1.m_PeriodLow.m_PeriodLow = p_Period & 0xFF;
-            p_APU->m_PulseChannel1.m_PeriodHighControl.m_PeriodHigh = (p_Period >> 8) & 0b111;
-            p_APU->m_PulseChannel1.m_CurrentPeriod =
-                (p_APU->m_PulseChannel1.m_PeriodHighControl.m_PeriodHigh << 8) |
-                p_APU->m_PulseChannel1.m_PeriodLow.m_PeriodLow;
-            p_APU->m_PulseChannel1.m_PeriodDivider = p_APU->m_PulseChannel1.m_CurrentPeriod;
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_PulseChannel2.m_PeriodLow.m_PeriodLow = p_Period & 0xFF;
-            p_APU->m_PulseChannel2.m_PeriodHighControl.m_PeriodHigh = (p_Period >> 8) & 0b111;
-            p_APU->m_PulseChannel2.m_CurrentPeriod =
-                (p_APU->m_PulseChannel2.m_PeriodHighControl.m_PeriodHigh << 8) |
-                p_APU->m_PulseChannel2.m_PeriodLow.m_PeriodLow;
-            p_APU->m_PulseChannel2.m_PeriodDivider = p_APU->m_PulseChannel2.m_CurrentPeriod;
-            break;
-        case GABLE_AC_WAVE:
-            p_APU->m_WaveChannel.m_PeriodLow.m_PeriodLow = p_Period & 0xFF;
-            p_APU->m_WaveChannel.m_PeriodHighControl.m_PeriodHigh = (p_Period >> 8) & 0b111;
-            p_APU->m_WaveChannel.m_CurrentPeriod =
-                (p_APU->m_WaveChannel.m_PeriodHighControl.m_PeriodHigh << 8) |
-                p_APU->m_WaveChannel.m_PeriodLow.m_PeriodLow;
-            p_APU->m_WaveChannel.m_PeriodDivider = p_APU->m_WaveChannel.m_CurrentPeriod;
-            break;
-        default: break;
-    }
-}
-
-void GABLE_SetAudioLengthTimerEnable (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel, Bool p_Enable)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-            p_APU->m_PulseChannel1.m_PeriodHighControl.m_LengthEnable = p_Enable;
-            break;
-        case GABLE_AC_PULSE_2:
-            p_APU->m_PulseChannel2.m_PeriodHighControl.m_LengthEnable = p_Enable;
-            break;
-        case GABLE_AC_WAVE:
-            p_APU->m_WaveChannel.m_PeriodHighControl.m_LengthEnable = p_Enable;
-            break;
-        case GABLE_AC_NOISE:
-            p_APU->m_NoiseChannel.m_Control.m_LengthEnable = p_Enable;
-            break;
-    }
-}
-
-void GABLE_SetWaveDACEnable (GABLE_APU* p_APU, Bool p_Enable)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    p_APU->m_WaveChannel.m_DACEnable.m_DACPower = p_Enable;
-
-    // If the DAC is disabled, then the channel is disabled.
-    if (p_Enable == false)
-    {
-        p_APU->m_MasterControl.m_WCEnable = false;
-    }
-}
-
-void GABLE_SetWaveOutputLevel (GABLE_APU* p_APU, GABLE_WaveOutputLevel p_Level)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    p_APU->m_WaveChannel.m_OutputLevel.m_OutputLevel = p_Level;
-}
-
-void GABLE_SetNoiseLFSRControl (GABLE_APU* p_APU, Uint8 p_Divider, Uint8 p_Width, Uint8 p_Shift)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // This setting can only be applied if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockDivider = p_Divider;
-    p_APU->m_NoiseChannel.m_FrequencyRandomness.m_LFSRWidth = p_Width;
-    p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockShift = p_Shift;
-}
-
-void GABLE_TriggerChannel (GABLE_APU* p_APU, GABLE_AudioChannel p_Channel)
-{
-    GABLE_expect(p_APU != NULL, "APU context is NULL!");
-
-    // Channels can only be triggered if the APU is enabled.
-    if (p_APU->m_MasterControl.m_Enable == false)
-    {
-        return;
-    }
-
-    switch (p_Channel)
-    {
-        case GABLE_AC_PULSE_1:
-        {
-            GABLE_PulseChannel* p_Channel = &p_APU->m_PulseChannel1;
-
-            // Trigger the channel
-            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthDuty.m_InitialLength;
-            p_Channel->m_CurrentVolume = p_Channel->m_VolumeEnvelope.m_InitialVolume;
-            p_Channel->m_CurrentPeriod = (p_Channel->m_PeriodHighControl.m_PeriodHigh << 8) | p_Channel->m_PeriodLow.m_PeriodLow;
-            p_Channel->m_PeriodDivider = p_Channel->m_CurrentPeriod;
-            p_Channel->m_CurrentWavePointer = 0;
-            p_Channel->m_CurrentFrequencyTicks = 0;
-            p_Channel->m_CurrentEnvelopeTicks = 0;
-
-            // Enable the channel only if its DAC is enabled.
-            p_APU->m_MasterControl.m_PC1Enable = p_Channel->m_DACEnabled;
-
-        } break;
-
-        case GABLE_AC_PULSE_2:
-        {
-            GABLE_PulseChannel* p_Channel = &p_APU->m_PulseChannel2;
-
-            // Trigger the channel
-            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthDuty.m_InitialLength;
-            p_Channel->m_CurrentVolume = p_Channel->m_VolumeEnvelope.m_InitialVolume;
-            p_Channel->m_CurrentPeriod = (p_Channel->m_PeriodHighControl.m_PeriodHigh << 8) | p_Channel->m_PeriodLow.m_PeriodLow;
-            p_Channel->m_PeriodDivider = p_Channel->m_CurrentPeriod;
-            p_Channel->m_CurrentWavePointer = 0;
-            p_Channel->m_CurrentFrequencyTicks = 0;
-            p_Channel->m_CurrentEnvelopeTicks = 0;
-
-            // Enable the channel only if its DAC is enabled.
-            p_APU->m_MasterControl.m_PC2Enable = p_Channel->m_DACEnabled;
-
-        } break;
-
-        case GABLE_AC_WAVE:
-        {
-            GABLE_WaveChannel* p_Channel = &p_APU->m_WaveChannel;
-
-            // Trigger the channel
-            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthTimer.m_InitialLength;
-            p_Channel->m_CurrentPeriod = (p_Channel->m_PeriodHighControl.m_PeriodHigh << 8) | p_Channel->m_PeriodLow.m_PeriodLow;
-            p_Channel->m_PeriodDivider = p_Channel->m_CurrentPeriod;
-            p_Channel->m_CurrentSampleIndex = 0;
-
-            // Enable the channel only if its DAC is enabled.
-            p_APU->m_MasterControl.m_WCEnable = p_Channel->m_DACEnable.m_DACPower;
-
-        } break;
-
-        case GABLE_AC_NOISE:
-        {
-            GABLE_NoiseChannel* p_Channel = &p_APU->m_NoiseChannel;
-
-            // Trigger the channel
-            p_Channel->m_CurrentLengthTimer = p_Channel->m_LengthTimer.m_InitialLength;
-            p_Channel->m_CurrentVolume = p_Channel->m_VolumeEnvelope.m_InitialVolume;
-            p_Channel->m_LFSR = 0;
-            p_Channel->m_CurrentEnvelopeTicks = 0;
-
-            // Enable the channel only if its DAC is enabled.
-            p_APU->m_MasterControl.m_NCEnable = p_Channel->m_DACEnabled;
-
-        } break;
-    }
 }
 
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
@@ -1448,7 +1041,7 @@ void GABLE_WriteNR14 (GABLE_APU* p_APU, Uint8 p_Value)
     // If the trigger bit is set, then trigger the channel.
     if (p_APU->m_PulseChannel1.m_PeriodHighControl.m_Trigger)
     {
-        GABLE_TriggerChannel(p_APU, GABLE_AC_PULSE_1);
+        GABLE_TriggerChannelInternal(p_APU, GABLE_AC_PULSE_1);
     }
 }
 
@@ -1527,7 +1120,7 @@ void GABLE_WriteNR24 (GABLE_APU* p_APU, Uint8 p_Value)
     // If the trigger bit is set, then trigger the channel.
     if (p_APU->m_PulseChannel2.m_PeriodHighControl.m_Trigger)
     {
-        GABLE_TriggerChannel(p_APU, GABLE_AC_PULSE_2);
+        GABLE_TriggerChannelInternal(p_APU, GABLE_AC_PULSE_2);
     }
 }
 
@@ -1548,6 +1141,19 @@ void GABLE_WriteNR30 (GABLE_APU* p_APU, Uint8 p_Value)
     {
         p_APU->m_MasterControl.m_WCEnable = false;
     }
+}
+
+void GABLE_WriteNR31 (GABLE_APU* p_APU, Uint8 p_Value)
+{
+    GABLE_expect(p_APU != NULL, "APU context is NULL!");
+
+    // This register is read-only when the APU is disabled.
+    if (p_APU->m_MasterControl.m_Enable == false)
+    {
+        return;
+    }
+
+    p_APU->m_WaveChannel.m_LengthTimer.m_Register = p_Value;
 }
 
 void GABLE_WriteNR32 (GABLE_APU* p_APU, Uint8 p_Value)
@@ -1599,7 +1205,7 @@ void GABLE_WriteNR34 (GABLE_APU* p_APU, Uint8 p_Value)
     // If the trigger bit is set, then trigger the channel.
     if (p_APU->m_WaveChannel.m_PeriodHighControl.m_Trigger)
     {
-        GABLE_TriggerChannel(p_APU, GABLE_AC_WAVE);
+        GABLE_TriggerChannelInternal(p_APU, GABLE_AC_WAVE);
     }
 }
 
@@ -1653,6 +1259,19 @@ void GABLE_WriteNR43 (GABLE_APU* p_APU, Uint8 p_Value)
     }
 
     p_APU->m_NoiseChannel.m_FrequencyRandomness.m_Register = p_Value;
+
+    // Update the noise channel's clock frequency.
+    if (p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockDivider == 0)
+    {
+        p_APU->m_NoiseChannel.m_CurrentClockFrequency = 
+            262144 / (0.5 * pow(2, p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockShift));
+    }
+    else
+    {
+        p_APU->m_NoiseChannel.m_CurrentClockFrequency = 
+            262144 / (p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockDivider 
+                << p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockShift);
+    }
 }
 
 void GABLE_WriteNR44 (GABLE_APU* p_APU, Uint8 p_Value)
@@ -1670,6 +1289,22 @@ void GABLE_WriteNR44 (GABLE_APU* p_APU, Uint8 p_Value)
     // If the trigger bit is set, then trigger the channel.
     if (p_APU->m_NoiseChannel.m_Control.m_Trigger)
     {
-        GABLE_TriggerChannel(p_APU, GABLE_AC_NOISE);
+        GABLE_TriggerChannelInternal(p_APU, GABLE_AC_NOISE);
     }
+}
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+void GABLE_SetAudioMixCallback (GABLE_Engine* p_Engine, GABLE_AudioMixCallback p_Callback)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    GABLE_APU* l_APU = GABLE_GetAPU(p_Engine);
+    l_APU->m_MixCallback = p_Callback;
+}
+
+const GABLE_AudioSample* GABLE_GetLatestAudioSample (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    GABLE_APU* l_APU = GABLE_GetAPU(p_Engine);
+    return &l_APU->m_AudioSample;
 }

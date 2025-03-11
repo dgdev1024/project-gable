@@ -27,6 +27,7 @@ typedef struct GABLE_Engine
     GABLE_PPU*              m_PPU;          ///< @brief The engine's PPU.
     GABLE_Joypad*           m_Joypad;       ///< @brief The engine's joypad.
     GABLE_NetworkContext*   m_Network;      ///< @brief The engine's network interface.
+    void*                   m_Userdata;     ///< @brief User data associated with the engine.
 } GABLE_Engine;
 
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +52,56 @@ GABLE_Engine* GABLE_CreateEngine ()
     // Initialize the engine's properties.
     l_Engine->m_Cycles = 0;
 
+    // Initialize hardware registers.
+    GABLE_WriteByte(l_Engine, GABLE_HP_JOYP, 0xCF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NTC, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NTS, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_TIMA, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_TMA, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_TAC, 0xF8);
+    GABLE_WriteByte(l_Engine, GABLE_HP_IF, 0xE1);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR52, 0xF1);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR50, 0x77);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR51, 0xF3); // 0xF3 = 0b11110011
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR10, 0x80);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR11, 0xBF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR12, 0xF3);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR13, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR14, 0xBF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR21, 0x3F);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR22, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR23, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR24, 0xBF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR30, 0x7F);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR31, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR32, 0x9F);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR33, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR34, 0xBF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR41, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR42, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR43, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_NR44, 0xBF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_LCDC, 0x91);
+    GABLE_WriteByte(l_Engine, GABLE_HP_STAT, 0x85);
+    GABLE_WriteByte(l_Engine, GABLE_HP_SCY, 0x00);  
+    GABLE_WriteByte(l_Engine, GABLE_HP_SCX, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_LY, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_LYC, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_BGP, 0xFC);
+    GABLE_WriteByte(l_Engine, GABLE_HP_OBP0, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_OBP1, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_WY, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_WX, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_VBK, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA1, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA2, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA3, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA4, 0x00);
+    GABLE_WriteByte(l_Engine, GABLE_HP_BGPI, 0xFC);
+    GABLE_WriteByte(l_Engine, GABLE_HP_OBPI, 0xFC);
+    GABLE_WriteByte(l_Engine, GABLE_HP_OPRI, 0xFF);
+    GABLE_WriteByte(l_Engine, GABLE_HP_GRPM, 0x00);
+
     // Return the new engine instance.
     return l_Engine;
 }
@@ -59,6 +110,9 @@ void GABLE_DestroyEngine (GABLE_Engine* p_Engine)
 {
     if (p_Engine != NULL)
     {
+        // Un-set the user data pointer.
+        p_Engine->m_Userdata = NULL;
+
         // Destroy the engine's components.
         GABLE_DestroyNetworkContext(p_Engine->m_Network);
         GABLE_DestroyInterruptContext(p_Engine->m_Interrupts);
@@ -200,7 +254,7 @@ Bool GABLE_ReadByte (GABLE_Engine* p_Engine, Uint16 p_Address, Uint8* p_Value)
         case GABLE_HP_NR32:     *p_Value = GABLE_ReadNR32(p_Engine->m_APU); break;
         case GABLE_HP_NR33:     *p_Value = 0xFF; break; // Write-only register.
         case GABLE_HP_NR34:     *p_Value = GABLE_ReadNR34(p_Engine->m_APU); break;
-        case GABLE_HP_NR41:     *p_Value = GABLE_ReadNR41(p_Engine->m_APU); break;
+        case GABLE_HP_NR41:     *p_Value = 0xFF; break; // Write-only register.
         case GABLE_HP_NR42:     *p_Value = GABLE_ReadNR42(p_Engine->m_APU); break;
         case GABLE_HP_NR43:     *p_Value = GABLE_ReadNR43(p_Engine->m_APU); break;
         case GABLE_HP_NR44:     *p_Value = GABLE_ReadNR44(p_Engine->m_APU); break;
@@ -494,4 +548,24 @@ GABLE_NetworkContext* GABLE_GetNetwork (GABLE_Engine* p_Engine)
 
     // Return the engine's network interface.
     return p_Engine->m_Network;
+}
+
+// Public Functions - User Data ////////////////////////////////////////////////////////////////////
+
+void* GABLE_GetUserdata (GABLE_Engine* p_Engine)
+{
+    // Validate the engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Return the user data pointer.
+    return p_Engine->m_Userdata;
+}
+
+void GABLE_SetUserdata (GABLE_Engine* p_Engine, void* p_Userdata)
+{
+    // Validate the engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Set the user data pointer.
+    p_Engine->m_Userdata = p_Userdata;
 }

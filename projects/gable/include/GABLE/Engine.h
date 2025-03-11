@@ -241,3 +241,68 @@ GABLE_Joypad* GABLE_GetJoypad (GABLE_Engine* p_Engine);
  * @return     A pointer to the GABLE Engine's network interface instance.
  */
 GABLE_NetworkContext* GABLE_GetNetwork (GABLE_Engine* p_Engine);
+
+// Public Functions - User Data ////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      Gets the user data associated with the GABLE Engine.
+ * 
+ * @param      p_Engine  A pointer to the GABLE Engine instance.
+ * 
+ * @return     A pointer to the user data associated with the GABLE Engine.
+ */
+void* GABLE_GetUserdata (GABLE_Engine* p_Engine);
+
+/**
+ * @brief      Sets the user data associated with the GABLE Engine.
+ * 
+ * @param      p_Engine    A pointer to the GABLE Engine instance.
+ * @param      p_Userdata  A pointer to the user data to associate with the GABLE Engine.
+ */
+void GABLE_SetUserdata (GABLE_Engine* p_Engine, void* p_Userdata);
+
+// Helper Macros ///////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @def        GABLE_CycleRead*(p_Engine, p_Address, p_Value)
+ * 
+ * @brief      Reads from the specified address in the GABLE Engine's memory map, then cycles
+ *             the engine a number of times equal to the number of bytes read.
+ * 
+ * Every time GABLE's memory map is accessed (read from or written to), the engine must be cycled
+ * by a certain number of cycles to simulate the time it takes for the CPU to access the memory,
+ * which is 1 cycle for every byte read or written.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Address        The address to read from.
+ * @param      p_Value          A pointer to the variable to store the read value.
+ * 
+ * @return     `true` if both the memory map was read from successfully and the engine cycled
+ *             successfully; `false` otherwise.
+ */
+#define GABLE_CycleReadByte(p_Engine, p_Address, p_Value) \
+    (GABLE_ReadByte(p_Engine, p_Address, p_Value) && GABLE_CycleEngine(p_Engine, 1))
+#define GABLE_CycleReadWord(p_Engine, p_Address, p_Value) \
+    (GABLE_ReadWord(p_Engine, p_Address, p_Value) && GABLE_CycleEngine(p_Engine, 2))
+
+/**
+ * @def        GABLE_CycleWrite*(p_Engine, p_Address, p_Value)
+ *
+ * @brief      Writes to the specified address in the GABLE Engine's memory map, then cycles
+ *             the engine a number of times equal to the number of bytes written.
+ *
+ * Every time GABLE's memory map is accessed (read from or written to), the engine must be cycled
+ * by a certain number of cycles to simulate the time it takes for the CPU to access the memory,
+ * which is 1 cycle for every byte read or written.
+ *
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Address        The address to write to.
+ * @param      p_Value          The value to write.
+ *
+ * @return     `true` if both the memory map was written to successfully and the engine cycled
+ *             successfully; `false` otherwise.
+ */
+#define GABLE_CycleWriteByte(p_Engine, p_Address, p_Value) \
+    (GABLE_WriteByte(p_Engine, p_Address, p_Value) && GABLE_CycleEngine(p_Engine, 1))
+#define GABLE_CycleWriteWord(p_Engine, p_Address, p_Value) \
+    (GABLE_WriteWord(p_Engine, p_Address, p_Value) && GABLE_CycleEngine(p_Engine, 2))

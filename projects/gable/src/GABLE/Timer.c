@@ -96,7 +96,7 @@ void GABLE_TickTimer (GABLE_Timer* p_Timer, GABLE_Engine* p_Engine)
         p_Timer->m_TIMA = p_Timer->m_TMA;
 
         // Request a timer interrupt.
-        GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_TIMER);
+        GABLE_RequestInterrupt(p_Engine, GABLE_INT_TIMER);
     }
 
 }

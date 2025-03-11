@@ -123,6 +123,8 @@ static void GABLE_FindLineObject (GABLE_PPU* p_PPU);
 
 // Static Function Prototypes - Pixel Transfer /////////////////////////////////////////////////////
 
+static Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555);
+static Uint32 GABLE_GetObjectColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555);
 static void GABLE_PushColor (GABLE_PixelFetcher* p_Fetcher, Uint32 p_Color);
 static void GABLE_PopColor (GABLE_PixelFetcher* p_Fetcher, Uint32* p_Color);
 static Bool GABLE_TryAddPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher);
@@ -180,7 +182,7 @@ void GABLE_IncrementLY (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
     // interrupt.
     if (p_PPU->m_STAT.m_LineCoincidence == 1 && p_PPU->m_STAT.m_LineCoincidenceStatSource == 1)
     {
-        GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_LCD_STAT);
+        GABLE_RequestInterrupt(p_Engine, GABLE_INT_LCD_STAT);
     }
 
 }
@@ -253,6 +255,76 @@ void GABLE_FindLineObject (GABLE_PPU* p_PPU)
 
 // Static Functions - Pixel Transfer ///////////////////////////////////////////////////////////////
 
+Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555)
+{
+    // Validate the palette index (0-7) and color index (0-3).
+    GABLE_expect(p_PaletteIndex < 8, "Invalid palette index!");
+    GABLE_expect(p_ColorIndex < 4, "Invalid color index!");
+
+    // Determine the start index of the color in the CRAM buffer.
+    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
+
+    // Get the color data from the CRAM buffer.
+    Uint8 l_ColorData[2] = { p_PPU->m_BgCRAM[l_StartIndex], p_PPU->m_BgCRAM[l_StartIndex + 1] };
+
+    // Extract the RGB555 color data. Remember that the color data is laid out as follows:
+    // `0bRRRRRGGG` `0bGGBBBBB0`
+    Uint8 l_Red   = (l_ColorData[0] & 0b11111000) >> 3;
+    Uint8 l_Green = ((l_ColorData[0] & 0b00000111) << 2) | ((l_ColorData[1] & 0b11000000) >> 6);
+    Uint8 l_Blue  = (l_ColorData[1] & 0b00111110) >> 1;
+
+    // If a color structure was provided, store the color data in it.
+    if (p_RGB555 != NULL)
+    {
+        p_RGB555->m_Red   = l_Red;
+        p_RGB555->m_Green = l_Green;
+        p_RGB555->m_Blue  = l_Blue;
+    }
+
+    // Return the RGBA color value.
+    return (
+        ((l_Red * 8) << 24) |
+        ((l_Green * 8) << 16) |
+        ((l_Blue * 8) << 8) |
+        0xFF
+    );
+}
+
+Uint32 GABLE_GetObjectColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555)
+{
+    // Validate the palette index (0-7) and color index (0-3).
+    GABLE_expect(p_PaletteIndex < 8, "Invalid palette index!");
+    GABLE_expect(p_ColorIndex < 4, "Invalid color index!");
+
+    // Determine the start index of the color in the CRAM buffer.
+    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
+
+    // Get the color data from the CRAM buffer.
+    Uint8 l_ColorData[2] = { p_PPU->m_ObjCRAM[l_StartIndex], p_PPU->m_ObjCRAM[l_StartIndex + 1] };
+
+    // Extract the RGB555 color data. Remember that the color data is laid out as follows:
+    // `0bRRRRRGGG` `0bGGBBBBB0`
+    Uint8 l_Red   = (l_ColorData[0] & 0b11111000) >> 3;
+    Uint8 l_Green = ((l_ColorData[0] & 0b00000111) << 2) | ((l_ColorData[1] & 0b11000000) >> 6);
+    Uint8 l_Blue  = (l_ColorData[1] & 0b00111110) >> 1;
+
+    // If a color structure was provided, store the color data in it.
+    if (p_RGB555 != NULL)
+    {
+        p_RGB555->m_Red   = l_Red;
+        p_RGB555->m_Green = l_Green;
+        p_RGB555->m_Blue  = l_Blue;
+    }
+
+    // Return the RGBA color value.
+    return (
+        ((l_Red * 8) << 24) |
+        ((l_Green * 8) << 16) |
+        ((l_Blue * 8) << 8) |
+        0xFF
+    );
+}
+
 void GABLE_PushColor (GABLE_PixelFetcher* p_Fetcher, Uint32 p_Color)
 {
     p_Fetcher->m_PixelFIFO.m_Buffer[p_Fetcher->m_PixelFIFO.m_Tail] = p_Color;
@@ -304,7 +376,7 @@ Bool GABLE_TryAddPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
         Uint32 l_RGBAColorValue = 0;
         if (p_PPU->m_GRPM == 1)
         {
-            l_RGBAColorValue = GABLE_GetBackgroundColor(
+            l_RGBAColorValue = GABLE_GetBackgroundColorInternal(
                 p_PPU,
                 l_TileAttributes.m_PaletteIndex,
                 l_ColorIndex,
@@ -369,6 +441,9 @@ void GABLE_ShiftNextPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
 
             // Determine the index of the pixel in the screen buffer.
             Uint32 l_ScreenIndex = p_Fetcher->m_PushedX + (p_PPU->m_LY * GABLE_PPU_SCREEN_WIDTH);
+
+            // GABLE_debug("Pushed X: %d, LY: %u, Screen Index: %u, Pixel Color: 0x%08X",
+            //     p_Fetcher->m_PushedX, p_PPU->m_LY, l_ScreenIndex, l_RGBAColorValue);
 
             // Emplace the pixel into the screen buffer. Advance the fetcher's pushed X-coordinate.
             p_PPU->m_ScreenBuffer[l_ScreenIndex] = l_RGBAColorValue;
@@ -447,7 +522,7 @@ Uint32 GABLE_FetchObjectPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher, 
             // Is the graphics mode set to CGB mode?
             if (p_PPU->m_GRPM == 1)
             {
-                p_RGBAColorValue = GABLE_GetObjectColor(
+                p_RGBAColorValue = GABLE_GetObjectColorInternal(
                     p_PPU,
                     l_Object->m_Attributes.m_PaletteIndex,
                     l_ColorIndex,
@@ -844,19 +919,19 @@ void GABLE_TickHorizontalBlank (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
         {
             // Move to the vertical blank state and request the `VBLANK` interrupt.
             p_PPU->m_STAT.m_DisplayMode = GABLE_DM_VERTICAL_BLANK;
-            GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_VBLANK);
+            GABLE_RequestInterrupt(p_Engine, GABLE_INT_VBLANK);
 
             // If the `LCD_STAT` interrupt source is enabled for the vertical blank period, then
             // request the `LCD_STAT` interrupt as well.
             if (p_PPU->m_STAT.m_VerticalBlankStatSource == true)
             {
-                GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_LCD_STAT);
+                GABLE_RequestInterrupt(p_Engine, GABLE_INT_LCD_STAT);
             }
 
             // If the frame rendered callback is provided, call it here.
             if (p_PPU->m_FrameRenderedCallback != NULL)
             {
-                p_PPU->m_FrameRenderedCallback(p_Engine);
+                p_PPU->m_FrameRenderedCallback(p_Engine, p_PPU);
             }
         }
 
@@ -864,11 +939,12 @@ void GABLE_TickHorizontalBlank (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
         else
         {
             p_PPU->m_STAT.m_DisplayMode = GABLE_DM_OBJECT_SCAN;
+            p_PPU->m_LineObjectCount = 0;
 
             // If its stat source is set, request the `LCD_STAT` interrupt.
             if (p_PPU->m_STAT.m_ObjectScanStatSource == true)
             {
-                GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_LCD_STAT);
+                GABLE_RequestInterrupt(p_Engine, GABLE_INT_LCD_STAT);
             }
         }
 
@@ -902,11 +978,12 @@ void GABLE_TickVerticalBlank (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
 
             // Move to the object scan state and begin processing the next frame.
             p_PPU->m_STAT.m_DisplayMode = GABLE_DM_OBJECT_SCAN;
+            p_PPU->m_LineObjectCount = 0;
 
             // If its stat source is set, request the `LCD_STAT` interrupt.
             if (p_PPU->m_STAT.m_ObjectScanStatSource == true)
             {
-                GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_LCD_STAT);
+                GABLE_RequestInterrupt(p_Engine, GABLE_INT_LCD_STAT);
             }
 
         }
@@ -928,6 +1005,13 @@ void GABLE_TickObjectScan (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
     if (p_PPU->m_CurrentDot >= 80)
     {
         p_PPU->m_STAT.m_DisplayMode = GABLE_DM_PIXEL_TRANSFER;        
+
+        GABLE_PixelFetcher* l_Fetcher = &p_PPU->m_PixelFetcher;
+        l_Fetcher->m_Mode = GABLE_PFM_TILE_NUMBER;
+        l_Fetcher->m_FetchingX = 0;
+        l_Fetcher->m_QueueX = 0;
+        l_Fetcher->m_LineX = 0;
+        l_Fetcher->m_PushedX = 0;
     }
     else if (l_Dot % 2 == 0)
     {
@@ -959,7 +1043,7 @@ void GABLE_TickPixelTransfer (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
         p_PPU->m_STAT.m_DisplayMode = GABLE_DM_HORIZONTAL_BLANK;
         if (p_PPU->m_STAT.m_HorizontalBlankStatSource == true)
         {
-            GABLE_RequestInterrupt(GABLE_GetInterruptContext(p_Engine), GABLE_INT_LCD_STAT);
+            GABLE_RequestInterrupt(p_Engine, GABLE_INT_LCD_STAT);
         }
 
         // At the start of each H-Blank period, another block of HDMA data is transferred.
@@ -1069,10 +1153,22 @@ void GABLE_TickPPU (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
     // Run the appropriate PPU state machine based on the current PPU display mode.
     switch (p_PPU->m_STAT.m_DisplayMode)
     {
-        case GABLE_DM_HORIZONTAL_BLANK: GABLE_TickHorizontalBlank(p_PPU, p_Engine); break;
-        case GABLE_DM_VERTICAL_BLANK:   GABLE_TickVerticalBlank(p_PPU, p_Engine); break;
-        case GABLE_DM_OBJECT_SCAN:      GABLE_TickObjectScan(p_PPU, p_Engine); break;
-        case GABLE_DM_PIXEL_TRANSFER:   GABLE_TickPixelTransfer(p_PPU, p_Engine); break;
+        case GABLE_DM_HORIZONTAL_BLANK: 
+            // GABLE_debug("Line: %u | Dot: %u | Mode: HBLANK", p_PPU->m_LY, p_PPU->m_CurrentDot);
+            GABLE_TickHorizontalBlank(p_PPU, p_Engine); 
+            break;
+        case GABLE_DM_VERTICAL_BLANK:   
+            // GABLE_debug("Line: %u | Dot: %u | Mode: VBLANK", p_PPU->m_LY, p_PPU->m_CurrentDot);
+            GABLE_TickVerticalBlank(p_PPU, p_Engine); 
+            break;
+        case GABLE_DM_OBJECT_SCAN:      
+            // GABLE_debug("Line: %u | Dot: %u | Mode: OAM_SCAN", p_PPU->m_LY, p_PPU->m_CurrentDot);
+            GABLE_TickObjectScan(p_PPU, p_Engine); 
+            break;
+        case GABLE_DM_PIXEL_TRANSFER:   
+            // GABLE_debug("Line: %u | Dot: %u | Mode: PIXEL_TRANSFER", p_PPU->m_LY, p_PPU->m_CurrentDot);
+            GABLE_TickPixelTransfer(p_PPU, p_Engine); 
+            break;
     }
 
 }
@@ -1285,434 +1381,6 @@ Bool GABLE_WriteOAMByte (GABLE_PPU* p_PPU, Uint16 p_Address, Uint8 p_Value)
     l_OAM[p_Address] = p_Value;
     return true;
 
-}
-
-// Public Functions - Color ////////////////////////////////////////////////////////////////////////
-
-Uint32 GABLE_GetBackgroundColor (const GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_Color)
-{
-
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Validate the color and palette indices.
-    if (p_PaletteIndex >= GABLE_PPU_CRAM_PALETTE_COUNT)
-    {
-        GABLE_error("Invalid background palette index: %u.", p_PaletteIndex);
-        return 0x00000000;
-    }
-    if (p_ColorIndex >= GABLE_PPU_CRAM_PALETTE_COLOR_COUNT)
-    {
-        GABLE_error("Invalid background color index: %u.", p_ColorIndex);
-        return 0x00000000;
-    }
-
-    // Determine the start index of the color in the CRAM buffer.
-    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
-
-    // Get the color data from the CRAM buffer.
-    Uint8 l_ColorData[2] = { p_PPU->m_BgCRAM[l_StartIndex], p_PPU->m_BgCRAM[l_StartIndex + 1] };
-
-    // Extract the RGB555 color data. Remember that the color data is laid out as follows:
-    // `0bRRRRRGGG` `0bGGBBBBB0`
-    Uint8 l_Red   = (l_ColorData[0] & 0b11111000) >> 3;
-    Uint8 l_Green = ((l_ColorData[0] & 0b00000111) << 2) | ((l_ColorData[1] & 0b11000000) >> 6);
-    Uint8 l_Blue  = (l_ColorData[1] & 0b00111110) >> 1;
-
-    // If a color structure was provided, store the color data in it.
-    if (p_Color != NULL)
-    {
-        p_Color->m_Red   = l_Red;
-        p_Color->m_Green = l_Green;
-        p_Color->m_Blue  = l_Blue;
-    }
-
-    // Return the RGBA color value.
-    return (
-        ((l_Red * 8) << 24) |
-        ((l_Green * 8) << 16) |
-        ((l_Blue * 8) << 8) |
-        0xFF
-    );
-}
-
-Uint32 GABLE_GetObjectColor (const GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_Color)
-{
-
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Validate the color and palette indices.
-    if (p_PaletteIndex >= GABLE_PPU_CRAM_PALETTE_COUNT)
-    {
-        GABLE_error("Invalid object palette index: %u.", p_PaletteIndex);
-        return 0x00000000;
-    }
-    if (p_ColorIndex >= GABLE_PPU_CRAM_PALETTE_COLOR_COUNT)
-    {
-        GABLE_error("Invalid object color index: %u.", p_ColorIndex);
-        return 0x00000000;
-    }
-
-    // Determine the start index of the color in the CRAM buffer.
-    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
-
-    // Get the color data from the CRAM buffer.
-    Uint8 l_ColorData[2] = { p_PPU->m_ObjCRAM[l_StartIndex], p_PPU->m_ObjCRAM[l_StartIndex + 1] };
-
-    // Extract the RGB555 color data. Remember that the color data is laid out as follows:
-    // `0bRRRRRGGG` `0bGGBBBBB0`
-    Uint8 l_Red   = (l_ColorData[0] & 0b11111000) >> 3;
-    Uint8 l_Green = ((l_ColorData[0] & 0b00000111) << 2) | ((l_ColorData[1] & 0b11000000) >> 6);
-    Uint8 l_Blue  = (l_ColorData[1] & 0b00111110) >> 1;
-
-    // If a color structure was provided, store the color data in it.
-    if (p_Color != NULL)
-    {
-        p_Color->m_Red   = l_Red;
-        p_Color->m_Green = l_Green;
-        p_Color->m_Blue  = l_Blue;
-    }
-
-    // Return the RGBA color value.
-    return (
-        ((l_Red * 8) << 24) |
-        ((l_Green * 8) << 16) |
-        ((l_Blue * 8) << 8) |
-        0xFF
-    );
-}
-
-Bool GABLE_SetBackgroundColor (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_Color* p_RGB555, Uint32 p_RGBA)
-{
-
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Validate the color and palette indices.
-    if (p_PaletteIndex >= GABLE_PPU_CRAM_PALETTE_COUNT)
-    {
-        GABLE_error("Invalid background palette index: %u.", p_PaletteIndex);
-        return false;
-    }
-    if (p_ColorIndex >= GABLE_PPU_CRAM_PALETTE_COLOR_COUNT)
-    {
-        GABLE_error("Invalid background color index: %u.", p_ColorIndex);
-        return false;
-    }
-
-    // Determine the start index of the color in the CRAM buffer.
-    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
-
-    // Extract the RGB555 color data from the provided color structure or RGBA value.
-    Uint8 l_Red = 0, l_Green = 0, l_Blue = 0;
-    if (p_RGB555 != NULL)
-    {
-        l_Red   = p_RGB555->m_Red;
-        l_Green = p_RGB555->m_Green;
-        l_Blue  = p_RGB555->m_Blue;
-    }
-    else
-    {
-        l_Red   = ((p_RGBA >> 24) & 0xFF) / 8;
-        l_Green = ((p_RGBA >> 16) & 0xFF) / 8;
-        l_Blue  = ((p_RGBA >> 8) & 0xFF) / 8;
-    }
-
-    // Validate the color data. Correct if out of bounds.
-    if (l_Red > 31)   { l_Red   = 31; }
-    if (l_Green > 31) { l_Green = 31; }
-    if (l_Blue > 31)  { l_Blue  = 31; }
-
-    // Pack the RGB555 color data into the CRAM buffer. Remember that the color data is laid out as
-    // follows: `0bRRRRRGGG` `0bGGBBBBB0`
-    p_PPU->m_BgCRAM[l_StartIndex]     = (l_Red << 3) | (l_Green >> 2);
-    p_PPU->m_BgCRAM[l_StartIndex + 1] = ((l_Green & 0b00000011) << 6) | (l_Blue << 1);
-
-    return true;
-}
-
-Bool GABLE_SetObjectColor (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_Color* p_RGB555, Uint32 p_RGBA)
-{
-
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Validate the color and palette indices.
-    if (p_PaletteIndex >= GABLE_PPU_CRAM_PALETTE_COUNT)
-    {
-        GABLE_error("Invalid object palette index: %u.", p_PaletteIndex);
-        return false;
-    }
-    if (p_ColorIndex >= GABLE_PPU_CRAM_PALETTE_COLOR_COUNT)
-    {
-        GABLE_error("Invalid object color index: %u.", p_ColorIndex);
-        return false;
-    }
-
-    // Determine the start index of the color in the CRAM buffer.
-    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
-
-    // Extract the RGB555 color data from the provided color structure or RGBA value.
-    Uint8 l_Red = 0, l_Green = 0, l_Blue = 0;
-    if (p_RGB555 != NULL)
-    {
-        l_Red   = p_RGB555->m_Red;
-        l_Green = p_RGB555->m_Green;
-        l_Blue  = p_RGB555->m_Blue;
-    }
-    else
-    {
-        l_Red   = ((p_RGBA >> 24) & 0xFF) / 8;
-        l_Green = ((p_RGBA >> 16) & 0xFF) / 8;
-        l_Blue  = ((p_RGBA >> 8) & 0xFF) / 8;
-    }
-
-    // Validate the color data. Correct if out of bounds.
-    if (l_Red > 31)   { l_Red   = 31; }
-    if (l_Green > 31) { l_Green = 31; }
-    if (l_Blue > 31)  { l_Blue  = 31; }
-
-    // Pack the RGB555 color data into the CRAM buffer. Remember that the color data is laid out as
-    // follows: `0bRRRRRGGG` `0bGGBBBBB0`
-    p_PPU->m_ObjCRAM[l_StartIndex]     = (l_Red << 3) | (l_Green >> 2);
-    p_PPU->m_ObjCRAM[l_StartIndex + 1] = ((l_Green & 0b00000011) << 6) | (l_Blue << 1);
-
-    return true;
-}
-
-// Public Functions - Object Attribute Memory (OAM) ////////////////////////////////////////////////
-
-GABLE_Object* GABLE_GetObject (GABLE_PPU* p_PPU, Uint8 p_Index)
-{
-
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Validate the object index.
-    if (p_Index >= GABLE_PPU_OAM_OBJECT_COUNT)
-    {
-        GABLE_error("Invalid object index: %u.", p_Index);
-        return NULL;
-    }
-
-    // Return a pointer to the object at the provided index.
-    return &p_PPU->m_OAM[p_Index];
-
-}
-
-void GABLE_GetObjectPosition (const GABLE_Object* p_Object, Uint8* p_X, Uint8* p_Y)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Extract the X and Y coordinates from the object's attributes.
-    if (p_X != NULL) { *p_X = p_Object->m_X; }
-    if (p_Y != NULL) { *p_Y = p_Object->m_Y; }
-
-}
-
-Uint8 GABLE_GetObjectTileIndex (const GABLE_Object* p_Object)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Extract the tile index from the object's attributes.
-    return p_Object->m_TileIndex;
-
-}
-
-GABLE_TileAttributes GABLE_GetObjectAttributes (const GABLE_Object* p_Object)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Extract the object's attributes.
-    return p_Object->m_Attributes;
-
-}
-
-void GABLE_SetObjectPosition (GABLE_Object* p_Object, Uint8 p_X, Uint8 p_Y)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Set the X and Y coordinates in the object's attributes.
-    p_Object->m_X = p_X;
-    p_Object->m_Y = p_Y;
-
-}
-
-void GABLE_SetObjectTileIndex (GABLE_Object* p_Object, Uint8 p_TileIndex)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Set the tile index in the object's attributes.
-    p_Object->m_TileIndex = p_TileIndex;
-
-}
-
-void GABLE_SetObjectAttributes (GABLE_Object* p_Object, GABLE_TileAttributes p_Attributes)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Set the object's attributes.
-    p_Object->m_Attributes = p_Attributes;
-
-}
-
-void GABLE_MoveObject (GABLE_Object* p_Object, Int8 p_DeltaX, Int8 p_DeltaY)
-{
-
-    GABLE_expect(p_Object, "Object is NULL!");
-
-    // Move the object by the provided deltas.
-    p_Object->m_X += p_DeltaX;
-    p_Object->m_Y += p_DeltaY;
-
-}
-
-// Public Functions - Tilemaps /////////////////////////////////////////////////////////////////////
-
-Uint8 GABLE_GetTileIndex (const GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y)
-{
-    
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Ensure that the PPU is not in the pixel transfer state.
-    if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
-    {
-        return 0xFF;
-    }
-
-    // Validate the X and Y coordinates. Correct if out of bounds.
-    p_X %= 32;
-    p_Y %= 32;
-    
-    // Using bit 0 of the `p_MapIndex` parameter, determine the start address of the tilemap
-    // which is to be accessed.
-    Uint16 l_StartAddress = (GABLE_bit(p_MapIndex, 0) != 0) ? 0x1C00 : 0x1800;
-
-    // Calculate the tilemap address.
-    Uint16 l_TilemapAddress = l_StartAddress + (p_Y * 32) + p_X;
-
-    // Read the tile index from the tilemap.
-    return p_PPU->m_VRAM0[l_TilemapAddress];
-}
-
-Uint8 GABLE_GetBackgroundTileIndex (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y)
-{
-    return GABLE_GetTileIndex(p_PPU, p_PPU->m_LCDC.m_BGTilemapAddress, p_X, p_Y);
-}
-
-Uint8 GABLE_GetWindowTileIndex (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y)
-{
-    return GABLE_GetTileIndex(p_PPU, p_PPU->m_LCDC.m_WindowTilemapAddress, p_X, p_Y);
-}
-
-GABLE_TileAttributes GABLE_GetTileAttributes (const GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y)
-{
-    
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Ensure that the PPU is not in the pixel transfer state.
-    if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
-    {
-        return (GABLE_TileAttributes) { .m_Value = 0x00 };
-    }
-
-    // Validate the X and Y coordinates. Correct if out of bounds.
-    p_X %= 32;
-    p_Y %= 32;
-
-    // Using bit 0 of the `p_MapIndex` parameter, determine the start address of the attribute map
-    // which is to be accessed.
-    Uint16 l_StartAddress = (GABLE_bit(p_MapIndex, 0) != 0) ? 0x1C00 : 0x1800;
-
-    // Calculate the attribute map address.
-    Uint16 l_AttributeMapAddress = l_StartAddress + (p_Y * 32) + p_X;
-
-    // Read the attribute byte from the attribute map.
-    Uint8 l_AttributeByte = p_PPU->m_VRAM1[l_AttributeMapAddress];
-}
-
-GABLE_TileAttributes GABLE_GetBackgroundTileAttributes (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y)
-{
-    return GABLE_GetTileAttributes(p_PPU, p_PPU->m_LCDC.m_BGTilemapAddress, p_X, p_Y);
-}
-
-GABLE_TileAttributes GABLE_GetWindowTileAttributes (const GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y)
-{
-    return GABLE_GetTileAttributes(p_PPU, p_PPU->m_LCDC.m_WindowTilemapAddress, p_X, p_Y);
-}
-
-void GABLE_SetTileIndex (GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y, Uint8 p_Tile)
-{
-    
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Ensure that the PPU is not in the pixel transfer state.
-    if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
-    {
-        return;
-    }
-
-    // Validate the X and Y coordinates. Correct if out of bounds.
-    p_X %= 32;
-    p_Y %= 32;
-
-    // Using bit 0 of the `p_MapIndex` parameter, determine the start address of the tilemap
-    // which is to be accessed.
-    Uint16 l_StartAddress = (GABLE_bit(p_MapIndex, 0) != 0) ? 0x1C00 : 0x1800;
-
-    // Calculate the tilemap address.
-    Uint16 l_TilemapAddress = l_StartAddress + (p_Y * 32) + p_X;
-
-    // Write the tile index to the tilemap.
-    p_PPU->m_VRAM0[l_TilemapAddress] = p_Tile;
-}
-
-void GABLE_SetBackgroundTileIndex (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, Uint8 p_Tile)
-{
-    GABLE_SetTileIndex(p_PPU, p_PPU->m_LCDC.m_BGTilemapAddress, p_X, p_Y, p_Tile);
-}
-
-void GABLE_SetWindowTileIndex (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, Uint8 p_Tile)
-{
-    GABLE_SetTileIndex(p_PPU, p_PPU->m_LCDC.m_WindowTilemapAddress, p_X, p_Y, p_Tile);
-}
-
-void GABLE_SetTileAttributes (GABLE_PPU* p_PPU, Uint8 p_MapIndex, Uint8 p_X, Uint8 p_Y, GABLE_TileAttributes p_Attributes)
-{
-    
-    GABLE_expect(p_PPU, "PPU context is NULL!");
-
-    // Ensure that the PPU is not in the pixel transfer state.
-    if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
-    {
-        return;
-    }
-
-    // Validate the X and Y coordinates. Correct if out of bounds.
-    p_X %= 32;
-    p_Y %= 32;
-
-    // Using bit 0 of the `p_MapIndex` parameter, determine the start address of the attribute map
-    // which is to be accessed.
-    Uint16 l_StartAddress = (GABLE_bit(p_MapIndex, 0) != 0) ? 0x1C00 : 0x1800;
-
-    // Calculate the attribute map address.
-    Uint16 l_AttributeMapAddress = l_StartAddress + (p_Y * 32) + p_X;
-
-    // Write the attribute byte to the attribute map.
-    p_PPU->m_VRAM1[l_AttributeMapAddress] = p_Attributes.m_Value;
-}
-
-void GABLE_SetBackgroundTileAttributes (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, GABLE_TileAttributes p_Attributes)
-{
-    GABLE_SetTileAttributes(p_PPU, p_PPU->m_LCDC.m_BGTilemapAddress, p_X, p_Y, p_Attributes);
-}
-
-void GABLE_SetWindowTileAttributes (GABLE_PPU* p_PPU, Uint8 p_X, Uint8 p_Y, GABLE_TileAttributes p_Attributes)
-{
-    GABLE_SetTileAttributes(p_PPU, p_PPU->m_LCDC.m_WindowTilemapAddress, p_X, p_Y, p_Attributes);
 }
 
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
@@ -2070,4 +1738,21 @@ void GABLE_WriteGRPM (GABLE_PPU* p_PPU, Uint8 p_Value)
 {
     GABLE_expect(p_PPU, "PPU context is NULL!");
     p_PPU->m_GRPM = p_Value;
+}
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+void GABLE_SetFrameRenderedCallback (GABLE_Engine* p_Engine, GABLE_FrameRenderedCallback p_Callback)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+    l_PPU->m_FrameRenderedCallback = p_Callback;
+}
+
+const Uint32* GABLE_GetScreenBuffer (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+    return l_PPU->m_ScreenBuffer;
 }

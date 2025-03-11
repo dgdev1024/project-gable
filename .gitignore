@@ -58,3 +58,6 @@ generated/
 bin/
 obj/
 out/
+
+# Private Assets
+assets/

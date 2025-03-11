@@ -42,13 +42,9 @@
  *   timer counter register (`TIMA`) overflows. This interrupt is typically used to update the game's
  *   logic and systems based on the passage of time.
  * 
- * - `3` - Serial Transfer Complete Interrupt (`SERIAL`) - This interrupt is requested when the GABLE
- *   engine's serial transfer controller (`SC`) has completed a serial data transfer. This interrupt
- *   is typically used to handle communication between the game software and external devices. In
- *   the case of the GABLE Engine, the serial transfer controller will likely use some kind of
- *   network socket to communicate with other instances of the GABLE Engine running on other
- *   machines, likely via TCP/IP or UDP. This interrupt is typically used to handle network
- *   communication events.
+ * - `3` - Network Transfer Complete Interrupt (`NET`) - This interrupt is requested when the GABLE
+ *   engine's network interface has completed a data transfer. This interrupt is typically used to
+ *   handle network communication events or network errors.
  * 
  * - `4` - Joypad Input Interrupt (`JOYP`) - This interrupt is requested when the GABLE engine's
  *   joypad register (`JOYP`) detects a change in the state of the joypad buttons or direction pad,
@@ -58,10 +54,6 @@
  * - `5` - Real-Time Clock Interrupt (`RTC`) - This interrupt is requested when one or more of the
  *   GABLE engine's real-time clock registers (`RTCS`, `RTCM`, `RTCH`, `RTCDH`, `RTCDL`) have
  *   changed. This interrupt is typically used to handle time-based events in the game software.
- * 
- * - `6` - Network Transfer Complete Interrupt (`NET`) - This interrupt is requested when the GABLE
- *   engine's network interface has completed a data transfer. This interrupt is typically used to
- *   handle network communication events or network errors.
  * 
  */
 
@@ -98,10 +90,9 @@ typedef enum GABLE_InterruptType
     GABLE_INT_VBLANK = 0,   ///< @brief Vertical Blank Interrupt
     GABLE_INT_LCD_STAT,     ///< @brief LCD Status Interrupt
     GABLE_INT_TIMER,        ///< @brief Timer Overflow Interrupt
-    GABLE_INT_SERIAL,       ///< @brief Serial Transfer Complete Interrupt
+    GABLE_INT_NET,          ///< @brief Network Transfer Complete Interrupt
     GABLE_INT_JOYPAD,       ///< @brief Joypad Input Interrupt
     GABLE_INT_RTC,          ///< @brief Real-Time Clock Interrupt
-    GABLE_INT_NET,          ///< @brief Network Transfer Complete Interrupt
 
     GABLE_INT_COUNT         ///< @brief The number of interrupt types
 } GABLE_InterruptType;
@@ -129,10 +120,9 @@ void GABLE_DestroyInterruptContext (GABLE_InterruptContext* p_Context);
  * - Vertical Blank Interrupt (`VBLANK`)
  * - LCD Status Interrupt (`LCD_STAT`)
  * - Timer Overflow Interrupt (`TIMER`)
- * - Serial Transfer Complete Interrupt (`SERIAL`)
+ * - Network Transfer Complete Interrupt (`NET`)
  * - Joypad Input Interrupt (`JOYP`)
  * - Real-Time Clock Interrupt (`RTC`)
- * - Network Transfer Complete Interrupt (`NET`)
  * 
  * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
  * @param      p_Engine   A pointer to the GABLE Engine instance whose interrupt context is
@@ -142,69 +132,6 @@ void GABLE_DestroyInterruptContext (GABLE_InterruptContext* p_Context);
  *             occurred while servicing the interrupt.
  */
 Int32 GABLE_ServiceInterrupt (GABLE_InterruptContext* p_Context, GABLE_Engine* p_Engine);
-
-/**
- * @brief      Requests an interrupt of the specified type.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * @param      p_Type     The type of interrupt to request.
- */
-void GABLE_RequestInterrupt (GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type);
-
-/**
- * @brief      Checks if the interrupt master enable flag is currently set.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * 
- * @return     `true` if the interrupt master enable flag is set; `false` otherwise.
- */
-Bool GABLE_IsInterruptMasterEnabled (const GABLE_InterruptContext* p_Context);
-
-/**
- * @brief      Checks if an interrupt of the specified type is currently enabled.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * @param      p_Type     The type of interrupt to check.
- * 
- * @return     `true` if the interrupt is currently enabled; `false` otherwise.
- */
-Bool GABLE_IsInterruptEnabled (const GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type);
-
-/**
- * @brief      Checks if an interrupt of the specified type is currently requested.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * @param      p_Type     The type of interrupt to check.
- * 
- * @return     `true` if the interrupt is currently requested; `false` otherwise.
- */
-Bool GABLE_IsInterruptRequested (const GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type);
-
-/**
- * @brief      Enables or disables an interrupt of the specified type.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * @param      p_Type     The type of interrupt to enable or disable.
- * @param      p_Enable   `true` to enable the interrupt; `false` to disable the interrupt.
- */
-void GABLE_SetInterruptEnable (GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type, Bool p_Enable);
-
-/**
- * @brief      Sets the interrupt handler for the specified interrupt type.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * @param      p_Type     The type of interrupt to set the handler for.
- * @param      p_Handler  A pointer to the interrupt handler function.
- */
-void GABLE_SetInterruptHandler (GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type, GABLE_InterruptHandler p_Handler);
-
-/**
- * @brief      Sets the interrupt master enable flag.
- * 
- * @param      p_Context  A pointer to the GABLE Engine interrupt context instance.
- * @param      p_Enable   `true` to enable interrupts; `false` to disable interrupts.
- */
-void GABLE_SetInterruptMasterEnable (GABLE_InterruptContext* p_Context, Bool p_Enable);
 
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
@@ -243,3 +170,15 @@ void GABLE_WriteIF (GABLE_InterruptContext* p_Context, Uint8 p_Value);
  * @param      p_Value    The new value of the `IE` register.
  */
 void GABLE_WriteIE (GABLE_InterruptContext* p_Context, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+Bool GABLE_IsInterruptMasterEnabled (GABLE_Engine* p_Engine);
+Bool GABLE_IsInterruptEnabled (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type);
+Bool GABLE_IsInterruptRequested (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type);
+void GABLE_RequestInterrupt (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type);
+void GABLE_CancelInterrupt (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type);
+Bool GABLE_ReturnFromInterrupt (GABLE_Engine* p_Engine);
+void GABLE_SetInterruptMasterEnable (GABLE_Engine* p_Engine, Bool p_Enable);
+void GABLE_SetInterruptEnable (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, Bool p_Enable);
+void GABLE_SetInterruptHandler (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, GABLE_InterruptHandler p_Handler);

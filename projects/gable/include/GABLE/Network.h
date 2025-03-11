@@ -209,98 +209,6 @@ void GABLE_DestroyNetworkContext (GABLE_NetworkContext* p_Context);
  */
 void GABLE_TickNetworkContext (GABLE_NetworkContext* p_Context, GABLE_Engine* p_Engine);
 
-/**
- * @brief      Connects the GABLE Engine's network interface component to a remote host.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * @param      p_Address  The IP address (or hostname) of the remote host to connect to.
- * @param      p_Port     The port number of the remote host to connect to.
- * 
- * @return     `true` if the connection was successful; `false` otherwise.
- */
-Bool GABLE_Connect (GABLE_NetworkContext* p_Context, const char* p_Address, Uint16 p_Port);
-
-/**
- * @brief      Closes the connection of the GABLE Engine's network interface component, if one exists.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- */
-void GABLE_CloseConnection (GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Requests a network transfer of the specified direction and size.
- * 
- * @param      p_Context    A pointer to the GABLE Engine network interface instance.
- */
-void GABLE_RequestNetworkTransfer (GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Cancels a network transfer currently in progress.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- */
-void GABLE_CancelNetworkTransfer (GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Checks the current status of the network interface component.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * 
- * @return     The current status of the network interface component.
- */
-GABLE_NetworkTransferStatus GABLE_GetNetworkTransferStatus (const GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Checks the current direction of the next (or current) network transfer.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * 
- * @return     The current direction of the network transfer.
- */
-GABLE_NetworkTransferDirection GABLE_GetNetworkTransferDirection (const GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Gets the current bank of NETRAM selected by the network interface component.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * 
- * @return     The current bank of NETRAM selected by the network interface component.
- */
-Uint8 GABLE_GetNetworkRAMBank (const GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Gets the size of the data section of the next (or current) network transfer.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * 
- * @return     The size of the data section of the next (or current) network transfer, in bytes.
- */
-Uint8 GABLE_GetNetworkTransferSize (const GABLE_NetworkContext* p_Context);
-
-/**
- * @brief      Sets the current direction of the next (or current) network transfer.
- * 
- * @param      p_Context   A pointer to the GABLE Engine network interface instance.
- * @param      p_Direction The direction of the network transfer.
- */
-void GABLE_SetNetworkTransferDirection (GABLE_NetworkContext* p_Context, GABLE_NetworkTransferDirection p_Direction);
-
-/**
- * @brief      Sets the current bank of NETRAM selected by the network interface component.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * @param      p_Bank     The bank of NETRAM to select.
- */
-void GABLE_SetNetworkRAMBank (GABLE_NetworkContext* p_Context, Uint8 p_Bank);
-
-/**
- * @brief      Sets the current bank of NETRAM selected by the network interface component.
- * 
- * @param      p_Context  A pointer to the GABLE Engine network interface instance.
- * @param      p_Bank     The bank of NETRAM to select.
- */
-void GABLE_SetNetworkTransferSize (GABLE_NetworkContext* p_Context, Uint8 p_Size);
-
 // Public Functions - Memory Access ////////////////////////////////////////////////////////////////
 
 /**
@@ -362,3 +270,23 @@ void GABLE_WriteNTC (GABLE_NetworkContext* p_Context, Uint8 p_Value);
  * @param      p_Value    The new value of the `NTS` register.
  */
 void GABLE_WriteNTS (GABLE_NetworkContext* p_Context, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+/**
+ * @brief      Connects the GABLE Engine's network interface component to a remote host.
+ * 
+ * @param      p_Engine   A pointer to the GABLE Engine instance.
+ * @param      p_Address  The IP address (or hostname) of the remote host to connect to.
+ * @param      p_Port     The port number of the remote host to connect to.
+ * 
+ * @return     `true` if the connection was successful; `false` otherwise.
+ */
+Bool GABLE_Connect (GABLE_Engine* p_Engine, const char* p_Address, Uint16 p_Port);
+
+/**
+ * @brief      Closes the connection of the GABLE Engine's network interface component, if one exists.
+ * 
+ * @param      p_Engine   A pointer to the GABLE Engine instance.
+ */
+void GABLE_CloseConnection (GABLE_Engine* p_Engine);

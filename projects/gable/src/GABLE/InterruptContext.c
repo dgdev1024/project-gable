@@ -48,14 +48,19 @@ Int32 GABLE_ServiceInterrupt (GABLE_InterruptContext* p_Context, GABLE_Engine* p
     GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
 
     // Check if the interrupt master enable flag is set.
-    if (GABLE_IsInterruptMasterEnabled(p_Context))
+    if (GABLE_IsInterruptMasterEnabled(p_Engine))
     {
         // Check if any interrupts are requested.
         for (Uint8 i = 0; i < GABLE_INT_COUNT; i++)
         {
             // Check if the interrupt is enabled and requested.
-            if (GABLE_IsInterruptEnabled(p_Context, i) && GABLE_IsInterruptRequested(p_Context, i))
+            if (GABLE_IsInterruptEnabled(p_Engine, i) && GABLE_IsInterruptRequested(p_Engine, i))
             {
+                // Acknowledge the interrupt request by clearing the interrupt request flag and
+                // the interrupt master enable flag.
+                GABLE_clearbit(p_Context->m_IF, i);
+                p_Context->m_IME = false;
+
                 // Call the interrupt handler.
                 if (p_Context->m_Handlers[i] != NULL)
                 {
@@ -79,69 +84,6 @@ Int32 GABLE_ServiceInterrupt (GABLE_InterruptContext* p_Context, GABLE_Engine* p
 
     // Return no interrupt serviced.
     return 0;
-}
-
-void GABLE_RequestInterrupt (GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Set the interrupt request.
-    GABLE_setbit(p_Context->m_IF, p_Type);
-}
-
-Bool GABLE_IsInterruptMasterEnabled (const GABLE_InterruptContext* p_Context)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Return the interrupt master enable flag.
-    return p_Context->m_IME;
-}
-
-Bool GABLE_IsInterruptEnabled (const GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Return the interrupt enable flag.
-    return GABLE_bit(p_Context->m_IE, p_Type);
-}
-
-Bool GABLE_IsInterruptRequested (const GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Return the interrupt request flag.
-    return GABLE_bit(p_Context->m_IF, p_Type);
-}
-
-void GABLE_SetInterruptEnable (GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type, Bool p_Enable)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Set the interrupt enable flag.
-    GABLE_changebit(p_Context->m_IE, p_Type, p_Enable);
-}
-
-void GABLE_SetInterruptHandler (GABLE_InterruptContext* p_Context, GABLE_InterruptType p_Type, GABLE_InterruptHandler p_Handler)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Set the interrupt handler.
-    p_Context->m_Handlers[p_Type] = p_Handler;
-}
-
-void GABLE_SetInterruptMasterEnable (GABLE_InterruptContext* p_Context, Bool p_Enable)
-{
-    // Validate the interrupt context instance.
-    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
-
-    // Set the interrupt master enable flag.
-    p_Context->m_IME = p_Enable;
 }
 
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
@@ -182,4 +124,99 @@ void GABLE_WriteIE (GABLE_InterruptContext* p_Context, Uint8 p_Value)
 
     // Set the interrupt enable register.
     p_Context->m_IE = p_Value;
+}
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+Bool GABLE_IsInterruptMasterEnabled (GABLE_Engine* p_Engine)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Return its interrupt master enable flag.
+    return GABLE_GetInterruptContext(p_Engine)->m_IME;
+}
+
+Bool GABLE_IsInterruptEnabled (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Return the interrupt enable flag for the specified interrupt type.
+    return GABLE_bit(GABLE_GetInterruptContext(p_Engine)->m_IE, p_Type);
+}
+
+Bool GABLE_IsInterruptRequested (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Return the interrupt request flag for the specified interrupt type.
+    return GABLE_bit(GABLE_GetInterruptContext(p_Engine)->m_IF, p_Type);
+}
+
+void GABLE_RequestInterrupt (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Set the interrupt request flag for the specified interrupt type.
+    GABLE_setbit(GABLE_GetInterruptContext(p_Engine)->m_IF, p_Type);
+}
+
+Bool GABLE_ReturnFromInterrupt (GABLE_Engine* p_Engine)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Set the interrupt master enable flag.
+    GABLE_GetInterruptContext(p_Engine)->m_IME = true;
+
+    // Return success.
+    return true;
+}
+
+void GABLE_CancelInterrupt (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Clear the interrupt request flag for the specified interrupt type.
+    GABLE_clearbit(GABLE_GetInterruptContext(p_Engine)->m_IF, p_Type);
+}
+
+void GABLE_SetInterruptMasterEnable (GABLE_Engine* p_Engine, Bool p_Enable)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Set the interrupt master enable flag.
+    GABLE_GetInterruptContext(p_Engine)->m_IME = p_Enable;
+}
+
+void GABLE_SetInterruptEnable (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, Bool p_Enable)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Set the interrupt enable flag for the specified interrupt type.
+    GABLE_changebit(GABLE_GetInterruptContext(p_Engine)->m_IE, p_Type, p_Enable);
+}
+
+void GABLE_SetInterruptHandler (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, GABLE_InterruptHandler p_Handler)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Pointer to the GABLE Engine interrupt context instance.
+    // Set the interrupt handler for the specified interrupt type.
+    GABLE_GetInterruptContext(p_Engine)->m_Handlers[p_Type] = p_Handler;
 }
