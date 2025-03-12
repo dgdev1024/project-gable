@@ -208,6 +208,11 @@
  */
 #define GABLE_AUDIO_SAMPLE_RATE 44100
 
+/**
+ * @brief The maximum octave of the GABLE Engine's audio channels, from 0 to 7.
+ */
+#define GABLE_MAX_OCTAVE 7
+
 // Typedefs and Forward Declarations ///////////////////////////////////////////////////////////////
 
 /**
@@ -231,6 +236,28 @@ typedef struct GABLE_APU GABLE_APU;
 typedef void (*GABLE_AudioMixCallback) (GABLE_Engine*, const GABLE_AudioSample*);
 
 // Enumerations ////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Enumerates the notes in the musical scale.
+ */
+typedef enum GABLE_AudioNote
+{
+    GABLE_NOTE_C = 0,           ///< @brief The C note.
+    GABLE_NOTE_C_SHARP,         ///< @brief The C# note.
+    GABLE_NOTE_D,               ///< @brief The D note.
+    GABLE_NOTE_D_SHARP,         ///< @brief The D# note.
+    GABLE_NOTE_E,               ///< @brief The E note.
+    GABLE_NOTE_F,               ///< @brief The F note.
+    GABLE_NOTE_F_SHARP,         ///< @brief The F# note.
+    GABLE_NOTE_G,               ///< @brief The G note.
+    GABLE_NOTE_G_SHARP,         ///< @brief The G# note.
+    GABLE_NOTE_A,               ///< @brief The A note.
+    GABLE_NOTE_A_SHARP,         ///< @brief The A# note.
+    GABLE_NOTE_B,               ///< @brief The B note.
+
+    GABLE_NOTE_COUNT,           ///< @brief The number of notes in the scale.
+    GABLE_NOTE_REST = 0xFF      ///< @brief A rest note.
+} GABLE_AudioNote;
 
 /**
  * @brief Enumerates the APU's four audio channels.
@@ -920,3 +947,33 @@ void GABLE_SetAudioMixCallback (GABLE_Engine* p_Engine, GABLE_AudioMixCallback p
  * @return     A pointer to the latest audio sample mixed by the APU.
  */
 const GABLE_AudioSample* GABLE_GetLatestAudioSample (GABLE_Engine* p_Engine);
+
+Float32 GABLE_GetFrequencyFromNote (GABLE_AudioNote p_Note, Uint8 p_Octave);
+
+GABLE_PulseFrequencySweep GABLE_GetPC1FrequencySweep (GABLE_Engine* p_Engine);
+GABLE_PulseDutyCycle GABLE_GetPulseDutyCycle (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
+GABLE_VolumeEnvelope GABLE_GetVolumeEnvelope (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
+Bool GABLE_GetDACEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
+GABLE_WaveOutputLevel GABLE_GetWaveOutputLevel (GABLE_Engine* p_Engine);
+GABLE_NoiseFrequencyRandomness GABLE_GetNoiseLFSRControl (GABLE_Engine* p_Engine);
+Bool GABLE_GetLengthTimerEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
+GABLE_MasterVolumeControl GABLE_GetMasterVolumeControl (GABLE_Engine* p_Engine);
+GABLE_SoundPanning GABLE_GetSoundPanning (GABLE_Engine* p_Engine);
+GABLE_AudioMasterControl GABLE_GetAudioMasterControl (GABLE_Engine* p_Engine);
+
+void GABLE_SetPC1FrequencySweep (GABLE_Engine* p_Engine, GABLE_PulseFrequencySweep p_Register);
+void GABLE_SetPulseLengthDuty (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_PulseLengthDuty p_Register);
+void GABLE_SetVolumeEnvelope (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_VolumeEnvelope p_Register);
+void GABLE_SetInitialPeriod (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Uint16 p_Period);
+void GABLE_SetInitialFrequency (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Float32 p_Frequency);
+void GABLE_SetInitialNote (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_AudioNote p_Note, Uint8 p_Octave);
+void GABLE_SetWaveDACEnable (GABLE_Engine* p_Engine, Bool p_Enable);
+void GABLE_SetWaveInitialLengthTimer (GABLE_Engine* p_Engine, Uint8 p_Length);
+void GABLE_SetWaveOutputLevel (GABLE_Engine* p_Engine, GABLE_WaveOutputLevel p_Level);
+void GABLE_SetNoiseInitialLengthTimer (GABLE_Engine* p_Engine, Uint8 p_Length);
+void GABLE_SetNoiseLFSRControl (GABLE_Engine* p_Engine, GABLE_NoiseFrequencyRandomness p_Register);
+void GABLE_SetLengthTimerEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Bool p_Enable);
+void GABLE_SetMasterVolumeControl (GABLE_Engine* p_Engine, GABLE_MasterVolumeControl p_Register);
+void GABLE_SetSoundPanning (GABLE_Engine* p_Engine, GABLE_SoundPanning p_Register);
+void GABLE_SetAudioEnable (GABLE_Engine* p_Engine, Bool p_Enable);
+void GABLE_TriggerChannel (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);

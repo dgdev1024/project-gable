@@ -121,74 +121,6 @@ void GABLE_TickTimer (GABLE_Timer* p_Timer, GABLE_Engine* p_Engine);
  */
 Bool GABLE_CheckTimerDividerBit (GABLE_Timer* p_Timer, Uint8 p_Bit);
 
-/**
- * @brief      Retrieves the timer's current clock speed setting.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * 
- * @return     The current clock speed setting of the timer.
- */
-GABLE_TimerClockSpeed GABLE_GetTimerClockSpeed (const GABLE_Timer* p_Timer);
-
-/**
- * @brief      Checks to see if the timer is currently enabled.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * 
- * @return     `true` if the timer is enabled; `false` otherwise.
- */
-Bool GABLE_IsTimerEnabled (const GABLE_Timer* p_Timer);
-
-/**
- * @brief      Retrieves the timer's modulo register value.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * 
- * @return     The current modulo register value of the timer.
- */
-Uint8 GABLE_GetTimerModulo (const GABLE_Timer* p_Timer);
-
-/**
- * @brief      Retrieves the timer's counter register value.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * 
- * @return     The current counter register value of the timer.
- */
-Uint8 GABLE_GetTimerCounter (const GABLE_Timer* p_Timer);
-
-/**
- * @brief      Sets the timer's current clock speed setting.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * @param      p_Speed  The new clock speed setting to apply.
- */
-void GABLE_SetTimerClockSpeed (GABLE_Timer* p_Timer, GABLE_TimerClockSpeed p_Speed);
-
-/**
- * @brief      Enables or disables the timer.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * @param      p_Enable `true` to enable the timer; `false` to disable the timer.
- */
-void GABLE_SetTimerEnable (GABLE_Timer* p_Timer, Bool p_Enable);
-
-/**
- * @brief      Sets the timer's modulo register value.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * @param      p_Value  The new modulo register value to apply.
- */
-void GABLE_SetTimerModulo (GABLE_Timer* p_Timer, Uint8 p_Value);
-
-/**
- * @brief      Sets the timer's counter register value.
- * 
- * @param      p_Timer  A pointer to the GABLE Engine timer instance.
- * @param      p_Value  The new counter register value to apply.
- */
-void GABLE_SetTimerCounter (GABLE_Timer* p_Timer, Uint8 p_Value);
-
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
 Uint8 GABLE_ReadDIV (const GABLE_Timer* p_Timer);
@@ -202,3 +134,11 @@ void GABLE_WriteDIV (GABLE_Timer* p_Timer, Uint8 p_Value);
 void GABLE_WriteTIMA (GABLE_Timer* p_Timer, Uint8 p_Value);
 void GABLE_WriteTMA (GABLE_Timer* p_Timer, Uint8 p_Value);
 void GABLE_WriteTAC (GABLE_Timer* p_Timer, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+GABLE_TimerClockSpeed GABLE_GetTimerClockSpeed (GABLE_Engine* p_Engine);
+Bool GABLE_IsTimerEnabled (GABLE_Engine* p_Engine);
+void GABLE_SetTimerClockSpeed (GABLE_Engine* p_Engine, GABLE_TimerClockSpeed p_Speed);
+void GABLE_SetTimerEnable (GABLE_Engine* p_Engine, Bool p_Enable);
+void GABLE_ResetTimerDivider (GABLE_Engine* p_Engine);

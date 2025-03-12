@@ -58,9 +58,14 @@
 /**
  * @brief The length of the name of a handle to a chunk of data in the data store.
  */
-#define GABLE_DS_NAME_STRLEN         32
+#define GABLE_DS_NAME_STRLEN         128
 
 // Typedefs and Forward Declarations ///////////////////////////////////////////////////////////////
+
+/**
+ * @brief Forward declaration of the GABLE Engine structure.
+ */
+typedef struct GABLE_Engine GABLE_Engine;
 
 /**
  * @brief The GABLE Engine's data store structure.
@@ -147,3 +152,14 @@ void GABLE_WriteDSBKH (GABLE_DataStore* p_DataStore, Uint8 p_Value);
  * @param      p_Value      The new value of the `DSBKL` register.
  */
 void GABLE_WriteDSBKL (GABLE_DataStore* p_DataStore, Uint8 p_Value);
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+const GABLE_DataHandle* GABLE_LoadDataFromBuffer (GABLE_Engine* p_Engine, const Char* p_Name, const Uint8* p_Buffer, Uint16 p_Size, Uint16 p_BankNumber);
+const GABLE_DataHandle* GABLE_LoadDataFromFile (GABLE_Engine* p_Engine, const Char* p_Name, const Char* p_FilePath, Uint16 p_BankNumber);
+const GABLE_DataHandle* GABLE_GetDataHandle (GABLE_Engine* p_Engine, const Char* p_Name);
+Bool GABLE_GotoBankWithDataHandle (GABLE_Engine* p_Engine, const GABLE_DataHandle* p_Handle);
+Uint16 GABLE_GetDataStoreBankCount (GABLE_Engine* p_Engine);
+Uint16 GABLE_GetDataStoreBankNumber (GABLE_Engine* p_Engine);
+void GABLE_SetDataStoreBankCount (GABLE_Engine* p_Engine, Uint16 p_BankCount);
+void GABLE_SetDataStoreBankNumber (GABLE_Engine* p_Engine, Uint16 p_BankNumber);

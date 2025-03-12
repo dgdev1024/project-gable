@@ -112,69 +112,6 @@ Bool GABLE_CheckTimerDividerBit (GABLE_Timer* p_Timer, Uint8 p_Bit)
     return (l_OldBit == true && l_NewBit == false);
 }
 
-GABLE_TimerClockSpeed GABLE_GetTimerClockSpeed (const GABLE_Timer* p_Timer)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Return the timer's clock speed setting.
-    return (GABLE_TimerClockSpeed) p_Timer->m_TAC.m_ClockSpeed;
-}
-
-Bool GABLE_IsTimerEnabled (const GABLE_Timer* p_Timer)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Return the timer's enable flag.
-    return p_Timer->m_TAC.m_Enable;
-}
-
-Uint8 GABLE_GetTimerModulo (const GABLE_Timer* p_Timer)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Return the timer's modulo register value.
-    return p_Timer->m_TMA;
-}
-
-Uint8 GABLE_GetTimerCounter (const GABLE_Timer* p_Timer)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Return the timer's counter register value.
-    return p_Timer->m_TIMA;
-}
-
-void GABLE_SetTimerClockSpeed (GABLE_Timer* p_Timer, GABLE_TimerClockSpeed p_Speed)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Set the timer's clock speed setting.
-    p_Timer->m_TAC.m_ClockSpeed = (Uint8) p_Speed;
-}
-
-void GABLE_SetTimerEnable (GABLE_Timer* p_Timer, Bool p_Enable)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Set the timer's enable flag.
-    p_Timer->m_TAC.m_Enable = p_Enable;
-}
-
-void GABLE_SetTimerModulo (GABLE_Timer* p_Timer, Uint8 p_Value)
-{
-    // Validate the timer instance.
-    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
-
-    // Set the timer's modulo register value.
-    p_Timer->m_TMA = p_Value;
-}
-
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
 Uint8 GABLE_ReadDIV (const GABLE_Timer* p_Timer)
@@ -251,4 +188,69 @@ void GABLE_WriteTAC (GABLE_Timer* p_Timer, Uint8 p_Value)
 
     // Set the TAC register value.
     p_Timer->m_TAC.m_Register = p_Value;
+}
+
+// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
+
+GABLE_TimerClockSpeed GABLE_GetTimerClockSpeed (GABLE_Engine* p_Engine)
+{
+    // Validate the engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `TAC` register value.
+    GABLE_TimerControl l_TAC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_TAC, &l_TAC.m_Register);
+
+    // Return the timer clock speed.
+    return l_TAC.m_ClockSpeed;
+}
+
+Bool GABLE_IsTimerEnabled (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `TAC` register value.
+    GABLE_TimerControl l_TAC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_TAC, &l_TAC.m_Register);
+
+    // Return the timer enable bit.
+    return l_TAC.m_Enable;
+}
+
+void GABLE_SetTimerClockSpeed (GABLE_Engine* p_Engine, GABLE_TimerClockSpeed p_Speed)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `TAC` register value.
+    GABLE_TimerControl l_TAC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_TAC, &l_TAC.m_Register);
+
+    // Set the clock speed bits.
+    l_TAC.m_ClockSpeed = p_Speed;
+
+    // Write the new `TAC` register value.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_TAC, l_TAC.m_Register);
+}
+
+void GABLE_SetTimerEnable (GABLE_Engine* p_Engine, Bool p_Enable)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `TAC` register value.
+    GABLE_TimerControl l_TAC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_TAC, &l_TAC.m_Register);
+
+    // Set the enable bit.
+    l_TAC.m_Enable = p_Enable;
+
+    // Write the new `TAC` register value.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_TAC, l_TAC.m_Register);
+}
+
+void GABLE_ResetTimerDivider (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Reset the DIV register to zero. Any write to the DIV register resets it to zero.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_DIV, 0);
 }

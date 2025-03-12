@@ -226,27 +226,6 @@ void GABLE_WriteSSBK (GABLE_RAM* p_RAM, Uint8 p_Value)
 
 // Public Functions - High-Level Functions /////////////////////////////////////////////////////////
 
-void GABLE_SetSRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount)
-{
-    // Validate the RAM instance.
-    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
-
-    // Point to the RAM context.
-    GABLE_RAM* l_RAM = GABLE_GetRAM(p_Engine);
-
-    // If the new bank count is greater than the current bank count, then re-size the SRAM buffer.
-    if (p_BankCount > l_RAM->m_SRAMBankCount)
-    {
-        Uint8* l_NewSRAM = GABLE_realloc(l_RAM->m_SRAM, p_BankCount * GABLE_RAM_SRAM_BANK_SIZE, Uint8);
-        GABLE_pexpect(l_NewSRAM != NULL, "Failed to re-size GABLE Engine static RAM banks");
-
-        l_RAM->m_SRAM = l_NewSRAM;
-    }
-
-    // Update the SRAM bank count.
-    l_RAM->m_SRAMBankCount = p_BankCount;
-}
-
 Bool GABLE_LoadSRAMFile (GABLE_Engine* p_Engine, const Char* p_FilePath)
 {
     // Validate the RAM instance.
@@ -343,4 +322,148 @@ Bool GABLE_SaveSRAMFile (GABLE_Engine* p_Engine, const Char* p_FilePath)
     // Close the file.
     fclose(l_File);
     return true;
+}
+
+Uint8 GABLE_GetWRAMBankCount (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Point to the RAM context and return the number of working RAM banks.
+    return GABLE_GetRAM(p_Engine)->m_WRAMBankCount;
+}
+
+Uint8 GABLE_GetSRAMBankCount (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Point to the RAM context and return the number of static RAM banks.
+    return GABLE_GetRAM(p_Engine)->m_SRAMBankCount;
+}
+
+Uint8 GABLE_GetWRAMBankNumber (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read from the `SVBK` hardware register and return its value.
+    Uint8 l_SVBK = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_SVBK, &l_SVBK);
+
+    return l_SVBK;
+}
+
+Uint8 GABLE_GetSRAMBankNumber (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read from the `SSBK` hardware register and return its value.
+    Uint8 l_SSBK = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_SSBK, &l_SSBK);
+
+    return l_SSBK;
+}
+
+void GABLE_SetWRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Point to the RAM context.
+    GABLE_RAM* l_RAM = GABLE_GetRAM(p_Engine);
+
+    // Minimum 2 banks are required for the working RAM. Correct if needed.
+    if (p_BankCount < 2)
+    {
+        p_BankCount = 2;
+    }
+
+    // Check to see if the new bank count is different from the current bank count.
+    if (l_RAM->m_WRAMBankCount != p_BankCount)
+    {
+
+        // If the current bank number exceeds the new bank count, correct it.
+        if (l_RAM->m_WRAMBankNumber >= p_BankCount)
+        {
+            l_RAM->m_WRAMBankNumber = p_BankCount - 1;
+        }
+
+        // Allocate a new working RAM buffer.
+        Uint8* l_NewWRAM = GABLE_calloc(GABLE_RAM_WRAM_BANK_SIZE * p_BankCount, Uint8);
+        GABLE_pexpect(l_NewWRAM != NULL, "Failed to allocate GABLE Engine working RAM banks");
+
+        // Copy the data from the old working RAM buffer to the new working RAM buffer.
+        if (p_BankCount > l_RAM->m_WRAMBankCount)
+        {
+            memcpy(l_NewWRAM, l_RAM->m_WRAM, GABLE_RAM_WRAM_BANK_SIZE * l_RAM->m_WRAMBankCount);
+        }
+        else
+        {
+            memcpy(l_NewWRAM, l_RAM->m_WRAM, GABLE_RAM_WRAM_BANK_SIZE * p_BankCount);
+        }
+
+        // Free the old working RAM buffer and update the RAM context.
+        GABLE_free(l_RAM->m_WRAM);
+        l_RAM->m_WRAM = l_NewWRAM;
+        l_RAM->m_WRAMBankCount = p_BankCount;
+
+    }
+}
+
+void GABLE_SetSRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Repeat the process for the static RAM banks. Minimum 1 bank is required.
+    if (p_BankCount < 1)
+    {
+        p_BankCount = 1;
+    }
+
+    // Point to the RAM context.
+    GABLE_RAM* l_RAM = GABLE_GetRAM(p_Engine);
+
+    // Check to see if the new bank count is different from the current bank count.
+    if (l_RAM->m_SRAMBankCount != p_BankCount)
+    {
+
+        // If the current bank number exceeds the new bank count, correct it.
+        if (l_RAM->m_SRAMBankNumber >= p_BankCount)
+        {
+            l_RAM->m_SRAMBankNumber = p_BankCount - 1;
+        }
+
+        // Allocate a new static RAM buffer.
+        Uint8* l_NewSRAM = GABLE_calloc(GABLE_RAM_SRAM_BANK_SIZE * p_BankCount, Uint8);
+        GABLE_pexpect(l_NewSRAM != NULL, "Failed to allocate GABLE Engine static RAM banks");
+
+        // Copy the data from the old static RAM buffer to the new static RAM buffer.
+        if (p_BankCount > l_RAM->m_SRAMBankCount)
+        {
+            memcpy(l_NewSRAM, l_RAM->m_SRAM, GABLE_RAM_SRAM_BANK_SIZE * l_RAM->m_SRAMBankCount);
+        }
+        else
+        {
+            memcpy(l_NewSRAM, l_RAM->m_SRAM, GABLE_RAM_SRAM_BANK_SIZE * p_BankCount);
+        }
+
+        // Free the old static RAM buffer and update the RAM context.
+        GABLE_free(l_RAM->m_SRAM);
+        l_RAM->m_SRAM = l_NewSRAM;
+        l_RAM->m_SRAMBankCount = p_BankCount;
+
+    }
+}
+
+void GABLE_SetWRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_BankNumber)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write to the `SVBK` hardware register to set the working RAM bank number.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SVBK, p_BankNumber);
+}
+
+void GABLE_SetSRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_BankNumber)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write to the `SSBK` hardware register to set the static RAM bank number.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SSBK, p_BankNumber);
 }

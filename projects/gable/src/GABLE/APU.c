@@ -13,6 +13,122 @@ static const Uint8 GABLE_WAVE_DUTY_PATTERNS[4] = {
     [GABLE_PDC_75]      = 0b00111111
 };
 
+static const Float32 GABLE_NOTE_FREQUENCY_TABLE[] = {
+
+    // Octave 0
+    [GABLE_NOTE_C]              = 16.35f,
+    [GABLE_NOTE_C_SHARP]        = 17.32f,
+    [GABLE_NOTE_D]              = 18.35f,
+    [GABLE_NOTE_D_SHARP]        = 19.45f,
+    [GABLE_NOTE_E]              = 20.60f,
+    [GABLE_NOTE_F]              = 21.83f,
+    [GABLE_NOTE_F_SHARP]        = 23.12f,
+    [GABLE_NOTE_G]              = 24.50f,
+    [GABLE_NOTE_G_SHARP]        = 25.96f,
+    [GABLE_NOTE_A]              = 27.50f,
+    [GABLE_NOTE_A_SHARP]        = 29.14f,
+    [GABLE_NOTE_B]              = 30.87f,
+
+    // Octave 1
+    [GABLE_NOTE_C + 12]         = 32.70f,
+    [GABLE_NOTE_C_SHARP + 12]   = 34.65f,
+    [GABLE_NOTE_D + 12]         = 36.71f,
+    [GABLE_NOTE_D_SHARP + 12]   = 38.89f,
+    [GABLE_NOTE_E + 12]         = 41.20f,
+    [GABLE_NOTE_F + 12]         = 43.65f,
+    [GABLE_NOTE_F_SHARP + 12]   = 46.25f,
+    [GABLE_NOTE_G + 12]         = 49.00f,
+    [GABLE_NOTE_G_SHARP + 12]   = 51.91f,
+    [GABLE_NOTE_A + 12]         = 55.00f,
+    [GABLE_NOTE_A_SHARP + 12]   = 58.27f,
+    [GABLE_NOTE_B + 12]         = 61.74f,
+
+    // Octave 2
+    [GABLE_NOTE_C + 24]         = 65.41f,
+    [GABLE_NOTE_C_SHARP + 24]   = 69.30f,
+    [GABLE_NOTE_D + 24]         = 73.42f,
+    [GABLE_NOTE_D_SHARP + 24]   = 77.78f,
+    [GABLE_NOTE_E + 24]         = 82.41f,
+    [GABLE_NOTE_F + 24]         = 87.31f,
+    [GABLE_NOTE_F_SHARP + 24]   = 92.50f,
+    [GABLE_NOTE_G + 24]         = 98.00f,
+    [GABLE_NOTE_G_SHARP + 24]   = 103.83f,
+    [GABLE_NOTE_A + 24]         = 110.00f,
+    [GABLE_NOTE_A_SHARP + 24]   = 116.54f,
+    [GABLE_NOTE_B + 24]         = 123.47f,
+
+    // Octave 3
+    [GABLE_NOTE_C + 36]         = 130.81f,
+    [GABLE_NOTE_C_SHARP + 36]   = 138.59f,
+    [GABLE_NOTE_D + 36]         = 146.83f,
+    [GABLE_NOTE_D_SHARP + 36]   = 155.56f,
+    [GABLE_NOTE_E + 36]         = 164.81f,
+    [GABLE_NOTE_F + 36]         = 174.61f,
+    [GABLE_NOTE_F_SHARP + 36]   = 185.00f,
+    [GABLE_NOTE_G + 36]         = 196.00f,
+    [GABLE_NOTE_G_SHARP + 36]   = 207.65f,
+    [GABLE_NOTE_A + 36]         = 220.00f,
+    [GABLE_NOTE_A_SHARP + 36]   = 233.08f,
+    [GABLE_NOTE_B + 36]         = 246.94f,
+
+    // Octave 4
+    [GABLE_NOTE_C + 48]         = 261.63f,
+    [GABLE_NOTE_C_SHARP + 48]   = 277.18f,
+    [GABLE_NOTE_D + 48]         = 293.66f,
+    [GABLE_NOTE_D_SHARP + 48]   = 311.13f,
+    [GABLE_NOTE_E + 48]         = 329.63f,
+    [GABLE_NOTE_F + 48]         = 349.23f,
+    [GABLE_NOTE_F_SHARP + 48]   = 369.99f,
+    [GABLE_NOTE_G + 48]         = 392.00f,
+    [GABLE_NOTE_G_SHARP + 48]   = 415.30f,
+    [GABLE_NOTE_A + 48]         = 440.00f,
+    [GABLE_NOTE_A_SHARP + 48]   = 466.16f,
+    [GABLE_NOTE_B + 48]         = 493.88f,
+
+    // Octave 5
+    [GABLE_NOTE_C + 60]         = 523.25f,
+    [GABLE_NOTE_C_SHARP + 60]   = 554.37f,
+    [GABLE_NOTE_D + 60]         = 587.33f,
+    [GABLE_NOTE_D_SHARP + 60]   = 622.25f,
+    [GABLE_NOTE_E + 60]         = 659.25f,
+    [GABLE_NOTE_F + 60]         = 698.46f,
+    [GABLE_NOTE_F_SHARP + 60]   = 739.99f,
+    [GABLE_NOTE_G + 60]         = 783.99f,
+    [GABLE_NOTE_G_SHARP + 60]   = 830.61f,
+    [GABLE_NOTE_A + 60]         = 880.00f,
+    [GABLE_NOTE_A_SHARP + 60]   = 932.33f,
+    [GABLE_NOTE_B + 60]         = 987.77f,
+
+    // Octave 6
+    [GABLE_NOTE_C + 72]         = 1046.50f,
+    [GABLE_NOTE_C_SHARP + 72]   = 1108.73f,
+    [GABLE_NOTE_D + 72]         = 1174.66f,
+    [GABLE_NOTE_D_SHARP + 72]   = 1244.51f,
+    [GABLE_NOTE_E + 72]         = 1318.51f,
+    [GABLE_NOTE_F + 72]         = 1396.91f,
+    [GABLE_NOTE_F_SHARP + 72]   = 1479.98f,
+    [GABLE_NOTE_G + 72]         = 1567.98f,
+    [GABLE_NOTE_G_SHARP + 72]   = 1661.22f,
+    [GABLE_NOTE_A + 72]         = 1760.00f,
+    [GABLE_NOTE_A_SHARP + 72]   = 1864.66f,
+    [GABLE_NOTE_B + 72]         = 1975.53f,
+
+    // Octave 7
+    [GABLE_NOTE_C + 84]         = 2093.00f,
+    [GABLE_NOTE_C_SHARP + 84]   = 2217.46f,
+    [GABLE_NOTE_D + 84]         = 2349.32f,
+    [GABLE_NOTE_D_SHARP + 84]   = 2489.02f,
+    [GABLE_NOTE_E + 84]         = 2637.02f,
+    [GABLE_NOTE_F + 84]         = 2793.83f,
+    [GABLE_NOTE_F_SHARP + 84]   = 2959.96f,
+    [GABLE_NOTE_G + 84]         = 3135.96f,
+    [GABLE_NOTE_G_SHARP + 84]   = 3322.44f,
+    [GABLE_NOTE_A + 84]         = 3520.00f,
+    [GABLE_NOTE_A_SHARP + 84]   = 3729.31f,
+    [GABLE_NOTE_B + 84]         = 3951.07f
+
+};
+
 // Audio Channel Structures ////////////////////////////////////////////////////////////////////////
 
 typedef struct GABLE_PulseChannel
@@ -841,7 +957,7 @@ Uint8 GABLE_ReadNR12 (const GABLE_APU* p_APU)
 Uint8 GABLE_ReadNR14 (const GABLE_APU* p_APU)
 {
     GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    return p_APU->m_PulseChannel1.m_PeriodHighControl.m_Register & 0b01111000;
+    return p_APU->m_PulseChannel1.m_PeriodHighControl.m_Register;
 }
 
 Uint8 GABLE_ReadNR21 (const GABLE_APU* p_APU)
@@ -859,7 +975,7 @@ Uint8 GABLE_ReadNR22 (const GABLE_APU* p_APU)
 Uint8 GABLE_ReadNR24 (const GABLE_APU* p_APU)
 {
     GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    return p_APU->m_PulseChannel2.m_PeriodHighControl.m_Register & 0b01111000;
+    return p_APU->m_PulseChannel2.m_PeriodHighControl.m_Register;
 }
 
 Uint8 GABLE_ReadNR30 (const GABLE_APU* p_APU)
@@ -877,7 +993,7 @@ Uint8 GABLE_ReadNR32 (const GABLE_APU* p_APU)
 Uint8 GABLE_ReadNR34 (const GABLE_APU* p_APU)
 {
     GABLE_expect(p_APU != NULL, "APU context is NULL!");
-    return p_APU->m_WaveChannel.m_PeriodHighControl.m_Register & 0b01111000;
+    return p_APU->m_WaveChannel.m_PeriodHighControl.m_Register;
 }
 
 Uint8 GABLE_ReadNR42 (const GABLE_APU* p_APU)
@@ -1308,3 +1424,467 @@ const GABLE_AudioSample* GABLE_GetLatestAudioSample (GABLE_Engine* p_Engine)
     GABLE_APU* l_APU = GABLE_GetAPU(p_Engine);
     return &l_APU->m_AudioSample;
 }
+
+Float32 GABLE_GetFrequencyFromNote (GABLE_AudioNote p_Note, Uint8 p_Octave)
+{
+    // Ensure that the octave is within the valid range. Correct if not.
+    if (p_Octave > GABLE_MAX_OCTAVE)
+    {
+        p_Octave = GABLE_MAX_OCTAVE;
+    }
+
+    // Look up the frequency for the note in the octave.
+    return GABLE_NOTE_FREQUENCY_TABLE[(p_Octave * GABLE_NOTE_COUNT) + p_Note];
+}
+
+GABLE_PulseFrequencySweep GABLE_GetPC1FrequencySweep (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `NR10` register from the APU.
+    GABLE_PulseFrequencySweep l_Register;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_NR10, &l_Register.m_Register);
+
+    return l_Register;
+}
+
+GABLE_PulseDutyCycle GABLE_GetPulseDutyCycle (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Hold the register value.
+    GABLE_PulseLengthDuty l_Register = {0};
+
+    // Read the appropriate register from the APU.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR11, &l_Register.m_Register);
+            break;
+        case GABLE_AC_PULSE_2:
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR21, &l_Register.m_Register);
+            break;
+        default: break;
+    }
+
+    return l_Register.m_DutyCycle;
+}
+
+GABLE_VolumeEnvelope GABLE_GetVolumeEnvelope (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Hold the register value.
+    GABLE_VolumeEnvelope l_Register = {0};
+
+    // Read the appropriate register from the APU.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR12, &l_Register.m_Register);
+            break;
+        case GABLE_AC_PULSE_2:
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR22, &l_Register.m_Register);
+            break;
+        case GABLE_AC_NOISE:
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR42, &l_Register.m_Register);
+            break;
+        default: break;
+    }
+
+    return l_Register;
+}
+
+Bool GABLE_GetDACEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // The wave channel's DAC enable is stored in register `NR30`.
+    if (p_Channel == GABLE_AC_WAVE)
+    {
+        GABLE_WaveDACEnable l_Register = {0};
+        GABLE_CycleReadByte(p_Engine, GABLE_HP_NR30, &l_Register.m_Register);
+        return l_Register.m_DACPower;
+    }
+
+    // The pulse and noise channels' DAC enables are internal registers, so we'll need to access
+    // the APU directly.
+    GABLE_APU* l_APU = GABLE_GetAPU(p_Engine);
+
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1: return l_APU->m_PulseChannel1.m_DACEnabled;
+        case GABLE_AC_PULSE_2: return l_APU->m_PulseChannel2.m_DACEnabled;
+        case GABLE_AC_NOISE: return l_APU->m_NoiseChannel.m_DACEnabled;
+        default: return false;
+    }
+}
+
+GABLE_WaveOutputLevel GABLE_GetWaveOutputLevel (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `NR32` register from the APU.
+    GABLE_WaveOutputLevelControl l_Register;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_NR32, &l_Register.m_Register);
+
+    return l_Register.m_OutputLevel;
+}
+
+GABLE_NoiseFrequencyRandomness GABLE_GetNoiseLFSRControl (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `NR43` register from the APU.
+    GABLE_NoiseFrequencyRandomness l_Register;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_NR43, &l_Register.m_Register);
+
+    return l_Register;
+}
+
+Bool GABLE_GetLengthTimerEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the appropriate register from the APU.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR14, &l_Register.m_Register);
+            return l_Register.m_LengthEnable;
+        } break;
+        case GABLE_AC_PULSE_2:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR24, &l_Register.m_Register);
+            return l_Register.m_LengthEnable;
+        } break;
+        case GABLE_AC_WAVE:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR34, &l_Register.m_Register);
+            return l_Register.m_LengthEnable;
+        } break;
+        case GABLE_AC_NOISE:
+        {
+            GABLE_NoiseControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR44, &l_Register.m_Register);
+            return l_Register.m_LengthEnable;
+        } break;
+        default: return false;
+    }
+}
+
+GABLE_MasterVolumeControl GABLE_GetMasterVolumeControl (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `NR50` register from the APU.
+    GABLE_MasterVolumeControl l_Register;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_NR50, &l_Register.m_Register);
+
+    return l_Register;
+}
+
+GABLE_SoundPanning GABLE_GetSoundPanning (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `NR51` register from the APU.
+    GABLE_SoundPanning l_Register;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_NR51, &l_Register.m_Register);
+
+    return l_Register;
+}
+
+GABLE_AudioMasterControl GABLE_GetAudioMasterControl (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the `NR52` register from the APU.
+    GABLE_AudioMasterControl l_Register;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_NR52, &l_Register.m_Register);
+
+    return l_Register;
+}
+
+void GABLE_SetPC1FrequencySweep (GABLE_Engine* p_Engine, GABLE_PulseFrequencySweep p_Register)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR10, p_Register.m_Register);
+}
+
+void GABLE_SetPulseLengthDuty (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_PulseLengthDuty p_Register)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the appropriate register to the APU.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR11, p_Register.m_Register);
+            break;
+        case GABLE_AC_PULSE_2:
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR21, p_Register.m_Register);
+            break;
+        default: break;
+    }
+}
+
+void GABLE_SetVolumeEnvelope (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_VolumeEnvelope p_Register)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the appropriate register to the APU.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR12, p_Register.m_Register);
+            break;
+        case GABLE_AC_PULSE_2:
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR22, p_Register.m_Register);
+            break;
+        case GABLE_AC_NOISE:
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR42, p_Register.m_Register);
+            break;
+        default: break;
+    }
+}
+
+void GABLE_SetInitialPeriod (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Uint16 p_Period)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Split the period into high and low bytes. Preserve only the low 3 bits of the high byte.
+    Uint8 l_PeriodHigh = (p_Period >> 8) & 0b00000111;
+    Uint8 l_PeriodLow = p_Period & 0x00FF;
+
+    // Write the appropriate registers to the APU. The high byte is part of the channel's control
+    // register, which will first need to be read from, its period high bits modified, and then
+    // written back. This may trigger the channel.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR14, &l_Register.m_Register);
+            l_Register.m_PeriodHigh = l_PeriodHigh;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR13, l_PeriodLow);
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR14, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_PULSE_2:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR24, &l_Register.m_Register);
+            l_Register.m_PeriodHigh = l_PeriodHigh;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR23, l_PeriodLow);
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR24, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_WAVE:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR34, &l_Register.m_Register);
+            l_Register.m_PeriodHigh = l_PeriodHigh;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR33, l_PeriodLow);
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR34, l_Register.m_Register);
+        }
+        break;
+        default: break;
+    }
+}
+
+void GABLE_SetInitialFrequency (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Float32 p_Frequency)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Calculate the period from the frequency.
+    //
+    // The formula for converting a period to a frequency is:
+    // - For the pulse channels: `freq = 131072 / (2048 - period)`
+    // - For the wave channel: `freq = 65536 / (2048 - period)`
+    Uint16 l_Period = 0;
+    if (p_Channel == GABLE_AC_WAVE)
+    {
+        l_Period = 2048 - (65536 / p_Frequency);
+    }
+    else
+    {
+        l_Period = 2048 - (131072 / p_Frequency);
+    }
+
+    // Set the initial period.
+    GABLE_SetInitialPeriod(p_Engine, p_Channel, l_Period);
+}
+
+void GABLE_SetInitialNote (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_AudioNote p_Note, Uint8 p_Octave)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Set the initial frequency.
+    GABLE_SetInitialFrequency(p_Engine, p_Channel, GABLE_GetFrequencyFromNote(p_Note, p_Octave));
+}
+
+void GABLE_SetWaveDACEnable (GABLE_Engine* p_Engine, Bool p_Enable)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // The wave channel is the only channel whose DAC can be enabled or disabled via a hardware
+    // register - `NR30`.
+    GABLE_WaveDACEnable l_Register = { .m_DACPower = p_Enable };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR30, l_Register.m_Register);
+}
+
+void GABLE_SetWaveInitialLengthTimer (GABLE_Engine* p_Engine, Uint8 p_Length)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR31, p_Length);
+}
+
+void GABLE_SetWaveOutputLevel (GABLE_Engine* p_Engine, GABLE_WaveOutputLevel p_Level)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_WaveOutputLevelControl l_Register = { .m_OutputLevel = p_Level };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR32, l_Register.m_Register);
+}
+
+void GABLE_SetNoiseInitialLengthTimer (GABLE_Engine* p_Engine, Uint8 p_Length)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_NoiseLengthTimer l_Register = { .m_InitialLength = (p_Length & 0b00111111) };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR41, l_Register.m_Register);
+}
+
+void GABLE_SetNoiseLFSRControl (GABLE_Engine* p_Engine, GABLE_NoiseFrequencyRandomness p_Register)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR43, p_Register.m_Register);
+}
+
+void GABLE_SetLengthTimerEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Bool p_Enable)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the appropriate register to the APU. This entails reading the channel's control register,
+    // changing the length enable bit, and then writing it back, which may trigger the channel.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR14, &l_Register.m_Register);
+            l_Register.m_LengthEnable = p_Enable;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR14, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_PULSE_2:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR24, &l_Register.m_Register);
+            l_Register.m_LengthEnable = p_Enable;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR24, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_WAVE:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR34, &l_Register.m_Register);
+            l_Register.m_LengthEnable = p_Enable;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR34, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_NOISE:
+        {
+            GABLE_NoiseControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR44, &l_Register.m_Register);
+            l_Register.m_LengthEnable = p_Enable;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR44, l_Register.m_Register);
+        }
+        break;
+        default: break;
+    }
+}
+
+void GABLE_SetMasterVolumeControl (GABLE_Engine* p_Engine, GABLE_MasterVolumeControl p_Register)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR50, p_Register.m_Register);
+}
+
+void GABLE_SetSoundPanning (GABLE_Engine* p_Engine, GABLE_SoundPanning p_Register)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR51, p_Register.m_Register);
+}
+
+void GABLE_SetAudioEnable (GABLE_Engine* p_Engine, Bool p_Enable)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Write the register to the APU.
+    GABLE_AudioMasterControl l_Register = { .m_Enable = p_Enable };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR52, l_Register.m_Register);
+}
+
+void GABLE_TriggerChannel (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the appropriate register from the APU, set its trigger bit, and then write it back
+    // to trigger the channel.
+    switch (p_Channel)
+    {
+        case GABLE_AC_PULSE_1:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR14, &l_Register.m_Register);
+            l_Register.m_Trigger = true;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR14, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_PULSE_2:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR24, &l_Register.m_Register);
+            l_Register.m_Trigger = true;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR24, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_WAVE:
+        {
+            GABLE_PeriodHighControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR34, &l_Register.m_Register);
+            l_Register.m_Trigger = true;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR34, l_Register.m_Register);
+        }
+        break;
+        case GABLE_AC_NOISE:
+        {
+            GABLE_NoiseControl l_Register;
+            GABLE_CycleReadByte(p_Engine, GABLE_HP_NR44, &l_Register.m_Register);
+            l_Register.m_Trigger = true;
+            GABLE_CycleWriteByte(p_Engine, GABLE_HP_NR44, l_Register.m_Register);
+        }
+        break;
+        default: break;
+    }
+}
+
+// "It's a Long Way To The Top (If You Wanna Rock N' Roll)" (AC/DC cover) - Cody Jinks, 2025

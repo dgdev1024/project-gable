@@ -54,29 +54,23 @@ Int32 GABLE_ServiceInterrupt (GABLE_InterruptContext* p_Context, GABLE_Engine* p
         for (Uint8 i = 0; i < GABLE_INT_COUNT; i++)
         {
             // Check if the interrupt is enabled and requested.
-            if (GABLE_IsInterruptEnabled(p_Engine, i) && GABLE_IsInterruptRequested(p_Engine, i))
+            if (
+                GABLE_bit(p_Context->m_IE, i) == true &&
+                GABLE_bit(p_Context->m_IF, i) == true
+            )
             {
                 // Acknowledge the interrupt request by clearing the interrupt request flag and
                 // the interrupt master enable flag.
+                //
+                // Disabling the interrupt master enable flag will prevent any further interrupts
+                // from being serviced until the current interrupt handler returns.
                 GABLE_clearbit(p_Context->m_IF, i);
                 p_Context->m_IME = false;
 
                 // Call the interrupt handler.
                 if (p_Context->m_Handlers[i] != NULL)
                 {
-                    if (p_Context->m_Handlers[i](p_Engine))
-                    {
-                        // Clear the interrupt request.
-                        GABLE_clearbit(p_Context->m_IF, i);
-
-                        // Return success.
-                        return 1;
-                    }
-                    else
-                    {
-                        // Return failure.
-                        return -1;
-                    }
+                    return (p_Context->m_Handlers[i](p_Engine) == true) ? 1 : -1;
                 }
             }
         }
@@ -142,20 +136,26 @@ Bool GABLE_IsInterruptEnabled (GABLE_Engine* p_Engine, GABLE_InterruptType p_Typ
 {
     // Validate the GABLE Engine instance.
     GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    
+    // Read the interrupt enable register.
+    Uint8 l_IE = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_IE, &l_IE);
 
-    // Pointer to the GABLE Engine interrupt context instance.
     // Return the interrupt enable flag for the specified interrupt type.
-    return GABLE_bit(GABLE_GetInterruptContext(p_Engine)->m_IE, p_Type);
+    return GABLE_bit(l_IE, p_Type);
 }
 
 Bool GABLE_IsInterruptRequested (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type)
 {
     // Validate the GABLE Engine instance.
     GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    
+    // Read the interrupt flag register.
+    Uint8 l_IF = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_IF, &l_IF);
 
-    // Pointer to the GABLE Engine interrupt context instance.
     // Return the interrupt request flag for the specified interrupt type.
-    return GABLE_bit(GABLE_GetInterruptContext(p_Engine)->m_IF, p_Type);
+    return GABLE_bit(l_IF, p_Type);
 }
 
 void GABLE_RequestInterrupt (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type)
@@ -205,10 +205,32 @@ void GABLE_SetInterruptEnable (GABLE_Engine* p_Engine, GABLE_InterruptType p_Typ
 {
     // Validate the GABLE Engine instance.
     GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    
+    // Read the interrupt enable register.
+    Uint8 l_IE = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_IE, &l_IE);
 
-    // Pointer to the GABLE Engine interrupt context instance.
     // Set the interrupt enable flag for the specified interrupt type.
-    GABLE_changebit(GABLE_GetInterruptContext(p_Engine)->m_IE, p_Type, p_Enable);
+    GABLE_changebit(l_IE, p_Type, p_Enable);
+
+    // Write back to the interrupt enable register.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_IE, l_IE);
+}
+
+void GABLE_SetInterruptRequested (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, Bool p_Request)
+{
+    // Validate the GABLE Engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Read the interrupt flag register.
+    Uint8 l_IF = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_IF, &l_IF);
+
+    // Set the interrupt request flag for the specified interrupt type.
+    GABLE_changebit(l_IF, p_Type, p_Request);
+
+    // Write back to the interrupt flag register.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_IF, l_IF);
 }
 
 void GABLE_SetInterruptHandler (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, GABLE_InterruptHandler p_Handler)

@@ -181,4 +181,5 @@ void GABLE_CancelInterrupt (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type);
 Bool GABLE_ReturnFromInterrupt (GABLE_Engine* p_Engine);
 void GABLE_SetInterruptMasterEnable (GABLE_Engine* p_Engine, Bool p_Enable);
 void GABLE_SetInterruptEnable (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, Bool p_Enable);
+void GABLE_SetInterruptRequested (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, Bool p_Request);
 void GABLE_SetInterruptHandler (GABLE_Engine* p_Engine, GABLE_InterruptType p_Type, GABLE_InterruptHandler p_Handler);

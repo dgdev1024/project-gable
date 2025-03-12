@@ -102,5 +102,7 @@ void GABLE_WriteJOYP (GABLE_Joypad* p_Joypad, Uint8 p_Value);
 // Public Functions - High-Level Functions /////////////////////////////////////////////////////////
 
 Bool GABLE_IsButtonPressed (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
+void GABLE_SetButtonsSelected (GABLE_Engine* p_Engine, Bool p_Selected);
+void GABLE_SetDirectionalPadSelected (GABLE_Engine* p_Engine, Bool p_Selected);
 void GABLE_PressButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
 void GABLE_ReleaseButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);

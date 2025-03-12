@@ -442,11 +442,28 @@ void Game_StartApplication (Game_Application* p_App)
     // Set the application running flag.
     p_App->m_Running = true;
     
-    GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR10, 0b00000000);
-    GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR11, 0b10000000);
-    GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR12, 0b11100010); // 0xE2 = 0b11100010
-    GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR13, 0b01010000); // 0x50 = 0b01010000
-    GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR14, 0b10000111); // 0x87 = 0b10000111
+    // GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR10, 0b00000000);
+    // GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR11, 0b10000000);
+    // GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR12, 0b11100010); // 0xE2 = 0b11100010
+    // GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR13, 0b01010000); // 0x50 = 0b01010000
+    // GABLE_CycleWriteByte(p_App->m_Engine, GABLE_HP_NR14, 0b10000111); // 0x87 = 0b10000111
+
+    GABLE_SetPC1FrequencySweep(p_App->m_Engine, (GABLE_PulseFrequencySweep) {
+        .m_Direction = GABLE_FSD_INCREASE,
+        .m_IndividualStep = 0,
+        .m_SweepPace = 0
+    });
+    GABLE_SetPulseLengthDuty(p_App->m_Engine, GABLE_AC_PULSE_1, (GABLE_PulseLengthDuty) {
+        .m_DutyCycle = GABLE_PDC_50,
+        .m_InitialLength = 0
+    });
+    GABLE_SetVolumeEnvelope(p_App->m_Engine, GABLE_AC_PULSE_1, (GABLE_VolumeEnvelope) {
+        .m_InitialVolume = 0b1110,
+        .m_Direction = GABLE_ESD_DECREASE,
+        .m_SweepPace = 0b010
+    });
+    GABLE_SetInitialNote(p_App->m_Engine, GABLE_AC_PULSE_1, GABLE_NOTE_F_SHARP, 5);
+    GABLE_TriggerChannel(p_App->m_Engine, GABLE_AC_PULSE_1);
 
     // Start the application loop.
     while (p_App->m_Running == true)

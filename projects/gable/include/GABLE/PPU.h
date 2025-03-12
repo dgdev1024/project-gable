@@ -1179,8 +1179,6 @@ void GABLE_WriteGRPM (GABLE_PPU* p_PPU, Uint8 p_Value);
 
 // Public Functions - High-Level Functions /////////////////////////////////////////////////////////
 
-
-
 /**
  * @brief Sets the function to be called when the PPU finishes rendering the visible portion of the
  *        current frame.

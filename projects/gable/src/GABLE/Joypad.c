@@ -89,22 +89,59 @@ void GABLE_WriteJOYP (GABLE_Joypad* p_Joypad, Uint8 p_Value)
 Bool GABLE_IsButtonPressed (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button)
 {
     GABLE_pexpect(p_Engine != NULL, "Engine context is NULL");
-
-    // Get the joypad component from the engine.
-    GABLE_Joypad* l_Joypad = GABLE_GetJoypad(p_Engine);
+    
+    // Read the JOYP register from the joypad component.
+    Uint8 l_JOYP = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_JOYP, &l_JOYP);
 
     // Check to see if the button being checked is a directional pad button.
     Bool l_IsDirectionalPadButton = (GABLE_bit(p_Button, 2) != 0);
 
-    // If the button is a directional pad button, then check the directional pad state.
-    if (l_IsDirectionalPadButton == true)
+    // If the button is a directional pad button, then only check if the directional pad buttons
+    // are selected.
+    if (l_IsDirectionalPadButton == true && GABLE_bit(l_JOYP, 5) == false)
     {
-        return GABLE_bit(l_Joypad->m_DirectionalPad, p_Button & 0b11);
+        return (GABLE_bit(l_JOYP, p_Button & 0b11) == false);
     }
-    else
+
+    // If the button is a face button, then only check if the face buttons are selected.
+    else if (l_IsDirectionalPadButton == false && GABLE_bit(l_JOYP, 4) == false)
     {
-        return GABLE_bit(l_Joypad->m_Buttons, p_Button & 0b11);
+        return (GABLE_bit(l_JOYP, p_Button & 0b11) == false);
     }
+
+    // If neither select bit is clear, then don't bother checking the button state.
+    return false;
+}
+
+void GABLE_SetButtonsSelected (GABLE_Engine* p_Engine, Bool p_Selected)
+{
+    GABLE_pexpect(p_Engine != NULL, "Engine context is NULL");
+    
+    // Read the JOYP register from the joypad component.
+    Uint8 l_JOYP = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_JOYP, &l_JOYP);
+
+    // Clear bit 5 of the register to select the face buttons.
+    GABLE_changebit(l_JOYP, 5, (p_Selected == false));
+
+    // Bits 4 and 5 cannot be cleared at the same time. If bit 5 was cleared, then bit 4 must be set.
+    if (GABLE_bit(l_JOYP, 5) == false) { GABLE_setbit(l_JOYP, 4); }
+
+    // Write the new JOYP register value back to the joypad component.
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_JOYP, l_JOYP);
+}
+
+void GABLE_SetDirectionalPadSelected (GABLE_Engine* p_Engine, Bool p_Selected)
+{
+    GABLE_pexpect(p_Engine != NULL, "Engine context is NULL");
+    
+    // Do the same as with `GABLE_SetButtonsSelected`, but for bit 4.
+    Uint8 l_JOYP = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_JOYP, &l_JOYP);
+    GABLE_changebit(l_JOYP, 4, (p_Selected == false));
+    if (GABLE_bit(l_JOYP, 4) == false) { GABLE_setbit(l_JOYP, 5); }
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_JOYP, l_JOYP);
 }
 
 void GABLE_PressButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button)
