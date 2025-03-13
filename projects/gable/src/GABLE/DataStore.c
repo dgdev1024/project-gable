@@ -59,6 +59,9 @@ GABLE_DataStore* GABLE_CreateDataStore ()
     l_DataStore->m_Handles     = GABLE_calloc(GABLE_DS_DEFAULT_CAPACITY, GABLE_DataHandle);
     GABLE_pexpect(l_DataStore->m_Handles != NULL, "Failed to allocate GABLE Engine data store handles");
 
+    l_DataStore->m_HandleCapacity = GABLE_DS_DEFAULT_CAPACITY;
+    l_DataStore->m_HandleCount = 0;
+
     // Return the new data store instance.
     return l_DataStore;
 }
@@ -304,6 +307,8 @@ const GABLE_DataHandle* GABLE_LoadDataFromFile (GABLE_Engine* p_Engine, const Ch
     strncpy(l_Handle->m_Name, p_Name, GABLE_DS_NAME_STRLEN);
     l_Handle->m_Length = l_FileSize;
     l_Handle->m_Address = l_BankSize;
+    l_Handle->m_BankHigh = (p_BankNumber >> 8) & 0xFF;
+    l_Handle->m_BankLow = p_BankNumber & 0xFF;
 
     // Read the file's contents into the data store, then update the data store's bank size.
     Size l_Offset = p_BankNumber * GABLE_DS_BANK_SIZE + l_Handle->m_Address;

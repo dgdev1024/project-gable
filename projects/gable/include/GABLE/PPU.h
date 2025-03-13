@@ -435,6 +435,68 @@ typedef enum GABLE_PixelFetchMode
     GABLE_PFM_SLEEP                  ///< @brief The pixel-fetcher is idling to allow the pixel FIFO to process the fetched pixels.
 } GABLE_PixelFetchMode;
 
+// Object Priority Mode Enumeration ////////////////////////////////////////////////////////////////
+
+/**
+ * @brief An enumeration representing the priority modes for objects in the object attribute memory (OAM).
+ */
+typedef enum GABLE_ObjectPriorityMode
+{
+    GABLE_OPM_OAM_INDEX = 0,            ///< @brief The PPU uses the object's index in the OAM buffer to determine its priority. Objects with a lower index in OAM have higher priority over other objects.
+    GABLE_OPM_X_POSITION                ///< @brief The PPU uses the object's X position to determine its priority; objects with a smaller X position have higher priority over other objects, with ties broken by the object's index in OAM.
+} GABLE_ObjectPriorityMode;
+
+// Graphics Mode Enumeration ///////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief An enumeration representing the PPU's graphics modes.
+ */
+typedef enum GABLE_GraphicsMode
+{
+    GABLE_GM_DMG = 0,  ///< @brief The PPU is in DMG graphics mode.
+    GABLE_GM_CGB       ///< @brief The PPU is in CGB graphics mode.
+} GABLE_GraphicsMode;
+
+// Bits Per Pixel Enumeration //////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief An enumeration representing the possible bit depths for tile data in the PPU's VRAM.
+ */
+typedef enum GABLE_BitsPerPixel
+{
+    GABLE_1BPP,         ///< @brief 1 bit per pixel (8 bytes per tile).
+    GABLE_2BPP          ///< @brief 2 bits per pixel (16 bytes per tile).
+} GABLE_BitsPerPixel;
+
+// Preset Color Enumeration ////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief An enumeration representing the preset colors available to the PPU.
+ */
+typedef enum GABLE_Color
+{
+    GABLE_COLOR_BLACK = 0,      ///< @brief The color black.
+    GABLE_COLOR_DARK_GRAY,      ///< @brief The color dark gray.
+    GABLE_COLOR_GRAY,           ///< @brief The color gray.
+    GABLE_COLOR_LIGHT_GRAY,     ///< @brief The color light gray.
+    GABLE_COLOR_WHITE,          ///< @brief The color white.
+    GABLE_COLOR_RED,            ///< @brief The color red.
+    GABLE_COLOR_ORANGE,         ///< @brief The color orange.
+    GABLE_COLOR_BROWN,          ///< @brief The color brown.
+    GABLE_COLOR_YELLOW,         ///< @brief The color yellow.
+    GABLE_COLOR_GREEN,          ///< @brief The color green.
+    GABLE_COLOR_CYAN,           ///< @brief The color cyan.
+    GABLE_COLOR_BLUE,           ///< @brief The color blue.
+    GABLE_COLOR_PURPLE,         ///< @brief The color purple.
+    GABLE_COLOR_MAGENTA,        ///< @brief The color magenta.
+    GABLE_COLOR_PINK,           ///< @brief The color pink.
+    GABLE_COLOR_GOLD,           ///< @brief The color gold.
+    GABLE_COLOR_SILVER,         ///< @brief The color silver.
+    GABLE_COLOR_BRONZE,         ///< @brief The color bronze.
+
+    GABLE_COLOR_COUNT           ///< @brief The number of preset colors.
+} GABLE_Color;
+
 // Display Control Union ///////////////////////////////////////////////////////////////////////////
 
 /**
@@ -654,13 +716,13 @@ typedef struct GABLE_Object
  * @note The RGB555 color format uses 5 bits for each of the red, green, and blue color channels,
  *       laid out as follows: `0bRRRRRGGG` `0bGGBBBBB0`.
  */
-typedef struct GABLE_Color
+typedef struct GABLE_ColorRGB555
 {
     Uint16 m_Red   : 5;  ///< @brief The red color channel.
     Uint16 m_Green : 5;  ///< @brief The green color channel.
     Uint16 m_Blue  : 5;  ///< @brief The blue color channel.
     Uint16 : 1;          ///< @brief The unused bit at the end of the color sequence.
-} GABLE_Color;
+} GABLE_ColorRGB555;
 
 // PPU Pixel Fetcher Structure /////////////////////////////////////////////////////////////////////
 
@@ -1200,3 +1262,143 @@ void GABLE_SetFrameRenderedCallback (GABLE_Engine* p_Engine, GABLE_FrameRendered
  * @return A pointer to the screen buffer.
  */
 const Uint32* GABLE_GetScreenBuffer (GABLE_Engine* p_Engine);
+
+/**
+ * @brief Waits until the end of the current vertial blanking period (`VBLANK`).
+ * 
+ * @param p_Engine A pointer to the GABLE Engine structure.
+ */
+void GABLE_WaitUntilAfterVerticalBlank (GABLE_Engine* p_Engine);
+
+/**
+ * @brief Waits for the PPU to enter the vertical blanking period (`VBLANK`).
+ * 
+ * @param p_Engine A pointer to the GABLE Engine structure.
+ */
+void GABLE_WaitForVerticalBlank (GABLE_Engine* p_Engine);
+
+/**
+ * @brief Uploads tile data to the tile data region in the current bank of the video RAM (VRAM).
+ * 
+ * @param p_Engine              A pointer to the GABLE Engine structure.
+ * @param p_BPP                 The enumerated bit depth of the tile data (`GABLE_1BPP`, `GABLE_2BPP`).
+ * @param p_SourceAddress       The address in the engine's memory map to copy the tile data from.
+ * @param p_DestinationIndex    The index of the first tile in the tile data region to copy the data to.
+ * @param p_TileCount           The number of tiles to copy.
+ * 
+ * @note The tile data is copied to the tile data region in the current bank of the video RAM (VRAM),
+ *       and the destination index is set according to the `LCDC` register's tile data address bit.
+ */
+void GABLE_UploadTileData (GABLE_Engine* p_Engine, GABLE_BitsPerPixel p_BPP, Uint16 p_SourceAddress, Uint8 p_DestinationIndex, Uint8 p_TileCount);
+
+/**
+ * @brief Retrieves some information about a tile in the tile map at the specified index.
+ * 
+ * - If the VRAM bank number `VBK` is 0, then the information is the index of the tile in the tile
+ *   data region, found in VRAM bank 0.
+ * 
+ * - If the VRAM bank number `VBK` is 1, then the information is the attributes of the tile in the
+ *   tile attribute map, found in VRAM bank 1.
+ * 
+ * @param p_Engine        A pointer to the GABLE Engine structure.
+ * @param p_TilemapIndex  The index of the tile in the tile map.
+ * @param p_X             The X-coordinate of the tile in the tile map.
+ * @param p_Y             The Y-coordinate of the tile in the tile map.
+ * 
+ * @return The requested tile information (tile data index if `VBK` is 0, tile attributes if `VBK` is 1).
+ * 
+ * @note If the VRAM bank number `VBK` is 0, the tile data index is returned as a byte value. Use
+ *       only the `m_Value` member of the returned `GABLE_TileAttributes` union to access this value.
+ */
+GABLE_TileAttributes GABLE_GetTileInfo (GABLE_Engine* p_Engine, Uint8 p_TilemapIndex, Uint8 p_X, Uint8 p_Y);
+GABLE_TileAttributes GABLE_GetBackgroundTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y);
+GABLE_TileAttributes GABLE_GetWindowTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y);
+
+/**
+ * @brief Sets some information about a tile in the tile map at the specified index.
+ * 
+ * - If the VRAM bank number `VBK` is 0, then the information is the index of the tile in the tile
+ *   data region, found in VRAM bank 0.
+ * 
+ * - If the VRAM bank number `VBK` is 1, then the information is the attributes of the tile in the
+ *   tile attribute map, found in VRAM bank 1.
+ * 
+ * @param p_Engine        A pointer to the GABLE Engine structure.
+ * @param p_TilemapIndex  The index of the tile in the tile map.
+ * @param p_X             The X-coordinate of the tile in the tile map.
+ * @param p_Y             The Y-coordinate of the tile in the tile map.
+ * @param p_Value         The new value to set.
+ * 
+ * @note If the VRAM bank number `VBK` is 1, then the information being set is the attributes of the
+ *       tile in the tile attribute map. It is recommended to use a `GABLE_TileAttributes` union to
+ *       configure this information, then pass its `m_Value` member to this function.
+ */
+void GABLE_SetTileInfo (GABLE_Engine* p_Engine, Uint8 p_TilemapIndex, Uint8 p_X, Uint8 p_Y, Uint8 p_Value);
+void GABLE_SetBackgroundTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y, Uint8 p_Value);
+void GABLE_SetWindowTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y, Uint8 p_Value);
+
+/**
+ * @brief Retrieves some information about an object in the object attribute memory (OAM) buffer at
+ *        the specified index.
+ * 
+ * @param p_Engine          A pointer to the GABLE Engine structure.
+ * @param p_Index           The index of the object in the OAM buffer.
+ * @param p_X               A pointer to a variable to store the X-coordinate of the object.
+ * @param p_Y               A pointer to a variable to store the Y-coordinate of the object.
+ * @param p_TileIndex       A pointer to a variable to store the index of the object's tile.
+ * @param p_Attributes      A pointer to a variable to store the attributes of the object.
+ */
+void GABLE_GetObjectInfo (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8* p_X, Uint8* p_Y, Uint8* p_TileIndex, GABLE_TileAttributes* p_Attributes);
+void GABLE_SetObjectPosition (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_X, Uint8 p_Y);
+void GABLE_SetObjectX (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_X);
+void GABLE_SetObjectY (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_Y);
+void GABLE_SetObjectTileIndex (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_TileIndex);
+void GABLE_SetObjectAttributes (GABLE_Engine* p_Engine, Uint8 p_Index, GABLE_TileAttributes p_Attributes);
+void GABLE_MoveObject (GABLE_Engine* p_Engine, Uint8 p_Index, Int8 p_OffsetX, Int8 p_OffsetY);
+
+const GABLE_ColorRGB555* GABLE_LookupColorPreset (GABLE_Color p_Color);
+void GABLE_GetBackgroundColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555, Uint32* p_RGBA);
+void GABLE_GetObjectColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555, Uint32* p_RGBA);
+void GABLE_SetBackgroundColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_ColorRGB555* p_RGB555, const Uint32* p_RGBA);
+void GABLE_SetObjectColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_ColorRGB555* p_RGB555, const Uint32* p_RGBA);
+
+GABLE_DisplayControl GABLE_GetDisplayControl (GABLE_Engine* p_Engine);
+GABLE_DisplayStatus GABLE_GetDisplayStatus (GABLE_Engine* p_Engine);
+void GABLE_GetViewportPosition (GABLE_Engine* p_Engine, Uint8* p_X, Uint8* p_Y);
+Uint8 GABLE_GetCurrentScanline (GABLE_Engine* p_Engine);
+Uint8 GABLE_GetLineCompare (GABLE_Engine* p_Engine);
+void GABLE_GetDMGPaletteIndices (GABLE_Engine* p_Engine, Uint8* p_BG, Uint8* p_OB0, Uint8* p_OB1);
+void GABLE_GetWindowPosition (GABLE_Engine* p_Engine, Uint8* p_X, Uint8* p_Y);
+Uint8 GABLE_GetVRAMBankNumber (GABLE_Engine* p_Engine);
+GABLE_HDMAControl GABLE_GetHDMAControl (GABLE_Engine* p_Engine);
+GABLE_PaletteSpecification GABLE_GetBackgroundPaletteSpec (GABLE_Engine* p_Engine);
+GABLE_PaletteSpecification GABLE_GetObjectPaletteSpec (GABLE_Engine* p_Engine);
+Uint8 GABLE_GetCurrentBackgroundColorByte (GABLE_Engine* p_Engine);
+Uint8 GABLE_GetCurrentObjectColorByte (GABLE_Engine* p_Engine);
+GABLE_ObjectPriorityMode GABLE_GetObjectPriorityMode (GABLE_Engine* p_Engine);
+GABLE_GraphicsMode GABLE_GetGraphicsMode (GABLE_Engine* p_Engine);
+
+void GABLE_SetDisplayControl (GABLE_Engine* p_Engine, GABLE_DisplayControl p_Value);
+void GABLE_SetDisplayStatus (GABLE_Engine* p_Engine, GABLE_DisplayStatus p_Value);
+void GABLE_SetViewportPosition (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y);
+void GABLE_SetViewportX (GABLE_Engine* p_Engine, Uint8 p_X);
+void GABLE_SetViewportY (GABLE_Engine* p_Engine, Uint8 p_Y);
+void GABLE_SetLineCompare (GABLE_Engine* p_Engine, Uint8 p_Value);
+void GABLE_InitiateODMA (GABLE_Engine* p_Engine, Uint8 p_SourceAddressHigh);
+void GABLE_SetDMGPaletteIndices (GABLE_Engine* p_Engine, Uint8 p_BG, Uint8 p_OB0, Uint8 p_OB1);
+void GABLE_SetDMGBackgroundPaletteIndex (GABLE_Engine* p_Engine, Uint8 p_Index);
+void GABLE_SetDMGObjectPaletteIndex (GABLE_Engine* p_Engine, Uint8 p_Palette, Uint8 p_Index);
+void GABLE_SetWindowPosition (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y);
+void GABLE_SetWindowX (GABLE_Engine* p_Engine, Uint8 p_X);
+void GABLE_SetWindowY (GABLE_Engine* p_Engine, Uint8 p_Y);
+void GABLE_SetVRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_Value);
+void GABLE_SetHDMAAddresses (GABLE_Engine* p_Engine, Uint16 p_SourceAddress, Uint16 p_DestinationAddress);
+void GABLE_SetHDMASourceAddress (GABLE_Engine* p_Engine, Uint16 p_Address);
+void GABLE_SetHDMADestinationAddress (GABLE_Engine* p_Engine, Uint16 p_Address);
+void GABLE_InitiateHDMA (GABLE_Engine* p_Engine, Uint8 p_TransferLength, Bool p_IsGDMA);
+void GABLE_SetBackgroundPaletteSpec (GABLE_Engine* p_Engine, Uint8 p_Index, Bool p_AutoIncrement);
+void GABLE_SetObjectPaletteSpec (GABLE_Engine* p_Engine, Uint8 p_Index, Bool p_AutoIncrement);
+void GABLE_SetCurrentBackgroundColorByte (GABLE_Engine* p_Engine, Uint8 p_Value);
+void GABLE_SetCurrentObjectColorByte (GABLE_Engine* p_Engine, Uint8 p_Value);
+void GABLE_SetObjectPriorityMode (GABLE_Engine* p_Engine, GABLE_ObjectPriorityMode p_Mode);
+void GABLE_SetGraphicsMode (GABLE_Engine* p_Engine, GABLE_GraphicsMode p_Mode);

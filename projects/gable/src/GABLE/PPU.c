@@ -13,6 +13,28 @@ static const Uint32 GABLE_PPU_DMG_PALETTE[4] =
     0x000000FF, 0x808080FF, 0xC0C0C0FF, 0xFFFFFFFF
 };
 
+static const GABLE_ColorRGB555 GABLE_PRESET_COLORS[] =
+{
+    [GABLE_COLOR_BLACK]         = { .m_Red = 0,  .m_Green = 0,   .m_Blue = 0   },
+    [GABLE_COLOR_DARK_GRAY]     = { .m_Red = 8,  .m_Green = 8,   .m_Blue = 8   },
+    [GABLE_COLOR_GRAY]          = { .m_Red = 15, .m_Green = 15,  .m_Blue = 15  },
+    [GABLE_COLOR_LIGHT_GRAY]    = { .m_Red = 23, .m_Green = 23,  .m_Blue = 23  },
+    [GABLE_COLOR_WHITE]         = { .m_Red = 31, .m_Green = 31,  .m_Blue = 31  },
+    [GABLE_COLOR_RED]           = { .m_Red = 31, .m_Green = 0,   .m_Blue = 0   },
+    [GABLE_COLOR_ORANGE]        = { .m_Red = 31, .m_Green = 15,  .m_Blue = 0   },
+    [GABLE_COLOR_BROWN]         = { .m_Red = 15, .m_Green = 15,  .m_Blue = 0   },
+    [GABLE_COLOR_YELLOW]        = { .m_Red = 31, .m_Green = 31,  .m_Blue = 0   },
+    [GABLE_COLOR_GREEN]         = { .m_Red = 0,  .m_Green = 31,  .m_Blue = 0   },
+    [GABLE_COLOR_CYAN]          = { .m_Red = 0,  .m_Green = 31,  .m_Blue = 31  },
+    [GABLE_COLOR_BLUE]          = { .m_Red = 0,  .m_Green = 0,   .m_Blue = 31  },
+    [GABLE_COLOR_PURPLE]        = { .m_Red = 15, .m_Green = 0,   .m_Blue = 15  },
+    [GABLE_COLOR_MAGENTA]       = { .m_Red = 31, .m_Green = 0,   .m_Blue = 31  },
+    [GABLE_COLOR_PINK]          = { .m_Red = 31, .m_Green = 15,  .m_Blue = 15  },
+    [GABLE_COLOR_GOLD]          = { .m_Red = 23, .m_Green = 23,  .m_Blue = 0   },
+    [GABLE_COLOR_SILVER]        = { .m_Red = 12, .m_Green = 12,  .m_Blue = 12  },
+    [GABLE_COLOR_BRONZE]        = { .m_Red = 15, .m_Green = 8,   .m_Blue = 0   },
+};
+
 // GABLE PPU Structure /////////////////////////////////////////////////////////////////////////////
 
 typedef struct GABLE_PPU
@@ -74,8 +96,8 @@ typedef struct GABLE_PPU
      * 
      * - If this register is zero, then the PPU is in DMG graphics mode. In this mode, the PPU simulates
      *   the graphics hardware of the original DMG Game Boy, with a limited color palette (using the
-     *   background and object palette data registers) and no access to the extended color palette of
-     *   the Game Boy Color.
+     *   background and object palette data registers) and no access to the extended color palette or
+     *   extended graphics features of the Game Boy Color.
      * 
      * - If this register is non-zero, then the PPU is in CGB graphics mode. In this mode, the PPU has
      *   access to the extended color palette and additional features of the Game Boy Color's PPU.
@@ -123,8 +145,8 @@ static void GABLE_FindLineObject (GABLE_PPU* p_PPU);
 
 // Static Function Prototypes - Pixel Transfer /////////////////////////////////////////////////////
 
-static Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555);
-static Uint32 GABLE_GetObjectColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555);
+static Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555);
+static Uint32 GABLE_GetObjectColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555);
 static void GABLE_PushColor (GABLE_PixelFetcher* p_Fetcher, Uint32 p_Color);
 static void GABLE_PopColor (GABLE_PixelFetcher* p_Fetcher, Uint32* p_Color);
 static Bool GABLE_TryAddPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher);
@@ -255,14 +277,14 @@ void GABLE_FindLineObject (GABLE_PPU* p_PPU)
 
 // Static Functions - Pixel Transfer ///////////////////////////////////////////////////////////////
 
-Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555)
+Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555)
 {
     // Validate the palette index (0-7) and color index (0-3).
     GABLE_expect(p_PaletteIndex < 8, "Invalid palette index!");
     GABLE_expect(p_ColorIndex < 4, "Invalid color index!");
 
     // Determine the start index of the color in the CRAM buffer.
-    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
+    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT * 2) + (p_ColorIndex * 2);
 
     // Get the color data from the CRAM buffer.
     Uint8 l_ColorData[2] = { p_PPU->m_BgCRAM[l_StartIndex], p_PPU->m_BgCRAM[l_StartIndex + 1] };
@@ -272,7 +294,7 @@ Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex,
     Uint8 l_Red   = (l_ColorData[0] & 0b11111000) >> 3;
     Uint8 l_Green = ((l_ColorData[0] & 0b00000111) << 2) | ((l_ColorData[1] & 0b11000000) >> 6);
     Uint8 l_Blue  = (l_ColorData[1] & 0b00111110) >> 1;
-
+    
     // If a color structure was provided, store the color data in it.
     if (p_RGB555 != NULL)
     {
@@ -290,14 +312,14 @@ Uint32 GABLE_GetBackgroundColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex,
     );
 }
 
-Uint32 GABLE_GetObjectColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_Color* p_RGB555)
+Uint32 GABLE_GetObjectColorInternal (GABLE_PPU* p_PPU, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555)
 {
     // Validate the palette index (0-7) and color index (0-3).
     GABLE_expect(p_PaletteIndex < 8, "Invalid palette index!");
     GABLE_expect(p_ColorIndex < 4, "Invalid color index!");
 
     // Determine the start index of the color in the CRAM buffer.
-    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT) + (p_ColorIndex * 2);
+    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_CRAM_PALETTE_COLOR_COUNT * 2) + (p_ColorIndex * 2);
 
     // Get the color data from the CRAM buffer.
     Uint8 l_ColorData[2] = { p_PPU->m_ObjCRAM[l_StartIndex], p_PPU->m_ObjCRAM[l_StartIndex + 1] };
@@ -362,7 +384,7 @@ Bool GABLE_TryAddPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
     {
 
         // Which bit of the tile data high and low bytes need to be added?
-        Uint8 l_Bit = (l_TileAttributes.m_HorizontalFlip == 1) ? 7 - i : i;
+        Uint8 l_Bit = (l_TileAttributes.m_HorizontalFlip == 0) ? 7 - i : i;
 
         // Grab the proper bit from the tile data low and high bytes.
         Uint8 l_LowBit = (p_Fetcher->m_FetchedBGW.m_TileDataLow >> l_Bit) & 1;
@@ -374,7 +396,7 @@ Bool GABLE_TryAddPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
         // If the `GRPM` register is set to 1, then the PPU is in CGB graphics mode. Retrieve the
         // color from the background color RAM.
         Uint32 l_RGBAColorValue = 0;
-        if (p_PPU->m_GRPM == 1)
+        if (p_PPU->m_GRPM != 0)
         {
             l_RGBAColorValue = GABLE_GetBackgroundColorInternal(
                 p_PPU,
@@ -442,9 +464,6 @@ void GABLE_ShiftNextPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
             // Determine the index of the pixel in the screen buffer.
             Uint32 l_ScreenIndex = p_Fetcher->m_PushedX + (p_PPU->m_LY * GABLE_PPU_SCREEN_WIDTH);
 
-            // GABLE_debug("Pushed X: %d, LY: %u, Screen Index: %u, Pixel Color: 0x%08X",
-            //     p_Fetcher->m_PushedX, p_PPU->m_LY, l_ScreenIndex, l_RGBAColorValue);
-
             // Emplace the pixel into the screen buffer. Advance the fetcher's pushed X-coordinate.
             p_PPU->m_ScreenBuffer[l_ScreenIndex] = l_RGBAColorValue;
             p_Fetcher->m_PushedX++;
@@ -493,7 +512,7 @@ Uint32 GABLE_FetchObjectPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher, 
         }
 
         // Correct the provided `p_Bit` parameter to account for the object's X-flip attribute.
-        p_Bit = (l_Object->m_Attributes.m_HorizontalFlip == 1) ? 7 - l_Offset : l_Offset;
+        p_Bit = (l_Object->m_Attributes.m_HorizontalFlip == 0) ? 7 - l_Offset : l_Offset;
 
         // Get the proper bit of the object's tile data low and high bytes.
         Uint8 l_LowBit = (p_Fetcher->m_FetchedOBJ.m_TileDataLow[i] >> p_Bit) & 1;
@@ -538,6 +557,8 @@ Uint32 GABLE_FetchObjectPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher, 
                     (p_PPU->m_OBP0 >> (l_ColorIndex * 2)) & 0b11 :
                     (p_PPU->m_OBP1 >> (l_ColorIndex * 2)) & 0b11;
 
+                GABLE_debug("OBP0: %d, OBP1: %d, BitPair: %d", p_PPU->m_OBP0, p_PPU->m_OBP1, l_BitPair);
+
                 // Get the RGBA color value from the DMG palette.
                 p_RGBAColorValue = GABLE_PPU_DMG_PALETTE[l_BitPair];
             }
@@ -565,20 +586,9 @@ void GABLE_FetchBackgroundTileNumber (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fe
     Uint16 l_TargetOffset = (l_TileY * 32) + (p_Fetcher->m_MapX / 8);
     Uint16 l_TargetAddress = l_TileMapAddress + l_TargetOffset;
 
-    // Fetch the tilemap number from VRAM bank 0, and the tile attributes from VRAM bank 1.
-    // However, if access to VRAM is not currently permitted (display mode is pixel transfer), then
-    // these values are set to garbage (0xFF).
-    if (p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER)
-    {
-        p_Fetcher->m_FetchedBGW.m_TileIndex = p_PPU->m_VRAM0[l_TargetAddress];
-        p_Fetcher->m_FetchedBGW.m_TileAttributes.m_Value = p_PPU->m_VRAM1[l_TargetAddress];
-    }
-    else
-    {
-        p_Fetcher->m_FetchedBGW.m_TileIndex = 0xFF;
-        p_Fetcher->m_FetchedBGW.m_TileAttributes.m_Value = 0xFF;
-    }
-
+    // Fetch the tile number and attributes from VRAM banks 0 and 1, respectively.
+    p_Fetcher->m_FetchedBGW.m_TileIndex = p_PPU->m_VRAM0[l_TargetAddress];
+    p_Fetcher->m_FetchedBGW.m_TileAttributes.m_Value = p_PPU->m_VRAM1[l_TargetAddress];
 }
 
 void GABLE_FetchWindowTileNumber (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
@@ -606,21 +616,10 @@ void GABLE_FetchWindowTileNumber (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetche
         // Use the pixel fetcher's map coordinates to determine the target address offset.
         Uint16 l_TargetOffset = (l_TileY * 32) + ((p_Fetcher->m_FetchingX + 7 - p_PPU->m_WX) / 8);
         Uint16 l_TargetAddress = l_TileMapAddress + l_TargetOffset;
-
-        // Fetch the tilemap number from VRAM bank 0, and the tile attributes from VRAM bank 1.
-        // However, if access to VRAM is not currently permitted (display mode is pixel transfer), then
-        // these values are set to garbage (0xFF).
-        if (p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER)
-        {
-            p_Fetcher->m_FetchedBGW.m_TileIndex = p_PPU->m_VRAM0[l_TargetAddress];
-            p_Fetcher->m_FetchedBGW.m_TileAttributes.m_Value = p_PPU->m_VRAM1[l_TargetAddress];
-        }
-        else
-        {
-            p_Fetcher->m_FetchedBGW.m_TileIndex = 0xFF;
-            p_Fetcher->m_FetchedBGW.m_TileAttributes.m_Value = 0xFF;
-        }
-
+        
+        // Fetch the tile number and attributes from VRAM banks 0 and 1, respectively.
+        p_Fetcher->m_FetchedBGW.m_TileIndex = p_PPU->m_VRAM0[l_TargetAddress];
+        p_Fetcher->m_FetchedBGW.m_TileAttributes.m_Value = p_PPU->m_VRAM1[l_TargetAddress];
     }
 
 }
@@ -692,15 +691,11 @@ void GABLE_FetchObjectTileData (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher,
         // access the VRAM bank will be checked for.
         if (p_Offset == 0)
         {
-            p_Fetcher->m_FetchedOBJ.m_TileDataLow[i] = 
-                (p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER) ?
-                p_PPU->m_VRAM[l_TargetAddress] : 0xFF;
+            p_Fetcher->m_FetchedOBJ.m_TileDataLow[i] = p_PPU->m_VRAM[l_TargetAddress];
         }
         else
         {
-            p_Fetcher->m_FetchedOBJ.m_TileDataHigh[i] = 
-                (p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER) ?
-                p_PPU->m_VRAM[l_TargetAddress] : 0xFF;
+            p_Fetcher->m_FetchedOBJ.m_TileDataHigh[i] = p_PPU->m_VRAM[l_TargetAddress];
         }
         
     }
@@ -797,15 +792,13 @@ void GABLE_FetchTileDataLow (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
     // Determine the target address to begin fetching the tile data from.
     // Adjust this address, if needed, based on the `LCDC` BGW tile data address bit.
     Uint16 l_TargetAddress = (l_TileIndex * 16) + p_Fetcher->m_TileDataOffset;
-    if (l_TileIndex < 128 && p_PPU->m_LCDC.m_BGWindowTileDataAddress == 1)
+    if (l_TileIndex < 128 && p_PPU->m_LCDC.m_BGWindowTileDataAddress == 0)
     {
         l_TargetAddress += 0x1000;
     }
 
-    // Fetch the low byte of the tile data. The above-calculated address is relative to the start
-    // of the VRAM bank, so permission to access the VRAM bank will be checked for.
-    Bool l_Read = GABLE_ReadVRAMByte(p_PPU, l_TargetAddress, &p_Fetcher->m_FetchedBGW.m_TileDataLow);
-    GABLE_expect(l_Read == true, "Failed to read tile data low byte from VRAM");
+    // Fetch the low byte of the tile data from the current bank in VRAM.
+    p_Fetcher->m_FetchedBGW.m_TileDataLow = p_PPU->m_VRAM[l_TargetAddress];
 
     // If there is an object residing on this pixel, fetch that object's tile data as well.
     GABLE_FetchObjectTileData(p_PPU, p_Fetcher, 0);
@@ -821,14 +814,13 @@ void GABLE_FetchTileDataHigh (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
     // The high byte of the tile data is fetched in the same manner as the low byte.
     Uint8 l_TileIndex = p_Fetcher->m_FetchedBGW.m_TileIndex;
     Uint16 l_TargetAddress = (l_TileIndex * 16) + p_Fetcher->m_TileDataOffset + 1;
-    if (l_TileIndex < 128 && p_PPU->m_LCDC.m_BGWindowTileDataAddress == 1)
+    if (l_TileIndex < 128 && p_PPU->m_LCDC.m_BGWindowTileDataAddress == 0)
     {
         l_TargetAddress += 0x1000;
     }
 
     // Fetch the high byte of the tile data.
-    Bool l_Read = GABLE_ReadVRAMByte(p_PPU, l_TargetAddress, &p_Fetcher->m_FetchedBGW.m_TileDataHigh);
-    GABLE_expect(l_Read == true, "Failed to read tile data high byte from VRAM");
+    p_Fetcher->m_FetchedBGW.m_TileDataHigh = p_PPU->m_VRAM[l_TargetAddress];
 
     // If there is an object residing on this pixel, fetch that object's tile data as well.
     GABLE_FetchObjectTileData(p_PPU, p_Fetcher, 1);
@@ -1103,44 +1095,41 @@ void GABLE_ResetPPU (GABLE_PPU* p_PPU)
 {
     GABLE_expect(p_PPU, "PPU context is NULL!");
 
-    // Point the VRAM pointer to the first VRAM bank.
-    p_PPU->m_VRAM = p_PPU->m_VRAM0;
+    memset(p_PPU, 0, sizeof(GABLE_PPU));
 
-    // Reset the hardware registers.
-    p_PPU->m_LCDC.m_Register = 0x91;
-    p_PPU->m_STAT.m_Register = 0x85;
-    p_PPU->m_SCY = 0x00;
-    p_PPU->m_SCX = 0x00;
-    p_PPU->m_LY = 0x00;
-    p_PPU->m_LYC = 0x00;
-    p_PPU->m_DMA = 0x00;
-    p_PPU->m_BGP = 0xFC;
-    p_PPU->m_OBP0 = 0xFF;
-    p_PPU->m_OBP1 = 0xFF;
-    p_PPU->m_WY = 0x00;
-    p_PPU->m_WX = 0x00;
-    p_PPU->m_VBK = 0x00;
-    p_PPU->m_HDMA1 = 0x00;
-    p_PPU->m_HDMA2 = 0x00;
-    p_PPU->m_HDMA3 = 0x00;
-    p_PPU->m_HDMA4 = 0x00;
-    p_PPU->m_HDMA5.m_Register = 0x00;
-    p_PPU->m_BGPI.m_Register = 0xFC;
-    p_PPU->m_OBPI.m_Register = 0xFF;
-    p_PPU->m_OPRI = 0xFF;
-    p_PPU->m_GRPM = 0x00;
+    p_PPU->m_PixelFetcher.m_Mode = GABLE_PFM_TILE_NUMBER;
+    p_PPU->m_STAT.m_DisplayMode = GABLE_DM_OBJECT_SCAN;
+    p_PPU->m_STAT.m_LineCoincidence = false;
+
+    // Reset the DMA settings.
+    p_PPU->m_ODMATicks = 0xFF;
+    p_PPU->m_HDMABlocksLeft = 0;
 
     // Initialize the color RAM buffers. Initialize all palettes to the default DMG palette.
     for (Count i = 0; i < GABLE_PPU_CRAM_SIZE; i += 8)
     {
+        // p_PPU->m_BgCRAM[i    ] = 0b11111111; p_PPU->m_ObjCRAM[i    ] = 0b11111111;
+        // p_PPU->m_BgCRAM[i + 1] = 0b11111110; p_PPU->m_ObjCRAM[i + 1] = 0b11111110;
+        // p_PPU->m_BgCRAM[i + 2] = 0b10011100; p_PPU->m_ObjCRAM[i + 2] = 0b10011100;
+        // p_PPU->m_BgCRAM[i + 3] = 0b11100110; p_PPU->m_ObjCRAM[i + 3] = 0b11100110;
+        // p_PPU->m_BgCRAM[i + 4] = 0b01011010; p_PPU->m_ObjCRAM[i + 4] = 0b01011010;
+        // p_PPU->m_BgCRAM[i + 5] = 0b11010110; p_PPU->m_ObjCRAM[i + 5] = 0b11010110;
+        // p_PPU->m_BgCRAM[i + 6] = 0b00001000; p_PPU->m_ObjCRAM[i + 6] = 0b00001000;
+        // p_PPU->m_BgCRAM[i + 7] = 0b01000010; p_PPU->m_ObjCRAM[i + 7] = 0b01000010;
+
+        // Color 0: White           (0b11111111 0b11111110)
+        // Color 1: Light Gray      (0b11001110 0b01110010)
+        // Color 2: Dark Gray       (0b10001100 0b01100010)
+        // Color 3: Black           (0b00001000 0b01000010)
         p_PPU->m_BgCRAM[i    ] = 0b11111111; p_PPU->m_ObjCRAM[i    ] = 0b11111111;
         p_PPU->m_BgCRAM[i + 1] = 0b11111110; p_PPU->m_ObjCRAM[i + 1] = 0b11111110;
-        p_PPU->m_BgCRAM[i + 2] = 0b10011100; p_PPU->m_ObjCRAM[i + 2] = 0b10011100;
-        p_PPU->m_BgCRAM[i + 3] = 0b11100110; p_PPU->m_ObjCRAM[i + 3] = 0b11100110;
-        p_PPU->m_BgCRAM[i + 4] = 0b01011010; p_PPU->m_ObjCRAM[i + 4] = 0b01011010;
-        p_PPU->m_BgCRAM[i + 5] = 0b11010110; p_PPU->m_ObjCRAM[i + 5] = 0b11010110;
+        p_PPU->m_BgCRAM[i + 2] = 0b11001110; p_PPU->m_ObjCRAM[i + 2] = 0b11001110;
+        p_PPU->m_BgCRAM[i + 3] = 0b01110010; p_PPU->m_ObjCRAM[i + 3] = 0b01110010;
+        p_PPU->m_BgCRAM[i + 4] = 0b10001100; p_PPU->m_ObjCRAM[i + 4] = 0b10001100;
+        p_PPU->m_BgCRAM[i + 5] = 0b01100010; p_PPU->m_ObjCRAM[i + 5] = 0b01100010;
         p_PPU->m_BgCRAM[i + 6] = 0b00001000; p_PPU->m_ObjCRAM[i + 6] = 0b00001000;
         p_PPU->m_BgCRAM[i + 7] = 0b01000010; p_PPU->m_ObjCRAM[i + 7] = 0b01000010;
+
     }
 }
 
@@ -1149,6 +1138,18 @@ void GABLE_TickPPU (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
 
     GABLE_expect(p_PPU, "PPU context is NULL!");
     GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Don't tick the PPU if the display is off, but still call the frame-rendered callback if
+    // one is provided.
+    if (p_PPU->m_LCDC.m_DisplayEnable == false)
+    {
+        if (p_PPU->m_FrameRenderedCallback != NULL)
+        {
+            p_PPU->m_FrameRenderedCallback(p_Engine, p_PPU);
+        }
+
+        return;
+    }
     
     // Run the appropriate PPU state machine based on the current PPU display mode.
     switch (p_PPU->m_STAT.m_DisplayMode)
@@ -1175,6 +1176,9 @@ void GABLE_TickPPU (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
 
 void GABLE_TickODMA (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
 {
+
+    GABLE_expect(p_PPU, "PPU context is NULL!");
+    GABLE_expect(p_Engine, "Engine context is NULL!");
 
     // Check to see if the DMA transfer is active.
     if (p_PPU->m_ODMATicks >= 0xA0)
@@ -1220,10 +1224,15 @@ Bool GABLE_ReadVRAMByte (const GABLE_PPU* p_PPU, Uint16 p_Address, Uint8* p_Valu
     // screen buffer (i.e., in the pixel transfer state), then the VRAM buffer is locked and cannot be
     // accessed. In this case, the byte returned is `0xFF`.
     //
-    // This check is not performed if this read is being conducted as part of an OAM DMA transfer.
-    if (p_Address < GABLE_PPU_VRAM_BANK_SIZE && p_PPU->m_ODMATicks >= 0xA0)
+    // This check is not performed if this read is being conducted as part of an OAM DMA transfer,
+    // or if the LCDC display is off.
+    if (p_Address < GABLE_PPU_VRAM_BANK_SIZE)
     {
-        if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
+        if (
+            p_PPU->m_LCDC.m_DisplayEnable == true &&
+            p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER && 
+            p_PPU->m_ODMATicks >= 0xA0
+        )
         {
             *p_Value = 0xFF;
             return true;
@@ -1261,12 +1270,15 @@ Bool GABLE_ReadOAMByte (const GABLE_PPU* p_PPU, Uint16 p_Address, Uint8* p_Value
     // buffer is being accessed from GABLE's address bus. In this case, the OAM buffer can only be
     // accessed during the `VBLANK` or `HBLANK` states.
     //
-    // This check is not performed if this read is being conducted as part of an OAM DMA transfer.
-    if (p_Address < GABLE_PPU_OAM_SIZE && p_PPU->m_ODMATicks >= 0xA0)
+    // This check is not performed if this read is being conducted as part of an OAM DMA transfer,
+    // or if the LCDC display is off.
+    if (p_Address < GABLE_PPU_OAM_SIZE)
     {
         if (
+            p_PPU->m_LCDC.m_DisplayEnable == true &&
             p_PPU->m_STAT.m_DisplayMode != GABLE_DM_VERTICAL_BLANK && 
-            p_PPU->m_STAT.m_DisplayMode != GABLE_DM_HORIZONTAL_BLANK
+            p_PPU->m_STAT.m_DisplayMode != GABLE_DM_HORIZONTAL_BLANK && 
+            p_PPU->m_ODMATicks >= 0xA0
         )
         {
             *p_Value = 0xFF;
@@ -1312,9 +1324,14 @@ Bool GABLE_WriteVRAMByte (GABLE_PPU* p_PPU, Uint16 p_Address, Uint8 p_Value)
     // being accessed from GABLE's address bus. If the PPU is currently transferring pixels to the
     // screen buffer (i.e., in the pixel transfer state), then the VRAM buffer is locked and cannot be
     // accessed. In this case, the byte is not written.
+    //
+    // If the LCDC display is off, then the VRAM buffer is always accessible.
     if (p_Address < GABLE_PPU_VRAM_BANK_SIZE)
     {
-        if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
+        if (
+            p_PPU->m_LCDC.m_DisplayEnable == true &&
+            p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER
+        )
         {
             return true;
         }
@@ -1349,10 +1366,11 @@ Bool GABLE_WriteOAMByte (GABLE_PPU* p_PPU, Uint16 p_Address, Uint8 p_Value)
 
     // If a relative address (`0x0000` to `0x009F`) is provided, then it can be assumed that the OAM
     // buffer is being accessed from GABLE's address bus. In this case, the OAM buffer can only be
-    // accessed during the `VBLANK` or `HBLANK` states.
+    // accessed during the `VBLANK` or `HBLANK` states, or if the LCDC display is disabled.
     if (p_Address < GABLE_PPU_OAM_SIZE)
     {
         if (
+            p_PPU->m_LCDC.m_DisplayEnable == true &&
             p_PPU->m_STAT.m_DisplayMode != GABLE_DM_VERTICAL_BLANK && 
             p_PPU->m_STAT.m_DisplayMode != GABLE_DM_HORIZONTAL_BLANK
         )
@@ -1479,8 +1497,9 @@ Uint8 GABLE_ReadBGPD (const GABLE_PPU* p_PPU)
 {
     GABLE_expect(p_PPU, "PPU context is NULL!");
     
-    // Palette data cannot be read from the BGPD register if the PPU is in the pixel transfer state.
-    if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
+    // Palette data cannot be read from the BGPD register if the PPU is in the pixel transfer state,
+    // unless the LCDC display is off.
+    if (p_PPU->m_LCDC.m_DisplayEnable == true && p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
     {
         return 0xFF;
     }
@@ -1499,7 +1518,7 @@ Uint8 GABLE_ReadOBPD (const GABLE_PPU* p_PPU)
     GABLE_expect(p_PPU, "PPU context is NULL!");
     
     // Palette data cannot be read from the OBPD register if the PPU is in the pixel transfer state.
-    if (p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
+    if (p_PPU->m_LCDC.m_DisplayEnable == true && p_PPU->m_STAT.m_DisplayMode == GABLE_DM_PIXEL_TRANSFER)
     {
         return 0xFF;
     }
@@ -1523,22 +1542,22 @@ Uint8 GABLE_ReadGRPM (const GABLE_PPU* p_PPU)
 
 void GABLE_WriteLCDC (GABLE_PPU* p_PPU, Uint8 p_Value)
 {
-    
     GABLE_expect(p_PPU, "PPU context is NULL!");
     
     // If LCDC bit 7 is currently on, and the new value turns it off, then do not turn it off if the
     // PPU is not in vertical blank mode.
     if (
         p_PPU->m_LCDC.m_DisplayEnable == true &&
-        GABLE_bit(p_Value, 7) == 0 &&
+        GABLE_bit(p_Value, 7) == false &&
         p_PPU->m_STAT.m_DisplayMode != GABLE_DM_VERTICAL_BLANK
     )
     {
-        GABLE_clearbit(p_Value, 7);
+        p_PPU->m_LCDC.m_Register = (p_PPU->m_LCDC.m_Register & 0b10000000) | (p_Value & 0b01111111);
     }
-
-    // Update the LCDC register.
-    p_PPU->m_LCDC.m_Register |= p_Value;
+    else
+    {
+        p_PPU->m_LCDC.m_Register = p_Value;
+    }
 }
 
 void GABLE_WriteSTAT (GABLE_PPU* p_PPU, Uint8 p_Value)
@@ -1690,7 +1709,7 @@ void GABLE_WriteBGPD (GABLE_PPU* p_PPU, Uint8 p_Value)
     
     // Palette data can only be written to the BGPD register if the PPU is not in the pixel transfer
     // state.
-    if (p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER)
+    if (p_PPU->m_LCDC.m_DisplayEnable == true && p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER)
     {
         p_PPU->m_BgCRAM[p_PPU->m_BGPI.m_ByteIndex] = p_Value;
     }
@@ -1715,7 +1734,7 @@ void GABLE_WriteOBPD (GABLE_PPU* p_PPU, Uint8 p_Value)
     
     // Palette data can only be written to the OBPD register if the PPU is not in the pixel transfer
     // state.
-    if (p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER)
+    if (p_PPU->m_LCDC.m_DisplayEnable == true && p_PPU->m_STAT.m_DisplayMode != GABLE_DM_PIXEL_TRANSFER)
     {
         p_PPU->m_ObjCRAM[p_PPU->m_OBPI.m_ByteIndex] = p_Value;
     }
@@ -1755,4 +1774,791 @@ const Uint32* GABLE_GetScreenBuffer (GABLE_Engine* p_Engine)
     GABLE_expect(p_Engine, "Engine context is NULL!");
     GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
     return l_PPU->m_ScreenBuffer;
+}
+
+void GABLE_WaitUntilAfterVerticalBlank (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    GABLE_DisplayStatus l_STAT;
+    while (true)
+    {
+        GABLE_CycleReadByte(p_Engine, GABLE_HP_STAT, &l_STAT.m_Register);
+        if (l_STAT.m_DisplayMode != GABLE_DM_VERTICAL_BLANK)
+        {
+            break;
+        }
+    }
+}
+
+void GABLE_WaitForVerticalBlank (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    GABLE_DisplayStatus l_STAT;
+    while (true)
+    {
+        GABLE_CycleReadByte(p_Engine, GABLE_HP_STAT, &l_STAT.m_Register);
+        if (l_STAT.m_DisplayMode == GABLE_DM_VERTICAL_BLANK)
+        {
+            break;
+        }
+    }
+}
+
+void GABLE_UploadTileData (GABLE_Engine* p_Engine, GABLE_BitsPerPixel p_BPP, Uint16 p_SourceAddress, Uint8 p_DestinationIndex, Uint8 p_TileCount)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+
+    // The destination index, plus the number of tiles to upload, must be within the range (0-255).
+    // Correct the tile count if this range is exceeded.
+    if (p_DestinationIndex + p_TileCount > 255)
+    {
+        p_TileCount = 255 - p_DestinationIndex;
+    }
+    
+    // Read the `LCDC` register to determine the tile data table address.
+    GABLE_DisplayControl l_LCDC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LCDC, &l_LCDC.m_Register);
+    
+    // Iterate over the number of tiles to upload.
+    for (Uint8 i = 0; i < p_TileCount; i++)
+    {
+        // Determine the current tile's destination index.
+        Uint8 l_CurrentTileIndex = p_DestinationIndex + i;
+
+        // Based on `LCDC` bit 4, determine the tile data table address.
+        Uint16 l_DestinationAddress = 0;
+        if (l_LCDC.m_BGWindowTileDataAddress == 1)
+        {
+            l_DestinationAddress = 0x8000 + (l_CurrentTileIndex * 16);
+        }
+        else if (l_CurrentTileIndex < 128)
+        {
+            l_DestinationAddress = 0x9000 + (l_CurrentTileIndex * 16);
+        }
+        else
+        {
+            l_DestinationAddress = 0x8800 + ((l_CurrentTileIndex - 128) * 16);
+        }
+
+        // Upload the tile data.
+        if (p_BPP == GABLE_1BPP)
+        {
+            // Iterate over the 8 bytes of 1BPP tile data.
+            for (Uint8 j = 0, k = 0; j < 8; j++, k += 2)
+            {
+                // Read the byte from the source address.
+                Uint8 l_Value = 0x00;
+                GABLE_CycleReadByte(p_Engine, p_SourceAddress + (i * 8) + j, &l_Value);
+
+                // Write the byte to the destination address in the tile data table.
+                // For 1BPP tile data, the byte is written to the destination address, then again
+                // to the destination address + 1.
+                GABLE_CycleWriteByte(p_Engine, l_DestinationAddress + k, l_Value);
+                GABLE_CycleWriteByte(p_Engine, l_DestinationAddress + k + 1, l_Value);
+            }
+        }
+        else
+        {
+            // Iterate over the 16 bytes of 2BPP tile data.
+            for (Uint8 j = 0; j < 16; j++)
+            {
+                // Read the byte from the source address.
+                Uint8 l_Value = 0x00;
+                GABLE_CycleReadByte(p_Engine, p_SourceAddress + (i * 16) + j, &l_Value);
+
+                // Write the byte to the destination address in the tile data table.
+                GABLE_CycleWriteByte(p_Engine, l_DestinationAddress + j, l_Value);
+            }
+        }
+    }
+}
+
+GABLE_TileAttributes GABLE_GetTileInfo (GABLE_Engine* p_Engine, Uint8 p_TilemapIndex, Uint8 p_X, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Determine the absolute address of the tile index/attribute map to read from.
+    Uint16 l_TilemapAddress = ((p_TilemapIndex & 1) == 1) ? 0x9C00 : 0x9800;
+
+    // Correct the X and Y coordinates to be within the bounds of the tilemap.
+    p_X = p_X % 32;
+    p_Y = p_Y % 32;
+
+    // Determine the address of the tile index/attribute map entry.
+    Uint16 l_TilemapEntryAddress = l_TilemapAddress + (p_Y * 32) + p_X;
+
+    // Read the tile index/attribute map entry.
+    GABLE_TileAttributes l_IndexOrAttribute;
+    GABLE_CycleReadByte(p_Engine, l_TilemapEntryAddress, &l_IndexOrAttribute.m_Value);
+
+    // Return the tile index/attribute map entry.
+    return l_IndexOrAttribute;
+}
+
+GABLE_TileAttributes GABLE_GetBackgroundTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // The tilemap index is determined by bit 3 of the `LCDC` register.
+    GABLE_DisplayControl l_LCDC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LCDC, &l_LCDC.m_Register);
+
+    // Get the tile information.
+    return GABLE_GetTileInfo(p_Engine, l_LCDC.m_BGTilemapAddress, p_X, p_Y);
+}
+
+GABLE_TileAttributes GABLE_GetWindowTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // The tilemap index is determined by bit 6 of the `LCDC` register.
+    GABLE_DisplayControl l_LCDC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LCDC, &l_LCDC.m_Register);
+
+    // Get the tile information.
+    return GABLE_GetTileInfo(p_Engine, l_LCDC.m_WindowTilemapAddress, p_X, p_Y);
+}
+
+void GABLE_SetTileInfo (GABLE_Engine* p_Engine, Uint8 p_TilemapIndex, Uint8 p_X, Uint8 p_Y, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Determine the absolute address of the tile index/attribute map to write to.
+    Uint16 l_TilemapAddress = ((p_TilemapIndex & 1) == 1) ? 0x9C00 : 0x9800;
+
+    // Correct the X and Y coordinates to be within the bounds of the tilemap.
+    p_X = p_X % 32;
+    p_Y = p_Y % 32;
+
+    // Determine the address of the tile index/attribute map entry.
+    Uint16 l_TilemapEntryAddress = l_TilemapAddress + (p_Y * 32) + p_X;
+
+    // Write the tile index/attribute map entry.
+    GABLE_CycleWriteByte(p_Engine, l_TilemapEntryAddress, p_Value);
+}
+
+void GABLE_SetBackgroundTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // The tilemap index is determined by bit 3 of the `LCDC` register.
+    GABLE_DisplayControl l_LCDC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LCDC, &l_LCDC.m_Register);
+
+    // Set the tile information.
+    GABLE_SetTileInfo(p_Engine, l_LCDC.m_BGTilemapAddress, p_X, p_Y, p_Value);
+}
+
+void GABLE_SetWindowTileInfo (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // The tilemap index is determined by bit 6 of the `LCDC` register.
+    GABLE_DisplayControl l_LCDC;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LCDC, &l_LCDC.m_Register);
+
+    // Set the tile information.
+    GABLE_SetTileInfo(p_Engine, l_LCDC.m_WindowTilemapAddress, p_X, p_Y, p_Value);
+}
+
+void GABLE_GetObjectInfo (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8* p_X, Uint8* p_Y, Uint8* p_TileIndex, GABLE_TileAttributes* p_Attributes)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // Read the object's X-coordinate.
+    if (p_X != NULL) { GABLE_CycleReadByte(p_Engine, l_OAMAddress + 1, p_X); }
+
+    // Read the object's Y-coordinate.
+    if (p_Y != NULL) { GABLE_CycleReadByte(p_Engine, l_OAMAddress, p_Y); }
+
+    // Read the object's tile index.
+    if (p_TileIndex != NULL) { GABLE_CycleReadByte(p_Engine, l_OAMAddress + 2, p_TileIndex); }
+
+    // Read the object's attributes.
+    if (p_Attributes != NULL) { GABLE_CycleReadByte(p_Engine, l_OAMAddress + 3, &p_Attributes->m_Value); }
+}
+
+void GABLE_SetObjectPosition (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_X, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // Write the object's X-coordinate.
+    GABLE_CycleWriteByte(p_Engine, l_OAMAddress + 1, p_X);
+
+    // Write the object's Y-coordinate.
+    GABLE_CycleWriteByte(p_Engine, l_OAMAddress, p_Y);
+}
+
+void GABLE_SetObjectX (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_X)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // Write the object's X-coordinate.
+    GABLE_CycleWriteByte(p_Engine, l_OAMAddress + 1, p_X);
+}
+
+void GABLE_SetObjectY (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // Write the object's Y-coordinate.
+    GABLE_CycleWriteByte(p_Engine, l_OAMAddress, p_Y);
+}
+
+void GABLE_SetObjectTileIndex (GABLE_Engine* p_Engine, Uint8 p_Index, Uint8 p_TileIndex)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // Write the object's tile index.
+    GABLE_CycleWriteByte(p_Engine, l_OAMAddress + 2, p_TileIndex);
+}
+
+void GABLE_SetObjectAttributes (GABLE_Engine* p_Engine, Uint8 p_Index, GABLE_TileAttributes p_Attributes)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // Write the object's attributes.
+    GABLE_CycleWriteByte(p_Engine, l_OAMAddress + 3, p_Attributes.m_Value);
+}
+
+void GABLE_MoveObject (GABLE_Engine* p_Engine, Uint8 p_Index, Int8 p_OffsetX, Int8 p_OffsetY)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the object index to be within the bounds of the object attribute table.
+    p_Index = p_Index % GABLE_PPU_OAM_OBJECT_COUNT;
+
+    // The object attribute table is located at `$FE00` to `$FE9F`.
+    Uint16 l_OAMAddress = GABLE_GB_OAM_START + (p_Index * 4);
+
+    // If the X-coordinate is being modified, then the offset is added to the current X-coordinate.
+    if (p_OffsetX != 0)
+    {
+        // Read the object's X-coordinate.
+        Uint8 l_X = 0x00;
+        GABLE_CycleReadByte(p_Engine, l_OAMAddress + 1, &l_X);
+
+        // Add the offset to the X-coordinate.
+        l_X = (l_X + p_OffsetX) & 0xFF;
+
+        // Write the new X-coordinate.
+        GABLE_CycleWriteByte(p_Engine, l_OAMAddress + 1, l_X);
+    }
+
+    // If the Y-coordinate is being modified, then the offset is added to the current Y-coordinate.
+    if (p_OffsetY != 0)
+    {
+        // Read the object's Y-coordinate.
+        Uint8 l_Y = 0x00;
+        GABLE_CycleReadByte(p_Engine, l_OAMAddress, &l_Y);
+
+        // Add the offset to the Y-coordinate.
+        l_Y = (l_Y + p_OffsetY) & 0xFF;
+
+        // Write the new Y-coordinate.
+        GABLE_CycleWriteByte(p_Engine, l_OAMAddress, l_Y);
+    }
+}
+
+const GABLE_ColorRGB555* GABLE_LookupColorPreset (GABLE_Color p_Color)
+{
+    // Correct the color index to be within the bounds of the color preset table.
+    p_Color = p_Color % GABLE_COLOR_COUNT;
+
+    // Return the color preset.
+    return &GABLE_PRESET_COLORS[p_Color];
+}
+
+void GABLE_GetBackgroundColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555, Uint32* p_RGBA)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the palette and color indices to ranges of 0-7 and 0-3, respectively.
+    p_PaletteIndex = p_PaletteIndex % 8;
+    p_ColorIndex = p_ColorIndex % 4;
+
+    // Direct access to the PPU is required to read from the background palette CRAM.
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+
+    Uint32 l_RGBA = GABLE_GetBackgroundColorInternal(l_PPU, p_PaletteIndex, p_ColorIndex, p_RGB555);
+    if (p_RGBA != NULL) { *p_RGBA = l_RGBA; }
+}
+
+void GABLE_GetObjectColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, GABLE_ColorRGB555* p_RGB555, Uint32* p_RGBA)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the palette and color indices to ranges of 0-7 and 0-3, respectively.
+    p_PaletteIndex = p_PaletteIndex % 8;
+    p_ColorIndex = p_ColorIndex % 4;
+
+    // Direct access to the PPU is required to read from the object palette CRAM.
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+
+    Uint32 l_RGBA = GABLE_GetObjectColorInternal(l_PPU, p_PaletteIndex, p_ColorIndex, p_RGB555);
+    if (p_RGBA != NULL) { *p_RGBA = l_RGBA; }
+}
+
+void GABLE_SetBackgroundColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_ColorRGB555* p_RGB555, const Uint32* p_RGBA)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the palette and color indices to ranges of 0-7 and 0-3, respectively.
+    p_PaletteIndex = p_PaletteIndex % 8;
+    p_ColorIndex = p_ColorIndex % 4;
+
+    // Direct access to the PPU is required to write to the background palette CRAM.
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+    
+    // Prepare the red, green, and blue components of the color.
+    Uint8 l_Red = 0, l_Green = 0, l_Blue = 0;
+    if (p_RGB555 != NULL)
+    {
+        l_Red = p_RGB555->m_Red;
+        l_Green = p_RGB555->m_Green;
+        l_Blue = p_RGB555->m_Blue;
+    }
+    else if (p_RGBA != NULL)
+    {
+        l_Red = ((*p_RGBA >> 24) & 0xFF) / 8;
+        l_Green = ((*p_RGBA >> 16) & 0xFF) / 8;
+        l_Blue = ((*p_RGBA >> 8) & 0xFF) / 8;
+    }
+    else
+    {
+        GABLE_error("No color data provided.");
+        return;
+    }
+
+    // Determine the start index of the color in the background palette CRAM.
+    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_BYTES_PER_PALETTE) + (p_ColorIndex * 2);
+
+    // Write the red, green, and blue components to the background palette CRAM. The color is written
+    // in RGB555 bitwise little-endian format, as follows: `0bRRRRRGGG`, `0bGGBBBBB0`.
+    l_PPU->m_BgCRAM[l_StartIndex] = (l_Red << 3) | ((l_Green & 0b11100) >> 2);
+    l_PPU->m_BgCRAM[l_StartIndex + 1] = ((l_Green & 0b11) << 6) | (l_Blue << 1);
+}
+
+void GABLE_SetObjectColor (GABLE_Engine* p_Engine, Uint8 p_PaletteIndex, Uint8 p_ColorIndex, const GABLE_ColorRGB555* p_RGB555, const Uint32* p_RGBA)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Correct the palette and color indices to ranges of 0-7 and 0-3, respectively.
+    p_PaletteIndex = p_PaletteIndex % 8;
+    p_ColorIndex = p_ColorIndex % 4;
+
+    // Direct access to the PPU is required to write to the object palette CRAM.
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+    
+    // Prepare the red, green, and blue components of the color.
+    Uint8 l_Red = 0, l_Green = 0, l_Blue = 0;
+    if (p_RGB555 != NULL)
+    {
+        l_Red = p_RGB555->m_Red;
+        l_Green = p_RGB555->m_Green;
+        l_Blue = p_RGB555->m_Blue;
+    }
+    else if (p_RGBA != NULL)
+    {
+        l_Red = ((*p_RGBA >> 24) & 0xFF) / 8;
+        l_Green = ((*p_RGBA >> 16) & 0xFF) / 8;
+        l_Blue = ((*p_RGBA >> 8) & 0xFF) / 8;
+    }
+    else
+    {
+        GABLE_error("No color data provided.");
+        return;
+    }
+
+    // Determine the start index of the color in the object palette CRAM.
+    Uint8 l_StartIndex = (p_PaletteIndex * GABLE_PPU_BYTES_PER_PALETTE) + (p_ColorIndex * 2);
+
+    // Write the red, green, and blue components to the object palette CRAM. The color is written in
+    // RGB555 bitwise little-endian format, as follows: `0bRRRRRGGG`, `0bGGBBBBB0`.
+    l_PPU->m_ObjCRAM[l_StartIndex] = (l_Red << 3) | ((l_Green & 0b11100) >> 2);
+    l_PPU->m_ObjCRAM[l_StartIndex + 1] = ((l_Green & 0b11) << 6) | (l_Blue << 1);
+}
+
+GABLE_DisplayControl GABLE_GetDisplayControl (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the LCDC register from the PPU.
+    GABLE_DisplayControl l_Control;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LCDC, &l_Control.m_Register);
+
+    // Return the display control register.
+    return l_Control;
+}
+
+GABLE_DisplayStatus GABLE_GetDisplayStatus (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the STAT register from the PPU.
+    GABLE_DisplayStatus l_Status;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_STAT, &l_Status.m_Register);
+
+    // Return the display status register.
+    return l_Status;
+}
+
+void GABLE_GetViewportPosition (GABLE_Engine* p_Engine, Uint8* p_X, Uint8* p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    if (p_X != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_SCX, p_X); }
+    if (p_Y != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_SCY, p_Y); }
+}
+
+Uint8 GABLE_GetCurrentScanline (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the LY register from the PPU.
+    Uint8 l_LY = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LY, &l_LY);
+
+    // Return the current scanline.
+    return l_LY;
+}
+
+Uint8 GABLE_GetLineCompare (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the LYC register from the PPU.
+    Uint8 l_LYC = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_LYC, &l_LYC);
+
+    // Return the line compare register.
+    return l_LYC;
+}
+
+void GABLE_GetDMGPaletteIndices (GABLE_Engine* p_Engine, Uint8* p_BG, Uint8* p_OB0, Uint8* p_OB1)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    if (p_BG != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_BGP, p_BG); }
+    if (p_OB0 != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_OBP0, p_OB0); }
+    if (p_OB1 != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_OBP1, p_OB1); }
+}
+
+void GABLE_GetWindowPosition (GABLE_Engine* p_Engine, Uint8* p_X, Uint8* p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    if (p_X != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_WX, p_X); }
+    if (p_Y != NULL) { GABLE_CycleReadByte(p_Engine, GABLE_HP_WY, p_Y); }
+}
+
+Uint8 GABLE_GetVRAMBankNumber (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the VBK register from the PPU.
+    Uint8 l_VBK = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_VBK, &l_VBK);
+
+    // Return the VRAM bank number.
+    return l_VBK;
+}
+
+GABLE_HDMAControl GABLE_GetHDMAControl (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the HDMA5 register from the PPU.
+    GABLE_HDMAControl l_Control;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_HDMA5, &l_Control.m_Register);
+
+    // Return the HDMA control register.
+    return l_Control;
+}
+
+GABLE_PaletteSpecification GABLE_GetBackgroundPaletteSpec (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Read the BGPI register from the PPU.
+    GABLE_PaletteSpecification l_Spec;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_BGPI, &l_Spec.m_Register);
+
+    // Return the background palette specification.
+    return l_Spec;
+}
+
+GABLE_PaletteSpecification GABLE_GetObjectPaletteSpec (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Read the OBPI register from the PPU.
+    GABLE_PaletteSpecification l_Spec;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_OBPI, &l_Spec.m_Register);
+
+    // Return the object palette specification.
+    return l_Spec;
+}
+
+Uint8 GABLE_GetCurrentBackgroundColorByte (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Read the BGPD register from the PPU.
+    Uint8 l_Value = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_BGPD, &l_Value);
+
+    // Return the current background color byte.
+    return l_Value;
+}
+
+Uint8 GABLE_GetCurrentObjectColorByte (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+
+    // Read the OBPD register from the PPU.
+    Uint8 l_Value = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_OBPD, &l_Value);
+
+    // Return the current object color byte.
+    return l_Value;
+}
+
+GABLE_ObjectPriorityMode GABLE_GetObjectPriorityMode (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the OPRI register from the PPU.
+    Uint8 l_Mode = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_OPRI, &l_Mode);
+
+    // Return the object priority mode.
+    //
+    // NOTE: If `GRPM` is zero (DMG mode), then this register is ignored, as the object priority mode
+    // is always `X Position` in DMG mode.
+    return (l_Mode == 0x00) ? GABLE_OPM_OAM_INDEX : GABLE_OPM_X_POSITION;
+}
+
+GABLE_GraphicsMode GABLE_GetGraphicsMode (GABLE_Engine* p_Engine)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    // Read the GRPM register from the PPU.
+    Uint8 l_Mode = 0x00;
+    GABLE_CycleReadByte(p_Engine, GABLE_HP_GRPM, &l_Mode);
+
+    // Return the graphics mode.
+    return (l_Mode == 0x00) ? GABLE_GM_DMG : GABLE_GM_CGB;
+}
+
+void GABLE_SetDisplayControl (GABLE_Engine* p_Engine, GABLE_DisplayControl p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_LCDC, p_Value.m_Register);
+}
+
+void GABLE_SetDisplayStatus (GABLE_Engine* p_Engine, GABLE_DisplayStatus p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_STAT, p_Value.m_Register);
+}
+
+void GABLE_SetViewportPosition (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SCX, p_X);
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SCY, p_Y);
+}
+
+void GABLE_SetViewportX (GABLE_Engine* p_Engine, Uint8 p_X)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SCX, p_X);
+}
+
+void GABLE_SetViewportY (GABLE_Engine* p_Engine, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SCY, p_Y);
+}
+
+void GABLE_SetLineCompare (GABLE_Engine* p_Engine, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_LYC, p_Value);
+}
+
+void GABLE_InitiateODMA (GABLE_Engine* p_Engine, Uint8 p_SourceAddressHigh)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_DMA, p_SourceAddressHigh);
+}
+
+void GABLE_SetDMGPaletteIndices (GABLE_Engine* p_Engine, Uint8 p_BG, Uint8 p_OB0, Uint8 p_OB1)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_BGP, p_BG);
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_OBP0, p_OB0);
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_OBP1, p_OB1);
+}
+
+void GABLE_SetDMGBackgroundPaletteIndex (GABLE_Engine* p_Engine, Uint8 p_Index)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_BGP, p_Index);
+}
+
+void GABLE_SetDMGObjectPaletteIndex (GABLE_Engine* p_Engine, Uint8 p_Palette, Uint8 p_Index)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    switch (p_Palette & 0b1)
+    {
+        case 0: GABLE_CycleWriteByte(p_Engine, GABLE_HP_OBP0, p_Index); break;
+        case 1: GABLE_CycleWriteByte(p_Engine, GABLE_HP_OBP1, p_Index); break;
+    }
+}
+
+void GABLE_SetWindowPosition (GABLE_Engine* p_Engine, Uint8 p_X, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_WX, p_X);
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_WY, p_Y);
+}
+
+void GABLE_SetWindowX (GABLE_Engine* p_Engine, Uint8 p_X)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_WX, p_X);
+}
+
+void GABLE_SetWindowY (GABLE_Engine* p_Engine, Uint8 p_Y)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_WY, p_Y);
+}
+
+void GABLE_SetVRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_VBK, p_Value);
+}
+
+void GABLE_SetHDMAAddresses (GABLE_Engine* p_Engine, Uint16 p_SourceAddress, Uint16 p_DestinationAddress)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA1, (p_SourceAddress >> 8));
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA2, (p_SourceAddress & 0xF0));
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA3, (p_DestinationAddress >> 8));
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA4, (p_DestinationAddress & 0xF0));
+}
+
+void GABLE_SetHDMASourceAddress (GABLE_Engine* p_Engine, Uint16 p_Address)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA1, (p_Address >> 8));
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA2, (p_Address & 0xF0));
+}
+
+void GABLE_SetHDMADestinationAddress (GABLE_Engine* p_Engine, Uint16 p_Address)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA3, (p_Address >> 8));
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA4, (p_Address & 0xF0));
+}
+
+void GABLE_InitiateHDMA (GABLE_Engine* p_Engine, Uint8 p_TransferLength, Bool p_IsGDMA)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    GABLE_HDMAControl l_Control = {
+        .m_TransferLength = p_TransferLength,
+        .m_TransferMode = (p_IsGDMA == true) ? 0 : 1
+    };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_HDMA5, l_Control.m_Register);
+}
+
+void GABLE_SetBackgroundPaletteSpec (GABLE_Engine* p_Engine, Uint8 p_Index, Bool p_AutoIncrement)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    GABLE_PaletteSpecification l_Spec = {
+        .m_ByteIndex = p_Index,
+        .m_AutoIncrement = p_AutoIncrement
+    };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_BGPI, l_Spec.m_Register);
+}
+
+void GABLE_SetObjectPaletteSpec (GABLE_Engine* p_Engine, Uint8 p_Index, Bool p_AutoIncrement)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    
+    GABLE_PaletteSpecification l_Spec = {
+        .m_ByteIndex = p_Index,
+        .m_AutoIncrement = p_AutoIncrement
+    };
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_OBPI, l_Spec.m_Register);
+}
+
+void GABLE_SetCurrentBackgroundColorByte (GABLE_Engine* p_Engine, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_BGPD, p_Value);
+}
+
+void GABLE_SetCurrentObjectColorByte (GABLE_Engine* p_Engine, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_OBPD, p_Value);
+}
+
+void GABLE_SetObjectPriorityMode (GABLE_Engine* p_Engine, GABLE_ObjectPriorityMode p_Mode)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_OPRI, p_Mode);
+}
+
+void GABLE_SetGraphicsMode (GABLE_Engine* p_Engine, GABLE_GraphicsMode p_Mode)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_GRPM, p_Mode);
 }
