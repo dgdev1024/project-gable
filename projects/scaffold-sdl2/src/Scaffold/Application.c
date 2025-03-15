@@ -439,69 +439,15 @@ void Game_StartApplication (Game_Application* p_App)
     // Begin the audio playback.
     SDL_PauseAudioDevice(p_App->m_AudioDevice, 0);
 
+    // Perform any necessary pre-loop initialization here.
+    {
+        
+    }
+
     // Set the application running flag.
     p_App->m_Running = true;
 
-    // Wait here for the next vertical blank period to start.
-    GABLE_WaitForVerticalBlank(p_App->m_Engine);
-
-    // Disable the PPU.
-    GABLE_DisplayControl l_LCDC = GABLE_GetDisplayControl(p_App->m_Engine);
-    l_LCDC.m_DisplayEnable = false;
-    GABLE_SetDisplayControl(p_App->m_Engine, l_LCDC);
-
-    // Set the PPU's graphics mode to GBC.
-    GABLE_SetGraphicsMode(p_App->m_Engine, GABLE_GM_CGB);
-
-    // Load the color test data into the data store.
-    const GABLE_DataHandle* l_ColorTestHandle = GABLE_LoadDataFromFile(p_App->m_Engine, "color_test",
-        "assets/color_test.2bpp", 0);
-    GABLE_expect(l_ColorTestHandle != NULL, "Failed to load color test data");
-
-    // Load Chris's spritesheet into the data store.
-    const GABLE_DataHandle* l_ChrisHandle = GABLE_LoadDataFromFile(p_App->m_Engine, "chris",
-        "assets/chris.2bpp", 0);
-    GABLE_expect(l_ChrisHandle != NULL, "Failed to load Chris's spritesheet");  
-
-    // Load the tile data from the data store into the PPU's VRAM.
-    GABLE_UploadTileData(p_App->m_Engine, GABLE_2BPP, l_ColorTestHandle->m_Address, 10,
-        l_ColorTestHandle->m_Length / 16);
-    GABLE_UploadTileData(p_App->m_Engine, GABLE_2BPP, l_ChrisHandle->m_Address, 100,
-        l_ChrisHandle->m_Length / 16);
-
-    for (Uint8 i = 1; i <= (l_ColorTestHandle->m_Length / 16); ++i)
-    {
-        GABLE_SetBackgroundTileInfo(p_App->m_Engine, 10 + (i % 8), 10 + (i / 8), 10 + i);
-    }
-
-    // Set up the OAM objects to render the sprite.
-    GABLE_SetObjectTileIndex(p_App->m_Engine, 0, 100);
-    GABLE_SetObjectTileIndex(p_App->m_Engine, 1, 101);
-    GABLE_SetObjectTileIndex(p_App->m_Engine, 2, 102);
-    GABLE_SetObjectTileIndex(p_App->m_Engine, 3, 103);
-    GABLE_SetObjectPosition(p_App->m_Engine, 0, 32, 40);
-    GABLE_SetObjectPosition(p_App->m_Engine, 1, 40, 40);
-    GABLE_SetObjectPosition(p_App->m_Engine, 2, 32, 48);
-    GABLE_SetObjectPosition(p_App->m_Engine, 3, 40, 48);
-
-    // Set the background palette colors.
-    GABLE_SetBackgroundColor(p_App->m_Engine, 0, 0, GABLE_LookupColorPreset(GABLE_COLOR_GOLD), NULL);
-    GABLE_SetBackgroundColor(p_App->m_Engine, 0, 1, GABLE_LookupColorPreset(GABLE_COLOR_ORANGE), NULL);
-    GABLE_SetBackgroundColor(p_App->m_Engine, 0, 2, GABLE_LookupColorPreset(GABLE_COLOR_SILVER), NULL);
-    GABLE_SetBackgroundColor(p_App->m_Engine, 0, 3, GABLE_LookupColorPreset(GABLE_COLOR_BLACK), NULL);
-
-    // Set the object palette colors.
-    GABLE_SetObjectColor(p_App->m_Engine, 0, 1, GABLE_LookupColorPreset(GABLE_COLOR_ORANGE), NULL);
-    GABLE_SetObjectColor(p_App->m_Engine, 0, 2, GABLE_LookupColorPreset(GABLE_COLOR_SILVER), NULL);
-    GABLE_SetObjectColor(p_App->m_Engine, 0, 3, GABLE_LookupColorPreset(GABLE_COLOR_BLACK), NULL);
-
-    // Re-enable the PPU. Also enable the object layer.
-    l_LCDC.m_DisplayEnable = true;
-    l_LCDC.m_ObjectEnable = true;
-    GABLE_SetDisplayControl(p_App->m_Engine, l_LCDC);
-
     // Start the application loop.
-    GABLE_debug("Starting the application loop");
     while (p_App->m_Running == true)
     {
 

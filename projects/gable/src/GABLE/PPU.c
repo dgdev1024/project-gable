@@ -13,6 +13,20 @@ static const Uint32 GABLE_PPU_DMG_PALETTE[4] =
     0x000000FF, 0x808080FF, 0xC0C0C0FF, 0xFFFFFFFF
 };
 
+static const Uint8 GABLE_PPU_DMG_PALETTE_RGB555[8] = {
+    // White (RGBA8888: 0xFFFFFFFF, RGB555 LE: 0b11111111 0b11111110)
+    0b11111111, 0b11111110,
+
+    // Light Gray (RGBA8888: 0xC0C0C0FF, RGB555 LE: 0b11000110 0b00110000)
+    0b11000110, 0b00110000,
+
+    // Dark Gray (RGBA8888: 0x808080FF, RGB555 LE: 0b10000100 0b00100000)
+    0b10000100, 0b00100000,
+
+    // Black (RGBA8888: 0x000000FF, RGB555 LE: 0b00000000 0b00000000)
+    0b00000000, 0b00000000
+};
+
 static const GABLE_ColorRGB555 GABLE_PRESET_COLORS[] =
 {
     [GABLE_COLOR_BLACK]         = { .m_Red = 0,  .m_Green = 0,   .m_Blue = 0   },
@@ -1111,9 +1125,9 @@ void GABLE_ResetPPU (GABLE_PPU* p_PPU)
     /* SCX      = 0x00 */   p_PPU->m_SCX                = 0x00;
     /* LY       = 0x00 */   p_PPU->m_LY                 = 0x00;
     /* LYC      = 0x00 */   p_PPU->m_LYC                = 0x00;
-    /* BGP      = 0xFC */   p_PPU->m_BGP                = 0xFC; // 0b11111100, Color Indices: 3, 3, 3, 0
-    /* OBP0     = 0xFF */   p_PPU->m_OBP0               = 0xFF; // 0b11111111, Color Indices: 3, 3, 3, 3
-    /* OBP1     = 0xFF */   p_PPU->m_OBP1               = 0xFF; // 0b11111111, Color Indices: 3, 3, 3, 3
+    /* BGP      = 0xFC */   p_PPU->m_BGP                = 0b00011011; // Color indices: 0, 1, 2, 3
+    /* OBP0     = 0xFF */   p_PPU->m_OBP0               = 0b00011011; // Color indices: 0, 1, 2, 3
+    /* OBP1     = 0xFF */   p_PPU->m_OBP1               = 0b00011011; // Color indices: 0, 1, 2, 3
     /* WY       = 0x00 */   p_PPU->m_WY                 = 0x00;
     /* WX       = 0x00 */   p_PPU->m_WX                 = 0x00;
     /* DMA      = 0x00 */   p_PPU->m_DMA                = 0x00;
@@ -1125,6 +1139,32 @@ void GABLE_ResetPPU (GABLE_PPU* p_PPU)
     /* HDMA5    = 0xFF */   p_PPU->m_HDMA5.m_Register   = 0xFF;
     /* BGPI     = 0x00 */   p_PPU->m_BGPI.m_Register    = 0x00;
     /* OBPI     = 0x00 */   p_PPU->m_OBPI.m_Register    = 0x00;
+    /* OPRI     = 0x00 */   p_PPU->m_OPRI               = 0x00;
+    /* GRPM     = 0x01 */   p_PPU->m_GRPM               = 0x01;
+
+    // Prepare the color RAM buffers.
+    // Initialize each palette to a DMG style palette.
+    // - DMG Palette: White, Light Gray, Dark Gray, Black
+    for (Uint8 i = 0; i < GABLE_PPU_CRAM_SIZE; i += 8)
+    {
+        p_PPU->m_BgCRAM[i + 0] = GABLE_PPU_DMG_PALETTE_RGB555[0];
+        p_PPU->m_BgCRAM[i + 1] = GABLE_PPU_DMG_PALETTE_RGB555[1];
+        p_PPU->m_BgCRAM[i + 2] = GABLE_PPU_DMG_PALETTE_RGB555[2];
+        p_PPU->m_BgCRAM[i + 3] = GABLE_PPU_DMG_PALETTE_RGB555[3];
+        p_PPU->m_BgCRAM[i + 4] = GABLE_PPU_DMG_PALETTE_RGB555[4];
+        p_PPU->m_BgCRAM[i + 5] = GABLE_PPU_DMG_PALETTE_RGB555[5];
+        p_PPU->m_BgCRAM[i + 6] = GABLE_PPU_DMG_PALETTE_RGB555[6];
+        p_PPU->m_BgCRAM[i + 7] = GABLE_PPU_DMG_PALETTE_RGB555[7];
+
+        p_PPU->m_ObjCRAM[i + 0] = GABLE_PPU_DMG_PALETTE_RGB555[0];
+        p_PPU->m_ObjCRAM[i + 1] = GABLE_PPU_DMG_PALETTE_RGB555[1];
+        p_PPU->m_ObjCRAM[i + 2] = GABLE_PPU_DMG_PALETTE_RGB555[2];
+        p_PPU->m_ObjCRAM[i + 3] = GABLE_PPU_DMG_PALETTE_RGB555[3];
+        p_PPU->m_ObjCRAM[i + 4] = GABLE_PPU_DMG_PALETTE_RGB555[4];
+        p_PPU->m_ObjCRAM[i + 5] = GABLE_PPU_DMG_PALETTE_RGB555[5];
+        p_PPU->m_ObjCRAM[i + 6] = GABLE_PPU_DMG_PALETTE_RGB555[6];
+        p_PPU->m_ObjCRAM[i + 7] = GABLE_PPU_DMG_PALETTE_RGB555[7];
+    }
 
     // Point the VRAM pointer to VRAM0.
     p_PPU->m_VRAM = p_PPU->m_VRAM0;
