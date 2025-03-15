@@ -52,60 +52,6 @@ GABLE_Engine* GABLE_CreateEngine ()
     // Initialize the engine's properties.
     l_Engine->m_Cycles = 0;
 
-    // Initialize hardware registers.
-    GABLE_WriteByte(l_Engine, GABLE_HP_JOYP, 0xCF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NTC, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NTS, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_TIMA, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_TMA, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_TAC, 0xF8);
-    GABLE_WriteByte(l_Engine, GABLE_HP_IF, 0xE1);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR52, 0xF1);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR50, 0x77);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR51, 0xF3); // 0xF3 = 0b11110011
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR10, 0x80);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR11, 0xBF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR12, 0xF3);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR13, 0xFF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR14, 0xBF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR21, 0x3F);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR22, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR23, 0xFF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR24, 0xBF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR30, 0x7F);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR31, 0xFF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR32, 0x9F);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR33, 0xFF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR34, 0xBF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR41, 0xFF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR42, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR43, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_NR44, 0xBF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_LCDC, 0x91);
-    GABLE_WriteByte(l_Engine, GABLE_HP_STAT, 0x85);
-    GABLE_WriteByte(l_Engine, GABLE_HP_SCY, 0x00);  
-    GABLE_WriteByte(l_Engine, GABLE_HP_SCX, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_LY, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_LYC, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_BGP, 0b00011011);
-    GABLE_WriteByte(l_Engine, GABLE_HP_OBP0, 0b00011011);
-    GABLE_WriteByte(l_Engine, GABLE_HP_OBP1, 0b00011011);
-    GABLE_WriteByte(l_Engine, GABLE_HP_WY, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_WX, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_VBK, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA1, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA2, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA3, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_HDMA4, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_BGPI, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_OBPI, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_OPRI, 0xFF);
-    GABLE_WriteByte(l_Engine, GABLE_HP_GRPM, 0x01);
-    GABLE_WriteByte(l_Engine, GABLE_HP_SVBK, 0x01);
-    GABLE_WriteByte(l_Engine, GABLE_HP_SSBK, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_DSBKH, 0x00);
-    GABLE_WriteByte(l_Engine, GABLE_HP_DSBKL, 0x01);
-
     // Return the new engine instance.
     return l_Engine;
 }

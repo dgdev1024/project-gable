@@ -767,7 +767,6 @@ typedef struct GABLE_PixelFetcher
     Uint8 m_FetchingX;                              ///< @brief The X-coordinate of the pixel currently being fetched.
     Uint8 m_MapY, m_MapX;                           ///< @brief The fetcher's current Y and X coordinates in the 256x256-pixel tilemap.               
     Uint8 m_TileDataOffset;                         ///< @brief The starting offset address of the tile data being fetched.
-    Uint8 m_OffsetX;                                ///< @brief The X-coordinate offset of the current tile data fetch.
     Uint8 m_QueueX;                                 ///< @brief The X-coordinate of the last pixel pushed into the pixel FIFO?
 
 } GABLE_PixelFetcher;
@@ -1262,6 +1261,8 @@ void GABLE_SetFrameRenderedCallback (GABLE_Engine* p_Engine, GABLE_FrameRendered
  * @return A pointer to the screen buffer.
  */
 const Uint32* GABLE_GetScreenBuffer (GABLE_Engine* p_Engine);
+
+void GABLE_DumpVRAMBank (GABLE_Engine* p_Engine, Uint8 p_Bank);
 
 /**
  * @brief Waits until the end of the current vertial blanking period (`VBLANK`).

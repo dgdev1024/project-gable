@@ -59,6 +59,13 @@ typedef struct GABLE_Realtime GABLE_Realtime;
 GABLE_Realtime* GABLE_CreateRealtime ();
 
 /**
+ * @brief      Resets a GABLE Engine real-time clock instance.
+ * 
+ * @param      p_Realtime  A pointer to the GABLE Engine real-time clock instance to reset.
+ */
+void GABLE_ResetRealtime (GABLE_Realtime* p_Realtime);
+
+/**
  * @brief      Destroys a GABLE Engine real-time clock instance.
  * 
  * @param      p_Realtime  A pointer to the GABLE Engine real-time clock instance to destroy.

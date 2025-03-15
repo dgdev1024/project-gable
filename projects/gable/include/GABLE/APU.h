@@ -562,6 +562,13 @@ typedef struct GABLE_AudioSample
 GABLE_APU* GABLE_CreateAPU ();
 
 /**
+ * @brief      Resets a GABLE Engine APU instance.
+ * 
+ * @param      p_APU  A pointer to the GABLE Engine APU instance to reset.
+ */
+void GABLE_ResetAPU (GABLE_APU* p_APU);
+
+/**
  * @brief      Destroys a GABLE Engine APU instance.
  * 
  * @param      p_APU  A pointer to the GABLE Engine APU instance to destroy.

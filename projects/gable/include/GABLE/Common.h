@@ -113,7 +113,7 @@
 #define GABLE_realloc(p_Ptr, p_Count, p_Type) \
     ((p_Type*) realloc((p_Ptr), (p_Count) * sizeof(p_Type)))
 #define GABLE_free(p_Ptr) \
-    if (p_Ptr != NULL) { free(p_Ptr); p_Ptr = NULL; }
+    if (p_Ptr != NULL) { free(p_Ptr); } p_Ptr = NULL;
 
 // Helper Macros - Bit Checking and Manipulation ///////////////////////////////////////////////////
 

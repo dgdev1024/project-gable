@@ -25,25 +25,37 @@ GABLE_RAM* GABLE_CreateRAM ()
     // Allocate the GABLE Engine RAM instance.
     GABLE_RAM* l_RAM = GABLE_calloc(1, GABLE_RAM);
     GABLE_pexpect(l_RAM != NULL, "Failed to allocate GABLE Engine RAM");
-
-    // Allocate the RAM buffers.
-    l_RAM->m_WRAM = GABLE_calloc(GABLE_RAM_WRAM_BANK_SIZE * GABLE_RAM_DEFAULT_WRAM_BANKS, Uint8);
-    GABLE_expect(l_RAM->m_WRAM != NULL, "Failed to allocate GABLE Engine working RAM banks");
-
-    l_RAM->m_SRAM = GABLE_calloc(GABLE_RAM_SRAM_BANK_SIZE * GABLE_RAM_DEFAULT_SRAM_BANKS, Uint8);
-    GABLE_expect(l_RAM->m_SRAM != NULL, "Failed to allocate GABLE Engine static RAM banks");
-
-    l_RAM->m_HRAM = GABLE_calloc(GABLE_RAM_HRAM_SIZE, Uint8);
-    GABLE_expect(l_RAM->m_HRAM != NULL, "Failed to allocate GABLE Engine high RAM buffer");
-
-    // Initialize the RAM properties.
-    l_RAM->m_WRAMBankCount  = GABLE_RAM_DEFAULT_WRAM_BANKS;
-    l_RAM->m_SRAMBankCount  = GABLE_RAM_DEFAULT_SRAM_BANKS;
-    l_RAM->m_WRAMBankNumber = 1;
-    l_RAM->m_SRAMBankNumber = 0;
+    GABLE_ResetRAM(l_RAM);
 
     // Return the new RAM instance.
     return l_RAM;
+}
+
+void GABLE_ResetRAM (GABLE_RAM* p_RAM)
+{
+    // Validate the RAM instance.
+    GABLE_expect(p_RAM != NULL, "RAM context is NULL!");
+    
+    // Free the old RAM buffers, if necessary.
+    GABLE_free(p_RAM->m_WRAM);
+    GABLE_free(p_RAM->m_SRAM);
+    GABLE_free(p_RAM->m_HRAM);
+
+    // (Re-)initialize the RAM properties.
+    p_RAM->m_WRAMBankCount  = GABLE_RAM_DEFAULT_WRAM_BANKS;
+    p_RAM->m_SRAMBankCount  = GABLE_RAM_DEFAULT_SRAM_BANKS;
+    p_RAM->m_WRAMBankNumber = 1;
+    p_RAM->m_SRAMBankNumber = 0;
+
+    // (Re-)allocate the RAM buffers.
+    p_RAM->m_WRAM = GABLE_calloc(p_RAM->m_WRAMBankCount * GABLE_RAM_WRAM_BANK_SIZE, Uint8);
+    GABLE_expect(p_RAM->m_WRAM != NULL, "Failed to (re-)allocate GABLE Engine working RAM banks");
+
+    p_RAM->m_SRAM = GABLE_calloc(p_RAM->m_SRAMBankCount * GABLE_RAM_SRAM_BANK_SIZE, Uint8);
+    GABLE_expect(p_RAM->m_SRAM != NULL, "Failed to (re-)allocate GABLE Engine static RAM banks");
+
+    p_RAM->m_HRAM = GABLE_calloc(GABLE_RAM_HRAM_SIZE, Uint8);
+    GABLE_expect(p_RAM->m_HRAM != NULL, "Failed to (re-)allocate GABLE Engine high RAM buffer");
 }
 
 void GABLE_DestroyRAM (GABLE_RAM* p_RAM)

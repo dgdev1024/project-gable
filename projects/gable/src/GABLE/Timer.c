@@ -24,16 +24,23 @@ GABLE_Timer* GABLE_CreateTimer ()
     // Allocate the GABLE Engine timer instance.
     GABLE_Timer* l_Timer = GABLE_calloc(1, GABLE_Timer);
     GABLE_pexpect(l_Timer != NULL, "Failed to allocate GABLE Engine timer");
-
-    // Initialize the timer's properties.
-    l_Timer->m_OldDIV           = 0;
-    l_Timer->m_DIV              = 0;
-    l_Timer->m_TIMA             = 0;
-    l_Timer->m_TMA              = 0;
-    l_Timer->m_TAC.m_Register   = 0;
+    GABLE_ResetTimer(l_Timer);
 
     // Return the new timer instance.
     return l_Timer;
+}
+
+void GABLE_ResetTimer (GABLE_Timer* p_Timer)
+{
+    // Validate the timer instance.
+    GABLE_expect(p_Timer != NULL, "Timer context is NULL!");
+
+    // Reset the timer's properties.
+    p_Timer->m_OldDIV           = 0;
+    p_Timer->m_DIV              = 0;
+    p_Timer->m_TIMA             = 0;
+    p_Timer->m_TMA              = 0;
+    p_Timer->m_TAC.m_Register   = 0xF8;     // 0xF8 = 0b11111000
 }
 
 void GABLE_DestroyTimer (GABLE_Timer* p_Timer)

@@ -535,7 +535,10 @@ Uint32 GABLE_FetchObjectPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher, 
         if (
             l_OldColorIndex == 0 ||
             l_Object->m_Attributes.m_Priority == 0 ||
-            p_BGWindowPriority == 0
+            (
+                p_BGWindowPriority == 0 &&
+                l_Object->m_Attributes.m_Priority == 0
+            )
         )
         {
             // Is the graphics mode set to CGB mode?
@@ -563,7 +566,7 @@ Uint32 GABLE_FetchObjectPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher, 
                 p_RGBAColorValue = GABLE_PPU_DMG_PALETTE[l_BitPair];
             }
 
-            if (p_ColorIndex == 0) { break; }
+            if (p_ColorIndex > 0) { break; }
         }
 
     }
@@ -1094,43 +1097,52 @@ void GABLE_DestroyPPU (GABLE_PPU* p_PPU)
 void GABLE_ResetPPU (GABLE_PPU* p_PPU)
 {
     GABLE_expect(p_PPU, "PPU context is NULL!");
-
+    
+    // Reset the PPU structure's memory.
     memset(p_PPU, 0, sizeof(GABLE_PPU));
 
-    p_PPU->m_PixelFetcher.m_Mode = GABLE_PFM_TILE_NUMBER;
-    p_PPU->m_STAT.m_DisplayMode = GABLE_DM_OBJECT_SCAN;
-    p_PPU->m_STAT.m_LineCoincidence = false;
+    // Also reset the pixel fetcher context's memory.
+    memset(&p_PPU->m_PixelFetcher, 0, sizeof(GABLE_PixelFetcher));
 
-    // Reset the DMA settings.
+    // Reset the PPU registers.
+    /* LCDC     = 0x91 */   p_PPU->m_LCDC.m_Register    = 0x91; // 0b10010001
+    /* STAT     = 0x85 */   p_PPU->m_STAT.m_Register    = 0x85; // 0b10000101
+    /* SCY      = 0x00 */   p_PPU->m_SCY                = 0x00;
+    /* SCX      = 0x00 */   p_PPU->m_SCX                = 0x00;
+    /* LY       = 0x00 */   p_PPU->m_LY                 = 0x00;
+    /* LYC      = 0x00 */   p_PPU->m_LYC                = 0x00;
+    /* BGP      = 0xFC */   p_PPU->m_BGP                = 0xFC; // 0b11111100, Color Indices: 3, 3, 3, 0
+    /* OBP0     = 0xFF */   p_PPU->m_OBP0               = 0xFF; // 0b11111111, Color Indices: 3, 3, 3, 3
+    /* OBP1     = 0xFF */   p_PPU->m_OBP1               = 0xFF; // 0b11111111, Color Indices: 3, 3, 3, 3
+    /* WY       = 0x00 */   p_PPU->m_WY                 = 0x00;
+    /* WX       = 0x00 */   p_PPU->m_WX                 = 0x00;
+    /* DMA      = 0x00 */   p_PPU->m_DMA                = 0x00;
+    /* VBK      = 0x00 */   p_PPU->m_VBK                = 0x00;
+    /* HDMA1    = 0xFF */   p_PPU->m_HDMA1              = 0xFF;
+    /* HDMA2    = 0xFF */   p_PPU->m_HDMA2              = 0xFF;
+    /* HDMA3    = 0xFF */   p_PPU->m_HDMA3              = 0xFF;
+    /* HDMA4    = 0xFF */   p_PPU->m_HDMA4              = 0xFF;
+    /* HDMA5    = 0xFF */   p_PPU->m_HDMA5.m_Register   = 0xFF;
+    /* BGPI     = 0x00 */   p_PPU->m_BGPI.m_Register    = 0x00;
+    /* OBPI     = 0x00 */   p_PPU->m_OBPI.m_Register    = 0x00;
+
+    // Point the VRAM pointer to VRAM0.
+    p_PPU->m_VRAM = p_PPU->m_VRAM0;
+
+    // Reset the PPU's internal state.
+    p_PPU->m_CurrentDot = 0;
     p_PPU->m_ODMATicks = 0xFF;
+    p_PPU->m_ODMADelay = 0;
+    p_PPU->m_ODMASource = 0;
+    p_PPU->m_ODMADestination = 0;
     p_PPU->m_HDMABlocksLeft = 0;
+    p_PPU->m_HDMASource = 0;
+    p_PPU->m_HDMADestination = 0;
+    p_PPU->m_LineObjectCount = 0;
 
-    // Initialize the color RAM buffers. Initialize all palettes to the default DMG palette.
-    for (Count i = 0; i < GABLE_PPU_CRAM_SIZE; i += 8)
-    {
-        // p_PPU->m_BgCRAM[i    ] = 0b11111111; p_PPU->m_ObjCRAM[i    ] = 0b11111111;
-        // p_PPU->m_BgCRAM[i + 1] = 0b11111110; p_PPU->m_ObjCRAM[i + 1] = 0b11111110;
-        // p_PPU->m_BgCRAM[i + 2] = 0b10011100; p_PPU->m_ObjCRAM[i + 2] = 0b10011100;
-        // p_PPU->m_BgCRAM[i + 3] = 0b11100110; p_PPU->m_ObjCRAM[i + 3] = 0b11100110;
-        // p_PPU->m_BgCRAM[i + 4] = 0b01011010; p_PPU->m_ObjCRAM[i + 4] = 0b01011010;
-        // p_PPU->m_BgCRAM[i + 5] = 0b11010110; p_PPU->m_ObjCRAM[i + 5] = 0b11010110;
-        // p_PPU->m_BgCRAM[i + 6] = 0b00001000; p_PPU->m_ObjCRAM[i + 6] = 0b00001000;
-        // p_PPU->m_BgCRAM[i + 7] = 0b01000010; p_PPU->m_ObjCRAM[i + 7] = 0b01000010;
-
-        // Color 0: White           (0b11111111 0b11111110)
-        // Color 1: Light Gray      (0b11001110 0b01110010)
-        // Color 2: Dark Gray       (0b10001100 0b01100010)
-        // Color 3: Black           (0b00001000 0b01000010)
-        p_PPU->m_BgCRAM[i    ] = 0b11111111; p_PPU->m_ObjCRAM[i    ] = 0b11111111;
-        p_PPU->m_BgCRAM[i + 1] = 0b11111110; p_PPU->m_ObjCRAM[i + 1] = 0b11111110;
-        p_PPU->m_BgCRAM[i + 2] = 0b11001110; p_PPU->m_ObjCRAM[i + 2] = 0b11001110;
-        p_PPU->m_BgCRAM[i + 3] = 0b01110010; p_PPU->m_ObjCRAM[i + 3] = 0b01110010;
-        p_PPU->m_BgCRAM[i + 4] = 0b10001100; p_PPU->m_ObjCRAM[i + 4] = 0b10001100;
-        p_PPU->m_BgCRAM[i + 5] = 0b01100010; p_PPU->m_ObjCRAM[i + 5] = 0b01100010;
-        p_PPU->m_BgCRAM[i + 6] = 0b00001000; p_PPU->m_ObjCRAM[i + 6] = 0b00001000;
-        p_PPU->m_BgCRAM[i + 7] = 0b01000010; p_PPU->m_ObjCRAM[i + 7] = 0b01000010;
-
-    }
+    // Reset the PPU's display mode and pixel fetch mode.
+    p_PPU->m_STAT.m_DisplayMode = GABLE_DM_OBJECT_SCAN;
+    p_PPU->m_PixelFetcher.m_Mode = GABLE_PFM_TILE_NUMBER;
 }
 
 void GABLE_TickPPU (GABLE_PPU* p_PPU, GABLE_Engine* p_Engine)
@@ -1566,7 +1578,7 @@ void GABLE_WriteSTAT (GABLE_PPU* p_PPU, Uint8 p_Value)
     GABLE_expect(p_PPU, "PPU context is NULL!"); 
 
     // Update the STAT register. The lower 3 bits are read-only.
-    p_PPU->m_STAT.m_Register = (p_Value & 0xF8) | (p_PPU->m_STAT.m_Register & 0x07);
+    p_PPU->m_STAT.m_Register = (p_Value & 0b11111000) | (p_PPU->m_STAT.m_Register & 0b00000111);
 
 }
 
@@ -1774,6 +1786,31 @@ const Uint32* GABLE_GetScreenBuffer (GABLE_Engine* p_Engine)
     GABLE_expect(p_Engine, "Engine context is NULL!");
     GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
     return l_PPU->m_ScreenBuffer;
+}
+
+void GABLE_DumpVRAMBank (GABLE_Engine* p_Engine, Uint8 p_Bank)
+{
+    GABLE_expect(p_Engine, "Engine context is NULL!");
+    GABLE_PPU* l_PPU = GABLE_GetPPU(p_Engine);
+
+    // Determine the VRAM bank to dump.
+    Uint8* l_VRAM = (p_Bank & 1) ? l_PPU->m_VRAM1 : l_PPU->m_VRAM0;
+
+    // Dump the VRAM bank to the console.
+    for (Uint16 i = 0; i < GABLE_PPU_VRAM_BANK_SIZE; i++)
+    {
+        if (i % 32 == 0)
+        {
+            printf("VRAM%u $%04X: ", p_Bank, i);
+        }
+
+        printf("%02X ", l_VRAM[i]);
+
+        if ((i + 1) % 32 == 0)
+        {
+            printf("\n");
+        }
+    }
 }
 
 void GABLE_WaitUntilAfterVerticalBlank (GABLE_Engine* p_Engine)

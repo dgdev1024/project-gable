@@ -186,24 +186,46 @@ GABLE_NetworkContext* GABLE_CreateNetworkContext ()
     GABLE_NetworkContext* l_Network = GABLE_calloc(1, GABLE_NetworkContext);
     GABLE_pexpect(l_Network, "Failed to allocate memory for network context");
 
+    // Initialize the socket to an invalid value.
     l_Network->m_Socket = GABLE_INVALID_SOCKET;
 
+    // Reset the network context to finish initialization.
+    GABLE_ResetNetworkContext(l_Network);
+
     return l_Network;
+}
+
+void GABLE_ResetNetworkContext (GABLE_NetworkContext* p_Context)
+{
+    GABLE_expect(p_Context != NULL, "Network context is NULL!");
+
+    // If there is a network socket open, close it.
+    #if defined(GABLE_LINUX)
+    if (p_Context->m_Socket != GABLE_INVALID_SOCKET)
+    {
+        close(p_Context->m_Socket);
+        p_Context->m_Socket = GABLE_INVALID_SOCKET;
+    }
+    #endif
+    
+    // Both the NTC and NTS registers are reset to zero.
+    p_Context->m_NTC.m_Register = 0;
+    p_Context->m_NTS = 0;
+
+    // The NETRAM is cleared.
+    memset(p_Context->m_NetRAM, 0, GABLE_NETRAM_SIZE);
+
+    // The byte and timeout counters are reset.
+    p_Context->m_ByteCounter = 0;
+    p_Context->m_TimeoutCounter = 0;
 }
 
 void GABLE_DestroyNetworkContext (GABLE_NetworkContext* p_Network)
 {
     if (p_Network != NULL)
     {
-        // Close the network socket.
-        #if defined(GABLE_LINUX)
-        if (p_Network->m_Socket != GABLE_INVALID_SOCKET)
-        {
-            close(p_Network->m_Socket);
-            p_Network->m_Socket = GABLE_INVALID_SOCKET;
-        }
-        #endif
-
+        // Reset the network context before freeing it.
+        GABLE_ResetNetworkContext(p_Network);
         GABLE_free(p_Network);
     }
 }

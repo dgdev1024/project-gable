@@ -811,13 +811,66 @@ GABLE_APU* GABLE_CreateAPU ()
     // Allocate the GABLE APU instance.
     GABLE_APU* l_APU = GABLE_calloc(1, GABLE_APU);
     GABLE_pexpect(l_APU != NULL, "Failed to allocate GABLE APU instance");
-
-    // Set the APU's mix clock frequency.
-    l_APU->m_MixClockFrequency = (4194304 / GABLE_AUDIO_SAMPLE_RATE);
+    GABLE_ResetAPU(l_APU);
 
     // Return the APU instance.
     return l_APU;
 
+}
+
+void GABLE_ResetAPU (GABLE_APU* p_APU)
+{
+    GABLE_expect(p_APU != NULL, "APU context is NULL!");
+
+    // Reset the APU structure's memory.
+    memset(p_APU, 0, sizeof(GABLE_APU));
+
+    // Reset the APU's hardware registers.
+    //
+    // First, the primary control registers:
+    /* NR52 = 0xF1 */   p_APU->m_MasterControl.m_Register = 0xF1;
+    /* NR51 = 0xF3 */   p_APU->m_SoundPanning.m_Register = 0xF3;
+    /* NR50 = 0x77 */   p_APU->m_MasterVolumeControl.m_Register = 0x77;
+
+    // Next, the pulse channel 1 registers:
+    /* NR10 = 0x80 */   p_APU->m_PulseChannel1.m_FrequencySweep.m_Register = 0x80;
+    /* NR11 = 0xBF */   p_APU->m_PulseChannel1.m_LengthDuty.m_Register = 0xBF;
+    /* NR12 = 0xF3 */   p_APU->m_PulseChannel1.m_VolumeEnvelope.m_Register = 0xF3;
+    /* NR13 = 0xFF */   p_APU->m_PulseChannel1.m_PeriodLow.m_Register = 0xFF;
+    /* NR14 = 0xBF */   p_APU->m_PulseChannel1.m_PeriodHighControl.m_Register = 0xBF;
+
+    // Next, the pulse channel 2 registers:
+    /* NR21 = 0x3F */   p_APU->m_PulseChannel2.m_LengthDuty.m_Register = 0x3F;
+    /* NR22 = 0x00 */   p_APU->m_PulseChannel2.m_VolumeEnvelope.m_Register = 0x00;
+    /* NR23 = 0xFF */   p_APU->m_PulseChannel2.m_PeriodLow.m_Register = 0xFF;
+    /* NR24 = 0xBF */   p_APU->m_PulseChannel2.m_PeriodHighControl.m_Register = 0xBF;
+
+    // Next, the wave channel registers:
+    /* NR30 = 0x7F */   p_APU->m_WaveChannel.m_DACEnable.m_Register = 0x7F;
+    /* NR31 = 0xFF */   p_APU->m_WaveChannel.m_LengthTimer.m_Register = 0xFF;
+    /* NR32 = 0x9F */   p_APU->m_WaveChannel.m_OutputLevel.m_Register = 0x9F;
+    /* NR33 = 0xFF */   p_APU->m_WaveChannel.m_PeriodLow.m_Register = 0xFF;
+    /* NR34 = 0xBF */   p_APU->m_WaveChannel.m_PeriodHighControl.m_Register = 0xBF;
+
+    // Next, the noise channel registers:
+    /* NR41 = 0xFF */   p_APU->m_NoiseChannel.m_LengthTimer.m_Register = 0xFF;
+    /* NR42 = 0x00 */   p_APU->m_NoiseChannel.m_VolumeEnvelope.m_Register = 0x00;
+    /* NR43 = 0x00 */   p_APU->m_NoiseChannel.m_FrequencyRandomness.m_Register = 0x00;
+    /* NR44 = 0xBF */   p_APU->m_NoiseChannel.m_Control.m_Register = 0xBF;
+
+    // Reset the APU's mix clock frequency and the noise channel's current clock frequency.
+    p_APU->m_MixClockFrequency = (4194304 / GABLE_AUDIO_SAMPLE_RATE);
+    if (p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockDivider == 0)
+    {
+        p_APU->m_NoiseChannel.m_CurrentClockFrequency = 
+            262144 / (0.5 * pow(2, p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockShift));
+    }
+    else
+    {
+        p_APU->m_NoiseChannel.m_CurrentClockFrequency = 
+            262144 / (p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockDivider 
+                << p_APU->m_NoiseChannel.m_FrequencyRandomness.m_ClockShift);
+    }
 }
 
 void GABLE_DestroyAPU (GABLE_APU* p_APU)

@@ -450,6 +450,9 @@ void Game_StartApplication (Game_Application* p_App)
     l_LCDC.m_DisplayEnable = false;
     GABLE_SetDisplayControl(p_App->m_Engine, l_LCDC);
 
+    // Set the PPU's graphics mode to GBC.
+    GABLE_SetGraphicsMode(p_App->m_Engine, GABLE_GM_CGB);
+
     // Load the color test data into the data store.
     const GABLE_DataHandle* l_ColorTestHandle = GABLE_LoadDataFromFile(p_App->m_Engine, "color_test",
         "assets/color_test.2bpp", 0);

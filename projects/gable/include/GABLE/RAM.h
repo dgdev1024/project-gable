@@ -90,6 +90,13 @@ typedef struct GABLE_RAM GABLE_RAM;
 GABLE_RAM* GABLE_CreateRAM ();
 
 /**
+ * @brief      Resets the contents of a GABLE Engine RAM instance.
+ * 
+ * @param      p_RAM  A pointer to the GABLE Engine RAM instance to reset.
+ */
+void GABLE_ResetRAM (GABLE_RAM* p_RAM);
+
+/**
  * @brief      Destroys a GABLE Engine RAM instance.
  * 
  * @param      p_RAM  A pointer to the GABLE Engine RAM instance to destroy.

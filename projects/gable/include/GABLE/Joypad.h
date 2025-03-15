@@ -72,6 +72,13 @@ typedef struct GABLE_Joypad GABLE_Joypad;
 GABLE_Joypad* GABLE_CreateJoypad (GABLE_Engine* p_Engine);
 
 /**
+ * @brief      Resets a GABLE Engine joypad instance.
+ * 
+ * @param      p_Joypad  A pointer to the GABLE Engine joypad instance to reset.
+ */
+void GABLE_ResetJoypad (GABLE_Joypad* p_Joypad);
+
+/**
  * @brief      Destroys a GABLE Engine joypad instance.
  * 
  * @param      p_Joypad  A pointer to the GABLE Engine joypad instance to destroy.

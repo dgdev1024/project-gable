@@ -195,6 +195,13 @@ typedef union GABLE_NetworkTransferControl
 GABLE_NetworkContext* GABLE_CreateNetworkContext ();
 
 /**
+ * @brief      Resets a GABLE Engine network interface instance.
+ * 
+ * @param      p_Context  A pointer to the GABLE Engine network interface instance to reset.
+ */
+void GABLE_ResetNetworkContext (GABLE_NetworkContext* p_Context);
+
+/**
  * @brief      Destroys a GABLE Engine network interface instance.
  * 
  * @param      p_Context  A pointer to the GABLE Engine network interface instance to destroy.

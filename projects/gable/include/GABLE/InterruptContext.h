@@ -107,6 +107,13 @@ typedef enum GABLE_InterruptType
 GABLE_InterruptContext* GABLE_CreateInterruptContext ();
 
 /**
+ * @brief      Initializes a GABLE Engine interrupt context instance.
+ * 
+ * @param      p_Context  A pointer to the GABLE Engine interrupt context instance to initialize.
+ */
+void GABLE_ResetInterruptContext (GABLE_InterruptContext* p_Context);
+
+/**
  * @brief      Destroys a GABLE Engine interrupt context instance.
  * 
  * @param      p_Context  A pointer to the GABLE Engine interrupt context instance to destroy.

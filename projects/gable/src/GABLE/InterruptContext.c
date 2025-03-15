@@ -22,14 +22,21 @@ GABLE_InterruptContext* GABLE_CreateInterruptContext ()
     // Allocate the GABLE Engine interrupt context instance.
     GABLE_InterruptContext* l_Context = GABLE_calloc(1, GABLE_InterruptContext);
     GABLE_pexpect(l_Context != NULL, "Failed to allocate GABLE Engine interrupt context");
-
-    // Initialize the interrupt context's properties.
-    l_Context->m_IF  = 0;
-    l_Context->m_IE  = 0;
-    l_Context->m_IME = false;
+    GABLE_ResetInterruptContext(l_Context);
 
     // Return the new interrupt context instance.
     return l_Context;
+}
+
+void GABLE_ResetInterruptContext (GABLE_InterruptContext* p_Context)
+{
+    // Validate the interrupt context instance.
+    GABLE_expect(p_Context != NULL, "Interrupt context is NULL!");
+
+    // Reset the interrupt context's properties.
+    p_Context->m_IF  = 0xE1;
+    p_Context->m_IE  = 0;
+    p_Context->m_IME = false;
 }
 
 void GABLE_DestroyInterruptContext (GABLE_InterruptContext* p_Context)

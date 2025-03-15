@@ -96,6 +96,13 @@ typedef struct GABLE_DataHandle
 GABLE_DataStore* GABLE_CreateDataStore ();
 
 /**
+ * @brief      Resets a GABLE Engine data store instance.
+ * 
+ * @param      p_DataStore  A pointer to the GABLE Engine data store instance to reset.
+ */
+void GABLE_ResetDataStore (GABLE_DataStore* p_DataStore);
+
+/**
  * @brief      Destroys a GABLE Engine data store instance.
  * 
  * @param      p_DataStore  A pointer to the GABLE Engine data store instance to destroy.

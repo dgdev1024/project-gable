@@ -24,20 +24,24 @@ GABLE_Realtime* GABLE_CreateRealtime ()
     // Allocate the GABLE Engine real-time clock instance.
     GABLE_Realtime* l_Realtime = GABLE_calloc(1, GABLE_Realtime);
     GABLE_pexpect(l_Realtime != NULL, "Failed to allocate GABLE Engine real-time clock");
+    GABLE_ResetRealtime(l_Realtime);
 
+    // Return the new real-time clock instance.
+    return l_Realtime;
+}
+
+void GABLE_ResetRealtime (GABLE_Realtime* p_Realtime)
+{
     // Poll the system clock for the current day and time.
     time_t l_Time = time(NULL);
     struct tm* l_LocalTime = localtime(&l_Time);
 
     // Initialize the real-time clock's properties.
-    l_Realtime->m_RTCS  = l_LocalTime->tm_sec;
-    l_Realtime->m_RTCM  = l_LocalTime->tm_min;
-    l_Realtime->m_RTCH  = l_LocalTime->tm_hour;
-    l_Realtime->m_RTCDH = (l_LocalTime->tm_yday & 0xFF00) >> 8;
-    l_Realtime->m_RTCDL = (l_LocalTime->tm_yday & 0x00FF);
-
-    // Return the new real-time clock instance.
-    return l_Realtime;
+    p_Realtime->m_RTCS  = l_LocalTime->tm_sec;
+    p_Realtime->m_RTCM  = l_LocalTime->tm_min;
+    p_Realtime->m_RTCH  = l_LocalTime->tm_hour;
+    p_Realtime->m_RTCDH = (l_LocalTime->tm_yday & 0xFF00) >> 8;
+    p_Realtime->m_RTCDL = (l_LocalTime->tm_yday & 0x00FF);
 }
 
 void GABLE_DestroyRealtime (GABLE_Realtime* p_Realtime)

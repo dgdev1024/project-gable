@@ -31,6 +31,17 @@ GABLE_Joypad* GABLE_CreateJoypad (GABLE_Engine* p_Engine)
 
 }
 
+void GABLE_ResetJoypad (GABLE_Joypad* p_Joypad)
+{
+    GABLE_expect(p_Joypad != NULL, "Joypad component is NULL!");
+
+    // The `JOYP` register is reset to 0xCF (0b11001111).
+    p_Joypad->m_SelectedButtons = true;
+    p_Joypad->m_SelectedDirectionalPad = true;
+    p_Joypad->m_Buttons = 0x0F;
+    p_Joypad->m_DirectionalPad = 0x0F;
+}
+
 void GABLE_DestroyJoypad (GABLE_Joypad* p_Joypad)
 {
     if (p_Joypad != NULL)

@@ -96,6 +96,13 @@ typedef union GABLE_TimerControl
 GABLE_Timer* GABLE_CreateTimer ();
 
 /**
+ * @brief      Resets a GABLE Engine timer instance.
+ * 
+ * @param      p_Timer  A pointer to the GABLE Engine timer instance to reset.
+ */
+void GABLE_ResetTimer (GABLE_Timer* p_Timer);
+
+/**
  * @brief      Destroys a GABLE Engine timer instance.
  * 
  * @param      p_Timer  A pointer to the GABLE Engine timer instance to destroy.

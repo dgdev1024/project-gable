@@ -45,25 +45,36 @@ GABLE_DataStore* GABLE_CreateDataStore ()
     // Allocate the GABLE Engine data store instance.
     GABLE_DataStore* l_DataStore = GABLE_calloc(1, GABLE_DataStore);
     GABLE_pexpect(l_DataStore != NULL, "Failed to allocate GABLE Engine data store");
-
-    // Initialize the data store's properties.
-    l_DataStore->m_BankCount   = GABLE_DS_DEFAULT_BANK_COUNT;
-    l_DataStore->m_CurrentBank = 1;
-
-    l_DataStore->m_Data        = GABLE_calloc(l_DataStore->m_BankCount * GABLE_DS_BANK_SIZE, Uint8);
-    GABLE_pexpect(l_DataStore->m_Data != NULL, "Failed to allocate GABLE Engine data store banks");
-
-    l_DataStore->m_DataSizes   = GABLE_calloc(l_DataStore->m_BankCount, Uint16);
-    GABLE_pexpect(l_DataStore->m_DataSizes != NULL, "Failed to allocate GABLE Engine data store bank sizes");
-
-    l_DataStore->m_Handles     = GABLE_calloc(GABLE_DS_DEFAULT_CAPACITY, GABLE_DataHandle);
-    GABLE_pexpect(l_DataStore->m_Handles != NULL, "Failed to allocate GABLE Engine data store handles");
-
-    l_DataStore->m_HandleCapacity = GABLE_DS_DEFAULT_CAPACITY;
-    l_DataStore->m_HandleCount = 0;
+    GABLE_ResetDataStore(l_DataStore);
 
     // Return the new data store instance.
     return l_DataStore;
+}
+
+void GABLE_ResetDataStore (GABLE_DataStore* p_DataStore)
+{
+    GABLE_expect(p_DataStore != NULL, "Data store context is NULL!");
+
+    // Free the data store's memory, if they are already allocated.
+    GABLE_free(p_DataStore->m_Handles);
+    GABLE_free(p_DataStore->m_DataSizes);
+    GABLE_free(p_DataStore->m_Data);
+
+    // Reset the data store's properties.
+    p_DataStore->m_BankCount = GABLE_DS_DEFAULT_BANK_COUNT;
+    p_DataStore->m_CurrentBank = 1;
+    p_DataStore->m_HandleCapacity = GABLE_DS_DEFAULT_CAPACITY;
+    p_DataStore->m_HandleCount = 0;
+
+    // Reallocate the data store's memory.
+    p_DataStore->m_Data = GABLE_calloc(p_DataStore->m_BankCount * GABLE_DS_BANK_SIZE, Uint8);
+    GABLE_pexpect(p_DataStore->m_Data != NULL, "Failed to (re-)allocate GABLE Engine data store banks");
+
+    p_DataStore->m_DataSizes = GABLE_calloc(p_DataStore->m_BankCount, Uint16);
+    GABLE_pexpect(p_DataStore->m_DataSizes != NULL, "Failed to (re-)allocate GABLE Engine data store bank sizes");
+
+    p_DataStore->m_Handles = GABLE_calloc(p_DataStore->m_HandleCapacity, GABLE_DataHandle);
+    GABLE_pexpect(p_DataStore->m_Handles != NULL, "Failed to (re-)allocate GABLE Engine data store handles");
 }
 
 void GABLE_DestroyDataStore (GABLE_DataStore* p_DataStore)
