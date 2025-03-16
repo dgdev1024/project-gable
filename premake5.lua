@@ -32,19 +32,19 @@ workspace "project-gable"
         files {
             "./projects/gable/src/**.c"
         }
-
-    -- GABLE Application Scaffolding (SDL2)
-    project "scaffold-sdl2"
+        
+    -- Hello, World! Example
+    project "hello"
         kind "ConsoleApp"
-        location "./generated/scaffold-sdl2"
-        targetdir "./build/bin/scaffold-sdl2/%{cfg.buildcfg}"
-        objdir "./build/obj/scaffold-sdl2/%{cfg.buildcfg}"
+        location "./generated/hello"
+        targetdir "./build/bin/hello/%{cfg.buildcfg}"
+        objdir "./build/obj/hello/%{cfg.buildcfg}"
         includedirs {
             "./projects/gable/include",
-            "./projects/scaffold-sdl2/include"
+            "./projects/hello/include"
         }
         files {
-            "./projects/scaffold-sdl2/src/**.c"
+            "./projects/hello/src/**.c"
         }
         libdirs {
             "./build/bin/gable/%{cfg.buildcfg}"
@@ -52,3 +52,4 @@ workspace "project-gable"
         links {
             "gable", "SDL2", "m"
         }
+        
