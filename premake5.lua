@@ -32,6 +32,26 @@ workspace "project-gable"
         files {
             "./projects/gable/src/**.c"
         }
+
+    -- GABUILD (Gable Asset BUILDer) Tool
+    project "gabuild"
+        kind "ConsoleApp"
+        location "./generated/gabuild"
+        targetdir "./build/bin/gabuild/%{cfg.buildcfg}"
+        objdir "./build/obj/gabuild/%{cfg.buildcfg}"
+        includedirs {
+            "./projects/gable/include",
+            "./projects/gabuild/include"
+        }
+        files {
+            "./projects/gabuild/src/**.c"
+        }
+        libdirs {
+            "./build/bin/gable/%{cfg.buildcfg}"
+        }
+        links {
+            "gable", "m"
+        }
         
     -- Hello, World! Example
     project "hello"

@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
@@ -146,6 +147,7 @@ typedef double      Float64;
 
 typedef char        Char;
 typedef bool        Bool;
+typedef int32_t     Enum;
 
 typedef size_t      Size;
 typedef size_t      Index;
