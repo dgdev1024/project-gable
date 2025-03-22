@@ -89,7 +89,7 @@ int main (int argc, char** argv)
     }
 
     GABUILD_InitParser();
-    if (GABUILD_ParseTokens(NULL) == false)
+    if (GABUILD_Parse(NULL) == false)
     {
         return 1;
     }

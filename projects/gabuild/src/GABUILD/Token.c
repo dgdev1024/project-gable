@@ -21,6 +21,7 @@ const Char* GABUILD_StringifyTokenType (GABUILD_TokenType p_Type)
         case GABUILD_TOKEN_OCTAL: return "Octal";
         case GABUILD_TOKEN_HEXADECIMAL: return "Hexadecimal";
         case GABUILD_TOKEN_CHARACTER: return "Character";
+        case GABUILD_TOKEN_ARGUMENT: return "Argument";
 
         // Arithmetic Operators
         case GABUILD_TOKEN_PLUS: return "Plus";
@@ -77,11 +78,12 @@ const Char* GABUILD_StringifyTokenType (GABUILD_TokenType p_Type)
 
         // Punctuation
         case GABUILD_TOKEN_COMMA: return "Comma";
-        case GABUILD_TOKEN_SEMICOLON: return "Semicolon";
         case GABUILD_TOKEN_COLON: return "Colon";
         case GABUILD_TOKEN_PERIOD: return "Period";
         case GABUILD_TOKEN_QUESTION: return "Question Mark";
+        case GABUILD_TOKEN_POUND: return "Pound";
 
+        case GABUILD_TOKEN_NEWLINE: return "Newline";
         case GABUILD_TOKEN_EOF: return "End of File";
 
         default: return "Unknown";
@@ -101,4 +103,99 @@ void GABUILD_PrintToken (const GABUILD_Token* p_Token)
         printf(" = '%s'", p_Token->m_Lexeme);
     }
     printf("\n");
+}
+
+Bool GABUILD_IsUnaryOperator (GABUILD_TokenType p_Type)
+{
+    switch (p_Type)
+    {
+        case GABUILD_TOKEN_PLUS:
+        case GABUILD_TOKEN_MINUS:
+        case GABUILD_TOKEN_LOGICAL_NOT:
+        case GABUILD_TOKEN_BITWISE_NOT:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+Bool GABUILD_IsMultiplicativeOperator (GABUILD_TokenType p_Type)
+{
+    switch (p_Type)
+    {
+        case GABUILD_TOKEN_MULTIPLY:
+        case GABUILD_TOKEN_DIVIDE:
+        case GABUILD_TOKEN_MODULO:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+Bool GABUILD_IsAdditiveOperator (GABUILD_TokenType p_Type)
+{
+    switch (p_Type)
+    {
+        case GABUILD_TOKEN_PLUS:
+        case GABUILD_TOKEN_MINUS:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+Bool GABUILD_IsShiftOperator (GABUILD_TokenType p_Type)
+{
+    switch (p_Type)
+    {
+        case GABUILD_TOKEN_BITWISE_SHIFT_LEFT:
+        case GABUILD_TOKEN_BITWISE_SHIFT_RIGHT:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+Bool GABUILD_IsComparisonOperator (GABUILD_TokenType p_Type)
+{
+    switch (p_Type)
+    {
+        case GABUILD_TOKEN_COMPARE_EQUAL:
+        case GABUILD_TOKEN_COMPARE_NOT_EQUAL:
+        case GABUILD_TOKEN_COMPARE_LESS:
+        case GABUILD_TOKEN_COMPARE_LESS_EQUAL:
+        case GABUILD_TOKEN_COMPARE_GREATER:
+        case GABUILD_TOKEN_COMPARE_GREATER_EQUAL:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+Bool GABUILD_IsAssignmentOperator (GABUILD_TokenType p_Type)
+{
+    switch (p_Type)
+    {
+        case GABUILD_TOKEN_ASSIGN_EQUAL:
+        case GABUILD_TOKEN_ASSIGN_PLUS:
+        case GABUILD_TOKEN_ASSIGN_MINUS:
+        case GABUILD_TOKEN_ASSIGN_MULTIPLY:
+        case GABUILD_TOKEN_ASSIGN_EXPONENT:
+        case GABUILD_TOKEN_ASSIGN_DIVIDE:
+        case GABUILD_TOKEN_ASSIGN_MODULO:
+        case GABUILD_TOKEN_ASSIGN_BITWISE_AND:
+        case GABUILD_TOKEN_ASSIGN_BITWISE_OR:
+        case GABUILD_TOKEN_ASSIGN_BITWISE_XOR:
+        case GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_LEFT:
+        case GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_RIGHT:
+            return true;
+
+        default:
+            return false;
+    }
 }

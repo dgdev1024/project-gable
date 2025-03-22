@@ -1,6 +1,0 @@
-family = [
-    { name: "John Doe", age: 34 },
-    { name: "Jane Doe", age: 32 },
-    { name: "Jim Doe", age: 10 },
-    { name: "Jill Doe", age: 8 }
-];

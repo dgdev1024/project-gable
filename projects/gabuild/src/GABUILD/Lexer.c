@@ -127,6 +127,13 @@ static void GABUILD_ResizeTokens ()
         GABUILD_Token* l_NewTokens  = GABLE_realloc(s_Lexer.m_Tokens, l_NewCapacity, GABUILD_Token);
         GABLE_pexpect(l_NewTokens, "Failed to resize tokens array");
 
+        // Zero out the new tokens.
+        memset(
+            l_NewTokens + s_Lexer.m_TokenCapacity,
+            0x00,
+            (l_NewCapacity - s_Lexer.m_TokenCapacity) * sizeof(GABUILD_Token)
+        );
+
         // Update the tokens array and capacity.
         s_Lexer.m_Tokens         = l_NewTokens;
         s_Lexer.m_TokenCapacity  = l_NewCapacity;
@@ -136,6 +143,8 @@ static void GABUILD_ResizeTokens ()
 
 static Bool GABUILD_InsertToken (GABUILD_TokenType p_Type, const Char* p_Lexeme)
 {
+    GABLE_assert(p_Lexeme != NULL);
+
     // Resize the tokens array, then add the new token.
     GABUILD_ResizeTokens();
     GABUILD_Token* l_Token = &s_Lexer.m_Tokens[s_Lexer.m_TokenCount++];
@@ -144,15 +153,33 @@ static Bool GABUILD_InsertToken (GABUILD_TokenType p_Type, const Char* p_Lexeme)
     l_Token->m_Line         = s_Lexer.m_CurrentLine;
     l_Token->m_Column       = s_Lexer.m_CurrentColumn;
 
-    // Copy the lexeme into the token's lexeme buffer.
-    strncpy(l_Token->m_Lexeme, p_Lexeme, GABUILD_TOKEN_MAX_LENGTH);
-    l_Token->m_Lexeme[GABUILD_TOKEN_MAX_LENGTH - 1] = '\0';
+    // Check to see if a non-empty lexeme was provided.
+    if (p_Lexeme[0] != '\0')
+    {
+        // If the token's string buffer has not already been allocated, allocate it.
+        if (l_Token->m_Lexeme == NULL)
+        {
+            l_Token->m_Lexeme = GABLE_malloc(GABUILD_TOKEN_MAX_LENGTH, Char);
+            GABLE_pexpect(l_Token->m_Lexeme, "Failed to allocate token lexeme buffer");
+        }
+
+        // Get the length of the lexeme, then copy it into the token's string buffer.
+        Size l_Length = strlen(p_Lexeme);
+        strncpy(l_Token->m_Lexeme, p_Lexeme, l_Length);
+        l_Token->m_Lexeme[l_Length] = '\0';
+    }
 
     return true;
 }
 
 static void GABUILD_FreeTokens ()
 {
+    // Iterate over each token, if it has a lexeme buffer, free it.
+    for (Index i = 0; i < s_Lexer.m_TokenCount; ++i)
+    {
+        GABLE_free(s_Lexer.m_Tokens[i].m_Lexeme);
+    }
+
     // Free the tokens array.
     GABLE_free(s_Lexer.m_Tokens);
     s_Lexer.m_Tokens        = NULL;
@@ -173,7 +200,7 @@ static Bool GABUILD_LexIdentifier (FILE* p_File)
     Char l_Upper[GABUILD_TOKEN_MAX_LENGTH];
 
     // Add characters to the buffer until a non-alphanumeric, non-underscore character is found.
-    while (isalnum(s_Lexer.m_Char) || s_Lexer.m_Char == '_')
+    while (isalnum(s_Lexer.m_Char) || s_Lexer.m_Char == '_' || s_Lexer.m_Char == '#' || s_Lexer.m_Char == '.')
     {
         // Check if the buffer is full. If so, return an error.
         if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
@@ -237,23 +264,45 @@ static Bool GABUILD_LexString (FILE* p_File)
             GABLE_error("String exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
             return false;
         }
+        
+        // Check for an escape character.
+        if (s_Lexer.m_Char == '\\')
+        {
+            // Read the next character from the file.
+            s_Lexer.m_Char = fgetc(p_File);
+            s_Lexer.m_CurrentColumn++;
 
-        // Add the character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
+            // Check for the escape character.
+            switch (s_Lexer.m_Char)
+            {
+                case '0': l_Buffer[l_Length] = '\0'; break;
+                case 'a': l_Buffer[l_Length] = '\a'; break;
+                case 'b': l_Buffer[l_Length] = '\b'; break;
+                case 'f': l_Buffer[l_Length] = '\f'; break;
+                case 'n': l_Buffer[l_Length] = '\n'; break;
+                case 'r': l_Buffer[l_Length] = '\r'; break;
+                case 't': l_Buffer[l_Length] = '\t'; break;
+                case 'v': l_Buffer[l_Length] = '\v'; break;
+                case '\\': l_Buffer[l_Length] = '\\'; break;
+                case '"': l_Buffer[l_Length] = '"'; break;
+                case '?': l_Buffer[l_Length] = '?'; break;
+                default:
+                    GABLE_error("Invalid escape character '\\%c'.", s_Lexer.m_Char);
+                    return false;
+            }
+        }
+        else
+        {
+            // The character is not an escape character.
+            l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        }
 
         // Read the next character from the file.
         s_Lexer.m_Char = fgetc(p_File);
-
-        // Unexpected end of file?
-        if (s_Lexer.m_Char == EOF)
-        {
-            GABLE_error("Unexpected end of file while lexing string.");
-            return false;
-        }
-
-        // Update the current column.
         s_Lexer.m_CurrentColumn++;
+
+        // Update the current length.
+        l_Length++;
     }
 
     // Add a null terminator to the buffer.
@@ -268,48 +317,54 @@ static Bool GABUILD_LexCharacter (FILE* p_File)
     // Advance past the opening single quote.
     s_Lexer.m_Char = fgetc(p_File);
     s_Lexer.m_CurrentColumn++;
+    
+    // Keep exactly one character for the character token.
+    Char l_Character = 0;
 
-    // Keep a string buffer for the character, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Add exactly one character to the buffer.
-    l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-    l_Length++;
-
-    // Account for the character escape sequence.
+    // Check to see if the current character is an escape character.
     if (s_Lexer.m_Char == '\\')
     {
         // Read the next character from the file.
         s_Lexer.m_Char = fgetc(p_File);
-
-        // Unexpected end of file?
-        if (s_Lexer.m_Char == EOF)
-        {
-            GABLE_error("Unexpected end of file while lexing character.");
-            return false;
-        }
-
-        // Update the current column.
         s_Lexer.m_CurrentColumn++;
 
-        // Add the escaped character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
+        // Check for the escape character.
+        switch (s_Lexer.m_Char)
+        {
+            case '0': l_Character = '\0'; break;
+            case 'a': l_Character = '\a'; break;
+            case 'b': l_Character = '\b'; break;
+            case 'f': l_Character = '\f'; break;
+            case 'n': l_Character = '\n'; break;
+            case 'r': l_Character = '\r'; break;
+            case 't': l_Character = '\t'; break;
+            case 'v': l_Character = '\v'; break;
+            case '\\': l_Character = '\\'; break;
+            case '\'': l_Character = '\''; break;
+            case '"': l_Character = '"'; break;
+            case '?': l_Character = '?'; break;
+            default:
+                GABLE_error("Invalid escape character '\\%c'.", s_Lexer.m_Char);
+                return false;
+        }
     }
-
+    else
+    {
+        // The character is not an escape character.
+        l_Character = (Char) s_Lexer.m_Char;
+    }
+    
     // Read the next character from the file. It should be a closing single quote.
     s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
     if (s_Lexer.m_Char != '\'')
     {
-        GABLE_error("Expected closing single quote for character literal.");
+        GABLE_error("Expected closing single quote after character literal.");
         return false;
     }
 
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
     // Insert the character token.
+    Char l_Buffer[2] = { l_Character, '\0' };
     return GABUILD_InsertToken(GABUILD_TOKEN_CHARACTER, l_Buffer);
 }
 
@@ -530,6 +585,49 @@ static Bool GABUILD_LexNumber (FILE* p_File)
     return GABUILD_InsertToken(GABUILD_TOKEN_NUMBER, l_Buffer);
 }
 
+static Bool GABUILD_LexArgument (FILE* p_File)
+{
+    // This works the same as `GABUILD_LexNumber`, only that it allows only integers.
+    // Keep a string buffer for the number, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Advance past the `@` character.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Add characters to the buffer until a non-numeric character is found.
+    while (isdigit(s_Lexer.m_Char))
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Argument exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Put the non-numeric character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+    s_Lexer.m_CurrentColumn--;
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the argument token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_ARGUMENT, l_Buffer);
+}
+
 static Bool GABUILD_LexSymbol (FILE* p_File)
 {
     Int32 l_Peek1 = 0, l_Peek2 = 0;
@@ -696,15 +794,15 @@ static Bool GABUILD_LexSymbol (FILE* p_File)
         case ':':
             // ':' = Colon
             return GABUILD_InsertToken(GABUILD_TOKEN_COLON, ":");
-        case ';':
-            // ';' = Semicolon
-            return GABUILD_InsertToken(GABUILD_TOKEN_SEMICOLON, ";");
         case '.':
             // '.' = Dot
             return GABUILD_InsertToken(GABUILD_TOKEN_PERIOD, ".");
         case '?':
             // '?' = Question Mark
             return GABUILD_InsertToken(GABUILD_TOKEN_QUESTION, "?");
+        case '#':
+            // '#' = Pound Sign
+            return GABUILD_InsertToken(GABUILD_TOKEN_POUND, "#");
         default:
             GABLE_error("Unexpected character '%c' at line %zu, column %zu.", s_Lexer.m_Char, s_Lexer.m_CurrentLine, s_Lexer.m_CurrentColumn);
             return false;
@@ -736,6 +834,8 @@ static Bool GABUILD_Lex (FILE* p_File)
             s_Lexer.m_CurrentLine++;
             s_Lexer.m_CurrentColumn = 0;
             l_Comment = false;
+            GABUILD_InsertToken(GABUILD_TOKEN_NEWLINE, "");
+            continue;
         }
 
         // Check for whitespace characters. If found, skip them.
@@ -744,8 +844,8 @@ static Bool GABUILD_Lex (FILE* p_File)
             continue;
         }
 
-        // Check for the start of a comment, indicated by a pound sign ('#').
-        if (s_Lexer.m_Char == '#')
+        // Check for the start of a comment, indicated by a semicolon (';').)
+        if (s_Lexer.m_Char == ';')
         {
             l_Comment = true;
             continue;
@@ -763,9 +863,10 @@ static Bool GABUILD_Lex (FILE* p_File)
         //   prefixes.
         // - Symbols are any other character.
         Bool l_Good = false;
-        if (isalpha(s_Lexer.m_Char) || s_Lexer.m_Char == '_')   { l_Good = GABUILD_LexIdentifier(p_File); }
+        if (isalpha(s_Lexer.m_Char) || s_Lexer.m_Char == '_' || s_Lexer.m_Char == '.')   { l_Good = GABUILD_LexIdentifier(p_File); }
         else if (s_Lexer.m_Char == '"')                         { l_Good = GABUILD_LexString(p_File); }
         else if (s_Lexer.m_Char == '\'')                        { l_Good = GABUILD_LexCharacter(p_File); }
+        else if (s_Lexer.m_Char == '@')                         { l_Good = GABUILD_LexArgument(p_File); }
         else if (isdigit(s_Lexer.m_Char))                       { l_Good = GABUILD_LexNumber(p_File); }
         else                                                    { l_Good = GABUILD_LexSymbol(p_File); }
 
@@ -784,7 +885,7 @@ void GABUILD_InitLexer ()
     s_Lexer.m_IncludeFiles = GABLE_malloc(GABUILD_LEXER_CAPACITY, Char*);
     GABLE_pexpect(s_Lexer.m_IncludeFiles, "Failed to allocate include files array");
 
-    s_Lexer.m_Tokens = GABLE_malloc(GABUILD_LEXER_CAPACITY, GABUILD_Token);
+    s_Lexer.m_Tokens = GABLE_calloc(GABUILD_LEXER_CAPACITY, GABUILD_Token);
     GABLE_pexpect(s_Lexer.m_Tokens, "Failed to allocate tokens array");
 
     // Initialize the include files and tokens arrays.

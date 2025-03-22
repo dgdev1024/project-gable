@@ -1,6 +1,6 @@
 /**
- * @file     GABUILD/Parser.h
- * @brief    Contains functions for parsing tokens into a syntax tree.
+ * @file  GABUILD/Parser.h
+ * @brief Contains functions for parsing tokens to produce syntax nodes.
  */
 
 #pragma once
@@ -10,4 +10,4 @@
 
 void GABUILD_InitParser ();
 void GABUILD_ShutdownParser ();
-Bool GABUILD_ParseTokens (GABUILD_Syntax* p_Syntax);
+Bool GABUILD_Parse (GABUILD_Syntax* p_SyntaxBlock);

@@ -15,37 +15,24 @@
 
 typedef enum GABUILD_KeywordType
 {
-    GABUILD_KT_NONE = 0,
-    
-    // Data Statements
-    GABUILD_KT_BYTE,            ///< @brief Define Byte Data
-    GABUILD_KT_WORD,            ///< @brief Define Word Data
-    GABUILD_KT_DWORD,           ///< @brief Define Double Word Data
-    GABUILD_KT_QWORD,           ///< @brief Define Quad Word Data
-    GABUILD_KT_FLOAT,           ///< @brief Define Single Precision Floating Point Data
-    GABUILD_KT_DOUBLE,          ///< @brief Define Double Precision Floating Point Data
-    GABUILD_KT_STRING,          ///< @brief Define String Data
-
-    // Variable Statements
-    GABUILD_KT_LET,             ///< @brief Variable Assignment
-    GABUILD_KT_CONST,           ///< @brief Constant Declaration
-
-    // Control Statements
-    GABUILD_KT_IF,              ///< @brief Conditional Statement (If)
-    GABUILD_KT_ELSE,            ///< @brief Conditional Statement (Else)
-    GABUILD_KT_FOR,             ///< @brief Loop Statement (For)
-    GABUILD_KT_WHILE,           ///< @brief Loop Statement (While)
-    GABUILD_KT_DO,              ///< @brief Loop Statement (Do-While)
-    GABUILD_KT_REPEAT,          ///< @brief Loop Statement (Repeat)
-    GABUILD_KT_BREAK,           ///< @brief Loop Control Statement (Break)
-    GABUILD_KT_CONTINUE,        ///< @brief Loop Control Statement (Continue)
-    GABUILD_KT_FUNCTION,        ///< @brief Function Definition
-    GABUILD_KT_SHIFT,           ///< @brief Function Argument Control Statement (Shift)
-    GABUILD_KT_RETURN,          ///< @brief Function Return Statement
-    GABUILD_KT_ASM,             ///< @brief Assembly Block
-    GABUILD_KT_INCBIN,          ///< @brief Include Binary File
-    GABUILD_KT_INCLUDE,         ///< @brief Include Source File
-
+    GABUILD_KT_NONE = 0,                ///< @brief No keyword type.
+    GABUILD_KT_DB,                      ///< @brief "Define Byte" keyword (eg. `db 0x00`).
+    GABUILD_KT_DW,                      ///< @brief "Define Word" keyword (eg. `dw 0x0000`).
+    GABUILD_KT_DL,                      ///< @brief "Define Long" keyword (eg. `dl 0x00000000`).
+    GABUILD_KT_DS,                      ///< @brief "Define Sequence" keyword (eg. `ds 3, 0x00, 0x11`, `ds 5, 0x44`).
+    GABUILD_KT_INCLUDE,                 ///< @brief "Include" keyword (eg. `include "file.asm"`).
+    GABUILD_KT_INCBIN,                  ///< @brief "Include Binary" keyword (eg. `incbin "file.bin"`).
+    GABUILD_KT_DEF,                     ///< @brief "Define" keyword (eg. `def x = 0x00`).
+    GABUILD_KT_MACRO,                   ///< @brief "Macro" keyword (eg. `macro name`).
+    GABUILD_KT_ENDM,                    ///< @brief "End Macro" keyword (eg. `endm`).
+    GABUILD_KT_SHIFT,                   ///< @brief "Shift" keyword (eg. `shift 2`).
+    GABUILD_KT_REPEAT,                  ///< @brief "Repeat" keyword (eg. `repeat 3`, `rept 5`).
+    GABUILD_KT_FOR,                     ///< @brief "For" keyword (eg. `for n, 256`, `for x, 0, 20, 4`).
+    GABUILD_KT_IF,                      ///< @brief "If" keyword (eg. `if n == 0`).
+    GABUILD_KT_ELIF,                    ///< @brief "Else If" keyword (eg. `elif n == 1`).
+    GABUILD_KT_ELSE,                    ///< @brief "Else" keyword (eg. `else`).
+    GABUILD_KT_ENDR,                    ///< @brief "End Repeat", "End For" keyword (eg. `endr`).
+    GABUILD_KT_ENDC,                    ///< @brief "End If" keyword (eg. `endc`).
 } GABUILD_KeywordType;
 
 // Keyword Structure ///////////////////////////////////////////////////////////////////////////////

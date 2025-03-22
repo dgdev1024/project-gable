@@ -61,4 +61,5 @@ out/
 
 # Private Assets
 assets/
+res/
 valgrind.log

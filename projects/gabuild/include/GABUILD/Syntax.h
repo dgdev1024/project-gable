@@ -1,6 +1,6 @@
 /**
  * @file     GABUILD/Syntax.h
- * @brief    Contains structures and functions for parsing tokens into an abstract syntax tree.
+ * @brief    Contains enumerations and structures for syntax nodes extracted from the lexer.
  */
 
 #pragma once
@@ -8,126 +8,92 @@
 
 // Constants ///////////////////////////////////////////////////////////////////////////////////////
 
-#define GABUILD_LITERAL_STRLEN 256
+#define GABUILD_SYNTAX_BODY_INITIAL_CAPACITY 8
+#define GABUILD_STRING_CAPACITY 80
 
 // Syntax Type Enumeration /////////////////////////////////////////////////////////////////////////
 
 typedef enum GABUILD_SyntaxType
 {
-    GABUILD_SYNTAX_UNKNOWN = 0,
+    GABUILD_ST_BLOCK,                   ///< @brief A block of syntax nodes, including the root node.
 
-    // Statements
-    GABUILD_SYNTAX_BLOCK,                   // Syntax Block (A list of statements enclosed in braces)
-    GABUILD_SYNTAX_INCLUDE,                 // Include Statement (eg. `include "file.gab"`)
-    GABUILD_SYNTAX_INCBIN,                  // Include Binary Statement (eg. `incbin "file.bin"`)
-    GABUILD_SYNTAX_ASM,                     // Assembly Statement (eg. `asm { ... }`)
-    GABUILD_SYNTAX_DATA,                    // Data Placement (eg. `db 0x52, 0x53, 0x54`, `word 16384`, `string "Hello, World!"`; requires an `asm` statement)
-    GABUILD_SYNTAX_LABEL,                   // Label Definition (eg. `loop:`)
-    GABUILD_SYNTAX_LET,                     // Variable Declaration (eg. `let x = 10`)
-    GABUILD_SYNTAX_CONST,                   // Constant Declaration (eg. `const PI = 3.14159`)
-    GABUILD_SYNTAX_IF,                      // If Statement (eg. `if (x == 10) {}`)
-    GABUILD_SYNTAX_ELSE,                    // Else Statement (eg. `else {}`; requires an `if` statement)
-    GABUILD_SYNTAX_FOR,                     // For Loop (eg. `for (let i = 0; i < 10; i++) {}`)
-    GABUILD_SYNTAX_WHILE,                   // While Loop (eg. `while (x < 10) {}`)
-    GABUILD_SYNTAX_DO,                      // Do-While Loop (eg. `do {} while (x < 10)`)
-    GABUILD_SYNTAX_REPEAT,                  // Repeat Loop (eg. `repeat (10) {}`)
-    GABUILD_SYNTAX_FUNCTION,                // Function Declaration (eg. `function main () {}`)
-    GABUILD_SYNTAX_SHIFT,                   // Shift Statement (eg. `shift 1`; requires a `function` statement)
-    GABUILD_SYNTAX_RETURN,                  // Return Statement (eg. `return 0`)
-    GABUILD_SYNTAX_BREAK,                   // Break Statement (eg. `break`)
-    GABUILD_SYNTAX_CONTINUE,                // Continue Statement (eg. `continue`)
+    // Statement Nodes
+    GABUILD_ST_LABEL,                   ///< @brief Label Statement (eg. `label:`).
+    GABUILD_ST_DATA,                    ///< @brief Data Statement (eg. `db 0x00`, `db "Hello, World!"`, `dw 0x0000`).
+    GABUILD_ST_INCLUDE,                 ///< @brief Include Statement (eg. `include "file.asm"`).
+    GABUILD_ST_INCBIN,                  ///< @brief Include Binary Statement (eg. `incbin "file.bin"`).
+    GABUILD_ST_DEF,                     ///< @brief Define Statement (eg. `def x = 0x00`).
+    GABUILD_ST_MACRO,                   ///< @brief Macro Definition Statement (eg. `macro name`).
+    GABUILD_ST_MACRO_CALL,              ///< @brief Macro Call Statement (eg. `name`, `name 1, 2, 3`).
+    GABUILD_ST_ENDM,                    ///< @brief End Macro Statement (eg. `endm`).
+    GABUILD_ST_SHIFT,                   ///< @brief Shift Statement (eg. `shift 2`).
+    GABUILD_ST_REPEAT,                  ///< @brief Repeat Statement (eg. `repeat 3`, `rept 5`).
+    GABUILD_ST_ENDR,                    ///< @brief End Repeat, End For Statement (eg. `endr`).
 
-    // Expressions
-    GABUILD_SYNTAX_BINARY,                  // Binary Expression (eg. `x + 10`, `(x + 10) * 2`)
-    GABUILD_SYNTAX_UNARY,                   // Unary Expression (eg. `-x`, `!x`)
-    GABUILD_SYNTAX_TERNARY,                 // Ternary Expression (eg. `x == 10 ? 1 : 0`)
-    GABUILD_SYNTAX_ASSIGNMENT,              // Assignment Expression (eg. `x = 10`)
-    GABUILD_SYNTAX_CALL,                    // Function Call (eg. `main()`, `printf("Hello, World!")`)
-    GABUILD_SYNTAX_INDEX,                   // Array Indexing (eg. `array[0]`, `matrix[1][2]`)
-    GABUILD_SYNTAX_MEMBER,                  // Structure Member Access (eg. `point.x`, `point.y`)
-    GABUILD_SYNTAX_IDENTIFIER,              // Identifier (eg. `x`, `y`)
-    GABUILD_SYNTAX_STRING,                  // String Literal (eg. `"Hello, World!"`)
-    GABUILD_SYNTAX_NUMBER,                  // Number Literal (eg. `10`, `3.14159`)
-    GABUILD_SYNTAX_BINARY_NUMBER,           // Binary Number Literal (eg. `0b1010`)
-    GABUILD_SYNTAX_OCTAL_NUMBER,            // Octal Number Literal (eg. `0o755`)
-    GABUILD_SYNTAX_HEXADECIMAL_NUMBER,      // Hexadecimal Number Literal (eg. `0x7FFF`)
-    GABUILD_SYNTAX_CHARACTER,               // Character Literal (eg. `'A'`, `'\n'`)
-    GABUILD_SYNTAX_ARRAY,                   // Array Literal (eg. `[1, 2, 3]`)
-    GABUILD_SYNTAX_STRUCTURE,               // Structure Literal (eg. `{ x: 10, y: 20 }`)
+    // Expression Nodes
+    GABUILD_ST_BINARY_EXP,              ///< @brief Binary Expression (eg. `1 + 2`, `3 * 4`).
+    GABUILD_ST_UNARY_EXP,               ///< @brief Unary Expression (eg. `-1`, `~2`).
+    GABUILD_ST_IDENTIFIER,              ///< @brief Identifier (eg. `x`, `y`).
+    GABUILD_ST_NUMBER,                  ///< @brief Number (eg. `0`, `1`, `2`).
+    GABUILD_ST_ARGUMENT,                ///< @brief Argument Placeholder (eg. `@0`, `@1`).
+    GABUILD_ST_STRING,                  ///< @brief String (eg. `"Hello, World!"`).
+
 } GABUILD_SyntaxType;
 
-// Syntax Structure ////////////////////////////////////////////////////////////////////////////////
+// Syntax Node Structure ///////////////////////////////////////////////////////////////////////////
 
 typedef struct GABUILD_Syntax
 {
-    GABUILD_SyntaxType           m_Type;             ///< @brief Syntax Type
-    const GABUILD_Token*         m_LeadToken;        ///< @brief The Syntax's Leading Token
+    GABUILD_SyntaxType           m_Type;         ///< @brief Syntax Node Type
+    GABUILD_Token                m_Token;        ///< @brief Token Associated with the Syntax Node
 
-    // Some Syntax Nodes are literals, and may have either a string, number, or character value:
-    // - `GABUILD_SYNTAX_STRING` contains a string literal.
-    // - `GABUILD_SYNTAX_NUMBER` contains a number literal.
-    // - `GABUILD_SYNTAX_BINARY_NUMBER` contains a binary number literal.
-    // - `GABUILD_SYNTAX_OCTAL_NUMBER` contains an octal number literal.
-    // - `GABUILD_SYNTAX_HEXADECIMAL_NUMBER` contains a hexadecimal number literal.
-    // - `GABUILD_SYNTAX_CHARACTER` contains a character literal.
-    Char*                        m_String;           ///< @brief String Literal
-    Float64                      m_Number;           ///< @brief Number Literal
+    // Syntax Node Specific Data ///////////////////////////////////////////////////////////////////
 
-    // Some Syntax Nodes may have a body of statements or expressions:
-    // - `GABUILD_SYNTAX_BLOCK` contains a list of statements.
-    // - `GABUILD_SYNTAX_ASM` contains a list of data placement (and instruction, if desired) statements.
-    // - `GABUILD_SYNTAX_FUNCTION` contains a list of statements.
-    struct GABUILD_Syntax**      m_Body;             ///< @brief Syntax Body (Statements or Expressions)
-    Size                         m_BodySize;         ///< @brief Number of Syntax Nodes in the Body
-    Size                         m_BodyCapacity;     ///< @brief Capacity of the Body
+    // Some nodes keep a string of text.
+    // - `GABUILD_ST_LABEL` nodes have a string of text to hold the label name.
+    // - `GABUILD_ST_INCLUDE` nodes have a string of text to hold the file path.
+    // - `GABUILD_ST_INCBIN` nodes have a string of text to hold the file path.
+    // - `GABUILD_ST_DEF` nodes have a string of text to hold the variable name.
+    // - `GABUILD_ST_MACRO` nodes have a string of text to hold the macro name.
+    // - `GABUILD_ST_MACRO_CALL` nodes have a string of text to hold the macro name.
+    // - `GABUILD_ST_FOR` nodes have a string of text to hold the loop variable name.
+    // - `GABUILD_ST_IDENTIFIER` nodes have a string of text to hold the symbol name.
+    // - `GABUILD_ST_STRING` nodes have a string of text to hold the string.
+    // - `GABUILD_ST_NUMBER` nodes have a string of text to hold the number in string form.
+    Char*                        m_String;       ///< @brief String of Text
 
-    // Some Syntax Nodes may have arguments:
-    // - `GABUILD_SYNTAX_FUNCTION` contains a list of parameters.
-    // - `GABUILD_SYNTAX_CALL` contains a list of arguments.
-    struct GABUILD_Syntax**      m_Arguments;        ///< @brief Function Arguments
-    Size                         m_ArgumentSize;     ///< @brief Number of Arguments
-    Size                         m_ArgumentCapacity; ///< @brief Capacity of the Arguments
+    // Some nodes hold a number.
+    // - `GABUILD_ST_NUMBER` nodes have a number value.
+    Float64                      m_Number;       ///< @brief Number Value
 
-    // `GABUILD_SYNTAX_FUNCTION` may have a return value:
-    struct GABUILD_Syntax*       m_ReturnValue;      ///< @brief Function Return Value
+    // Some nodes keep an index value.
+    // - `GABUILD_ST_ARGUMENT` nodes have an index value to hold the argument index.
+    Uint32                       m_Index;        ///< @brief Index value
 
-    // Some Syntax Nodes may have a condition, and/or one or two branches:
-    // - `GABUILD_SYNTAX_IF` contains a condition and two branches (if and else).
-    // - `GABUILD_SYNTAX_TERANRY` contains a condition and two branches (true and false).
-    struct GABUILD_Syntax*       m_Condition;        ///< @brief Condition Expression
-    struct GABUILD_Syntax*       m_TrueBranch;       ///< @brief True Branch (if, ternary `?`)
-    struct GABUILD_Syntax*       m_FalseBranch;      ///< @brief False Branch (else, ternary `:`)
+    // Some nodes may need to keep track of the keyword type of its lead token.
+    // - `GABUILD_ST_DATA` nodes have a keyword type to hold the data type.
+    GABUILD_KeywordType          m_KeywordType;  ///< @brief Keyword Type
 
-    // Some Syntax Nodes are loops and may have an initialization, condition, and/or increment, in
-    // addition to a branch:
-    // - `GABUILD_SYNTAX_FOR` contains an initialization, condition, increment, and a branch.
-    // - `GABUILD_SYNTAX_WHILE` contains a condition and a branch.
-    // - `GABUILD_SYNTAX_DO` contains a branch and a condition.
-    // - `GABUILD_SYNTAX_REPEAT` contains a count and a branch.
-    struct GABUILD_Syntax*       m_Initialization;   ///< @brief Loop Initialization (eg. `for (let i = 0;...)`)
-    struct GABUILD_Syntax*       m_Increment;        ///< @brief Loop Increment (eg. `for (...; ...; i++)`)
-    struct GABUILD_Syntax*       m_Branch;           ///< @brief Loop Branch (eg. `for (...; ...; ...) {}`)
-    struct GABUILD_Syntax*       m_Count;            ///< @brief Loop Count (eg. `repeat (10) {}`)
+    // Some nodes have a body of child nodes, such as a block of statements, or a macro definition.
+    // - `GABUILD_ST_BLOCK` nodes have a body of child nodes.
+    // - `GABUILD_ST_DATA` nodes have a body of child nodes to hold parameters passed to the data statement.
+    // - `GABUILD_ST_MACRO_CALL` nodes have a body of child nodes to hold parameters passed to the macro.
+    struct GABUILD_Syntax**      m_Body;         ///< @brief Array of Child Syntax Nodes
+    Size                         m_BodySize;     ///< @brief Number of Child Syntax Nodes
+    Size                         m_BodyCapacity; ///< @brief Capacity of Child Syntax Nodes
 
-    // Some Syntax Nodes may have a variable or constant declaration:
-    // - `GABUILD_SYNTAX_LET` contains a variable declaration.
-    // - `GABUILD_SYNTAX_CONST` contains a constant declaration.
-    struct GABUILD_Syntax*       m_VariableValue;    ///< @brief Variable or Constant Value
-    Bool                         m_IsConstant;       ///< @brief Is Constant Declaration
+    // Some nodes are loop nodes, with their own parameters and a branch of child nodes.
+    // - `GABUILD_ST_REPEAT` nodes have a loop count parameter.
+    struct GABUILD_Syntax*       m_LoopBranch;   ///< @brief Branch of Child Syntax Nodes
+    struct GABUILD_Syntax*       m_CountExpr;    ///< @brief Count Expression
 
-    // Some Syntax Nodes may have a lefthand and righthand side, and maybe an operator:
-    // - `GABUILD_SYNTAX_BINARY` contains a lefthand and righthand side, and an operator.
-    // - `GABUILD_SYNTAX_UNARY` contains a lefthand or righthand side (but not both) and an operator.
-    // - `GABUILD_SYNTAX_ASSIGNMENT` contains a lefthand and righthand side, and an operator.
-    // - `GABUILD_SYNTAX_INDEX` contains a lefthand (array) and righthand (index) side.
-    // - `GABUILD_SYNTAX_MEMBER` contains a lefthand (structure) and righthand (member) side.
-    struct GABUILD_Syntax*       m_Left;             ///< @brief Lefthand Side
-    struct GABUILD_Syntax*       m_Right;            ///< @brief Righthand Side
-    GABUILD_TokenType            m_Operator;         ///< @brief Operator Token
-    
-    // Function Call Syntax Nodes have a callee syntax:
-    // - `GABUILD_SYNTAX_CALL` contains a callee syntax.
-    struct GABUILD_Syntax*       m_Callee;           ///< @brief Function Call Callee
+    // Some nodes are unary and binary expression nodes, with left and/or right child nodes 
+    // and an operator token.
+    // - `GABUILD_ST_BINARY_EXP` nodes have a left and right child node.
+    // - `GABUILD_ST_UNARY_EXP` nodes have a right child node.
+    struct GABUILD_Syntax*       m_LeftExpr;     ///< @brief Left Expression
+    struct GABUILD_Syntax*       m_RightExpr;    ///< @brief Right Expression
+    GABUILD_TokenType            m_Operator;     ///< @brief Operator Token Type
 
 } GABUILD_Syntax;
 
@@ -135,6 +101,4 @@ typedef struct GABUILD_Syntax
 
 GABUILD_Syntax* GABUILD_CreateSyntax (GABUILD_SyntaxType p_Type, const GABUILD_Token* p_Token);
 void GABUILD_DestroySyntax (GABUILD_Syntax* p_Syntax);
-void GABUILD_ResizeSyntax (GABUILD_Syntax* p_Syntax);
-void GABUILD_PushToBody (GABUILD_Syntax* p_Syntax, GABUILD_Syntax* p_Node);
-void GABUILD_PushToArguments (GABUILD_Syntax* p_Syntax, GABUILD_Syntax* p_Argument);
+void GABUILD_PushToSyntaxBody (GABUILD_Syntax* p_Parent, GABUILD_Syntax* p_Child);

@@ -8,7 +8,7 @@
 
 // Constants ///////////////////////////////////////////////////////////////////////////////////////
 
-#define GABUILD_TOKEN_MAX_LENGTH 256
+#define GABUILD_TOKEN_MAX_LENGTH 80
 
 // Token Type Enumeration //////////////////////////////////////////////////////////////////////////
 
@@ -27,6 +27,7 @@ typedef enum GABUILD_TokenType
     GABUILD_TOKEN_OCTAL,
     GABUILD_TOKEN_HEXADECIMAL,
     GABUILD_TOKEN_CHARACTER,
+    GABUILD_TOKEN_ARGUMENT,
 
     // Arithmetic Operators
     GABUILD_TOKEN_PLUS,
@@ -83,11 +84,12 @@ typedef enum GABUILD_TokenType
 
     // Punctuation
     GABUILD_TOKEN_COMMA,
-    GABUILD_TOKEN_SEMICOLON,
     GABUILD_TOKEN_COLON,
     GABUILD_TOKEN_PERIOD,
     GABUILD_TOKEN_QUESTION,
+    GABUILD_TOKEN_POUND,
 
+    GABUILD_TOKEN_NEWLINE,
     GABUILD_TOKEN_EOF
 } GABUILD_TokenType;
 
@@ -95,7 +97,7 @@ typedef enum GABUILD_TokenType
 
 typedef struct GABUILD_Token
 {
-    Char                        m_Lexeme[GABUILD_TOKEN_MAX_LENGTH];
+    Char*                       m_Lexeme;
     GABUILD_TokenType           m_Type;
     const GABUILD_Keyword*      m_Keyword;
     const Char*                 m_SourceFile;
@@ -108,3 +110,9 @@ typedef struct GABUILD_Token
 const Char* GABUILD_StringifyTokenType (GABUILD_TokenType p_Type);
 const Char* GABUILD_StringifyToken (const GABUILD_Token* p_Token);
 void GABUILD_PrintToken (const GABUILD_Token* p_Token);
+Bool GABUILD_IsUnaryOperator (GABUILD_TokenType p_Type);
+Bool GABUILD_IsMultiplicativeOperator (GABUILD_TokenType p_Type);
+Bool GABUILD_IsAdditiveOperator (GABUILD_TokenType p_Type);
+Bool GABUILD_IsShiftOperator (GABUILD_TokenType p_Type);
+Bool GABUILD_IsComparisonOperator (GABUILD_TokenType p_Type);
+Bool GABUILD_IsAssignmentOperator (GABUILD_TokenType p_Type);
