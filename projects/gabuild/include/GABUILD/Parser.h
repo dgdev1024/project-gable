@@ -11,3 +11,4 @@
 void GABUILD_InitParser ();
 void GABUILD_ShutdownParser ();
 Bool GABUILD_Parse (GABUILD_Syntax* p_SyntaxBlock);
+const GABUILD_Syntax* GABUILD_GetRootSyntax ();

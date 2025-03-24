@@ -5,6 +5,7 @@
 #include <GABUILD/Arguments.h>
 #include <GABUILD/Lexer.h>
 #include <GABUILD/Parser.h>
+#include <GABUILD/Builder.h>
 
 // Constants ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -14,6 +15,7 @@
 
 static void GABUILD_AtExit ()
 {
+    GABUILD_ShutdownBuilder();
     GABUILD_ShutdownParser();
     GABUILD_ShutdownLexer();
     GABUILD_ReleaseArguments();
@@ -90,6 +92,17 @@ int main (int argc, char** argv)
 
     GABUILD_InitParser();
     if (GABUILD_Parse(NULL) == false)
+    {
+        return 1;
+    }
+
+    GABUILD_InitBuilder();
+    if (GABUILD_Build(GABUILD_GetRootSyntax()) == false)
+    {
+        return 1;
+    }
+
+    if (GABUILD_SaveBinary(l_OutputFile) == false)
     {
         return 1;
     }
