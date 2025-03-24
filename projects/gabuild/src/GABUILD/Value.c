@@ -122,6 +122,48 @@ void GABUILD_PrintValue (const GABUILD_Value* p_Value)
     }
 }
 
+void GABUILD_SetNumberValue (GABUILD_Value* p_Value, Float64 p_Number)
+{
+    GABLE_assert(p_Value != NULL);
+
+    if (p_Value->m_Type != GABUILD_VT_NUMBER)
+    {
+        GABLE_error("Cannot set a number value on a non-number value.");
+        return;
+    }
+
+    Float64 l_IntegerPart = 0.0;
+    Float64 l_FractionalPart = modf(p_Number, &l_IntegerPart);
+
+    p_Value->m_Number = p_Number;
+    p_Value->m_IntegerPart = (Uint64) l_IntegerPart;
+    p_Value->m_FractionalPart = (Uint64) (l_FractionalPart * UINT64_MAX);
+}
+
+void GABUILD_SetStringValue (GABUILD_Value* p_Value, const Char* p_String)
+{
+    GABLE_assert(p_Value != NULL && p_String != NULL);
+
+    if (p_Value->m_Type != GABUILD_VT_STRING)
+    {
+        GABLE_error("Cannot set a string value on a non-string value.");
+        return;
+    }
+    
+    // Calculate the size of the new string, and see if a reallocation is necessary.
+    Size l_Strlen = strlen(p_String);
+    if (l_Strlen > strlen(p_Value->m_String))
+    {
+        Char* l_NewString = GABLE_realloc(p_Value->m_String, l_Strlen + 1, Char);
+        GABLE_pexpect(l_NewString != NULL, "Could not reallocate memory for a string value");
+        p_Value->m_String = l_NewString;
+    }
+
+    // Copy the new string into the value.
+    strncpy(p_Value->m_String, p_String, l_Strlen);
+    p_Value->m_String[l_Strlen] = '\0';
+}
+
 GABUILD_Value* GABUILD_ConcatenateStringValues (const GABUILD_Value* p_LeftValue, const GABUILD_Value* p_RightValue)
 {
     GABLE_assert(p_LeftValue != NULL && p_LeftValue->m_String != NULL);

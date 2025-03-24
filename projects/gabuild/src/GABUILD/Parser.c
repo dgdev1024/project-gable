@@ -74,13 +74,6 @@ GABUILD_Syntax* GABUILD_ParsePrimaryExpression ()
             return l_NumberSyntax;
         }
 
-        case GABUILD_TOKEN_ARGUMENT:
-        {
-            GABUILD_Syntax* l_ArgumentSyntax = GABUILD_CreateSyntax(GABUILD_ST_ARGUMENT, l_LeadToken);
-            l_ArgumentSyntax->m_Index = (Float64) strtoul(l_LeadToken->m_Lexeme, NULL, 10);
-            return l_ArgumentSyntax;
-        }
-
         case GABUILD_TOKEN_BINARY:
         {
             GABUILD_Syntax* l_BinarySyntax = GABUILD_CreateSyntax(GABUILD_ST_NUMBER, l_LeadToken);
@@ -791,6 +784,44 @@ GABUILD_Syntax* GABUILD_ParseDataSyntax (const GABUILD_Keyword* p_Keyword)
     return l_DataSyntax;
 }
 
+// Define Statement
+//
+// A define statement is a statement that is used to define a variable or constant value which can
+// be referenced by other statements and expressions in the code.
+//
+// The syntax of a define statement is as follows:
+//
+//     `def <identifier> <operator> <expression>`            ; Define a variable or constant value.
+//
+GABUILD_Syntax* GABUILD_ParseDefineSyntax ()
+{
+    // Store the identifier token, then advance past it.
+    const GABUILD_Token* l_IdentifierToken = GABUILD_AdvanceToken();
+
+    // The next token should be an operator token - an assignment operator.
+    const GABUILD_Token* l_OperatorToken = GABUILD_AdvanceToken();
+    if (GABUILD_IsAssignmentOperator(l_OperatorToken->m_Type) == false)
+    {
+        GABLE_error("Expected an assignment operator after an identifier in a 'def' statement.");
+        return NULL;
+    }
+
+    // Parse the expression.
+    GABUILD_Syntax* l_Expression = GABUILD_ParseExpression();
+    if (l_Expression == NULL)
+    {
+        return NULL;
+    }
+
+    // Create the define syntax node.
+    GABUILD_Syntax* l_DefineSyntax = GABUILD_CreateSyntax(GABUILD_ST_DEF, l_IdentifierToken);
+    strncpy(l_DefineSyntax->m_String, l_IdentifierToken->m_Lexeme, GABUILD_STRING_CAPACITY);
+    l_DefineSyntax->m_Operator = l_OperatorToken->m_Type;
+    l_DefineSyntax->m_RightExpr = l_Expression;
+
+    return l_DefineSyntax;
+}
+
 GABUILD_Syntax* GABUILD_ParseStatement ()
 {
     // Skip any newline tokens.
@@ -821,6 +852,12 @@ GABUILD_Syntax* GABUILD_ParseStatement ()
         )
         {
             return GABUILD_ParseDataSyntax(l_KeywordToken->m_Keyword);
+        }
+
+        // If the keyword token is a define keyword, then parse a define statement.
+        else if (l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DEF)
+        {
+            return GABUILD_ParseDefineSyntax();
         }
 
         else

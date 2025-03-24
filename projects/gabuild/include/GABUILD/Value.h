@@ -45,4 +45,6 @@ GABUILD_Value* GABUILD_CreateStringValue (const Char* p_String);
 GABUILD_Value* GABUILD_CopyValue (const GABUILD_Value* p_Value);
 void GABUILD_DestroyValue (GABUILD_Value* p_Value);
 void GABUILD_PrintValue (const GABUILD_Value* p_Value);
+void GABUILD_SetNumberValue (GABUILD_Value* p_Value, Float64 p_Number);
+void GABUILD_SetStringValue (GABUILD_Value* p_Value, const Char* p_String);
 GABUILD_Value* GABUILD_ConcatenateStringValues (const GABUILD_Value* p_LeftValue, const GABUILD_Value* p_RightValue);

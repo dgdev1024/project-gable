@@ -29,9 +29,16 @@ static struct
 {
     Uint8               m_Output[GABUILD_BUILDER_OUTPUT_CAPACITY];
     GABUILD_Value*      m_Result;
+
     GABUILD_Label*      m_Labels;
     Size                m_LabelCount;
     Size                m_LabelCapacity;
+
+    GABUILD_Value**     m_DefineValues;
+    Char**              m_DefineKeys;
+    Size                m_DefineCount;
+    Size                m_DefineCapacity;
+
     Size                m_OutputSize;
 } s_Builder = {
     .m_Output = { 0 },
@@ -39,6 +46,10 @@ static struct
     .m_Labels = NULL,
     .m_LabelCount = 0,
     .m_LabelCapacity = 0,
+    .m_DefineValues = NULL,
+    .m_DefineKeys = NULL,
+    .m_DefineCount = 0,
+    .m_DefineCapacity = 0,
     .m_OutputSize = 0
 };
 
@@ -72,6 +83,24 @@ static void GABUILD_ResizeLabelsArray ()
 
         s_Builder.m_Labels          = l_NewLabels;
         s_Builder.m_LabelCapacity   = l_NewCapacity;
+    }
+}
+
+static void GABUILD_ResizeDefinesArrays ()
+{
+    if (s_Builder.m_DefineCount + 1 >= s_Builder.m_DefineCapacity)
+    {
+        Size l_NewCapacity = s_Builder.m_DefineCapacity * 2;
+
+        GABUILD_Value** l_NewDefineValues = GABLE_realloc(s_Builder.m_DefineValues, l_NewCapacity, GABUILD_Value*);
+        GABLE_pexpect(l_NewDefineValues != NULL, "Failed to reallocate memory for the builder's define values array");
+
+        Char** l_NewDefineKeys = GABLE_realloc(s_Builder.m_DefineKeys, l_NewCapacity, Char*);
+        GABLE_pexpect(l_NewDefineKeys != NULL, "Failed to reallocate memory for the builder's define keys array");
+
+        s_Builder.m_DefineValues    = l_NewDefineValues;
+        s_Builder.m_DefineKeys      = l_NewDefineKeys;
+        s_Builder.m_DefineCapacity  = l_NewCapacity;
     }
 }
 
@@ -134,6 +163,99 @@ static Bool GABUILD_DefineStringASCII (const Char* p_String)
     s_Builder.m_Output[s_Builder.m_OutputSize++] = 0;
 
     return true;
+}
+
+// Static Functions - Assignment Operations ////////////////////////////////////////////////////////
+
+static GABUILD_Value* GABUILD_PerformAssignmentOperation (const GABUILD_Value* p_LeftValue,
+    const GABUILD_Value* p_RightValue, GABUILD_TokenType p_Operator)
+{
+    // If the operator is '=', then just return a copy of the right value.
+    if (p_Operator == GABUILD_TOKEN_ASSIGN_EQUAL)
+    {
+        return GABUILD_CopyValue(p_RightValue);
+    }
+
+    // Check the type of the lefthand value.
+    if (p_LeftValue->m_Type == GABUILD_VT_NUMBER)
+    {
+        // Check the type of the righthand value.
+        if (p_RightValue->m_Type == GABUILD_VT_NUMBER)
+        {
+            // Check the operator type and perform the proper operation.
+            switch (p_Operator)
+            {
+                case GABUILD_TOKEN_ASSIGN_PLUS:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_Number + p_RightValue->m_Number);
+                case GABUILD_TOKEN_ASSIGN_MINUS:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_Number - p_RightValue->m_Number);
+                case GABUILD_TOKEN_ASSIGN_MULTIPLY:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_Number * p_RightValue->m_Number);
+                case GABUILD_TOKEN_ASSIGN_DIVIDE:
+                    if (p_RightValue->m_IntegerPart == 0 && p_RightValue->m_FractionalPart == 0)
+                    {
+                        GABLE_error("Encountered attempted division by zero.");
+                        return NULL;
+                    }
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_Number / p_RightValue->m_Number);
+                case GABUILD_TOKEN_ASSIGN_MODULO:
+                    if (p_RightValue->m_IntegerPart == 0 && p_RightValue->m_FractionalPart == 0)
+                    {
+                        GABLE_error("Encountered modulo with attempted division by zero.");
+                        return NULL;
+                    }
+                    return GABUILD_CreateNumberValue(fmod(p_LeftValue->m_Number, p_RightValue->m_Number));
+                case GABUILD_TOKEN_ASSIGN_EXPONENT:
+                    return GABUILD_CreateNumberValue(pow(p_LeftValue->m_Number, p_RightValue->m_Number));
+                case GABUILD_TOKEN_ASSIGN_BITWISE_AND:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_IntegerPart & p_RightValue->m_IntegerPart);
+                case GABUILD_TOKEN_ASSIGN_BITWISE_OR:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_IntegerPart | p_RightValue->m_IntegerPart);
+                case GABUILD_TOKEN_ASSIGN_BITWISE_XOR:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_IntegerPart ^ p_RightValue->m_IntegerPart);
+                case GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_LEFT:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_IntegerPart << p_RightValue->m_IntegerPart);
+                case GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_RIGHT:
+                    return GABUILD_CreateNumberValue(p_LeftValue->m_IntegerPart >> p_RightValue->m_IntegerPart);
+                default:
+                    GABLE_error("Invalid operator type for number-vs-number assignment operation.");
+                    return NULL;
+            }
+        }
+        else
+        {
+            GABLE_error("Invalid righthand value type for assignment operation.");
+            return NULL;
+        }
+    }
+    else if (p_LeftValue->m_Type == GABUILD_VT_STRING)
+    {
+        // Check the type of the righthand value.
+        if (p_RightValue->m_Type == GABUILD_VT_STRING)
+        {
+            // Check the operator type and perform the proper operation.
+            switch (p_Operator)
+            {
+                case GABUILD_TOKEN_ASSIGN_PLUS:
+                {
+                    return GABUILD_ConcatenateStringValues(p_LeftValue, p_RightValue);
+                }
+                default:
+                    GABLE_error("Invalid operator type for string-vs-string assignment operation.");
+                    return NULL;
+            }
+        }
+        else
+        {
+            GABLE_error("Invalid righthand value type for assignment operation.");
+            return NULL;
+        }
+    }
+    else
+    {
+        GABLE_error("Invalid lefthand value type for assignment operation.");
+        return NULL;
+    }
 }
 
 // Static Functions - Binary Operations ////////////////////////////////////////////////////////////
@@ -327,6 +449,15 @@ static GABUILD_Value* GABUILD_EvaluateUnaryExpression (const GABUILD_Syntax* p_S
 
 static GABUILD_Value* GABUILD_EvaluateIdentifier (const GABUILD_Syntax* p_SyntaxNode)
 {
+    // Check if the identifier is a reference to a defined value.
+    for (Index i = 0; i < s_Builder.m_DefineCount; ++i)
+    {
+        if (strcmp(s_Builder.m_DefineKeys[i], p_SyntaxNode->m_String) == 0)
+        {
+            return GABUILD_CopyValue(s_Builder.m_DefineValues[i]);
+        }
+    }
+
     // The identifier must be a reference to a label.
     GABUILD_Label* l_Label = NULL;
 
@@ -635,6 +766,62 @@ static GABUILD_Value* GABUILD_EvaluateData (const GABUILD_Syntax* p_SyntaxNode)
     return GABUILD_CreateVoidValue();
 }
 
+static GABUILD_Value* GABUILD_EvaluateDefine (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Evaluate the value of the define statement.
+    GABUILD_Value* l_Value = GABUILD_Evaluate(p_SyntaxNode->m_RightExpr);
+    if (l_Value == NULL)
+    {
+        return NULL;
+    }
+
+    // Check to see if the define already exists.
+    GABUILD_Value** l_ExistingValue = NULL;
+    for (Index i = 0; i < s_Builder.m_DefineCount; ++i)
+    {
+        if (strcmp(s_Builder.m_DefineKeys[i], p_SyntaxNode->m_String) == 0)
+        {
+            l_ExistingValue = &s_Builder.m_DefineValues[i];
+            break;
+        }
+    }
+
+    // If the define already exists, then perform an assignment operation.
+    if (l_ExistingValue != NULL)
+    {
+        // Perform the assignment operation and store the result.
+        GABUILD_Value* l_Result = GABUILD_PerformAssignmentOperation(*l_ExistingValue, l_Value, p_SyntaxNode->m_Operator);
+        if (l_Result == NULL)
+        {
+            GABUILD_DestroyValue(l_Value);
+            return NULL;
+        }
+
+        // Replace the existing value with the result of the assignment operation.
+        GABUILD_DestroyValue(*l_ExistingValue);
+        *l_ExistingValue = l_Result;
+    }
+    else
+    {
+        // Resize the defines arrays.
+        GABUILD_ResizeDefinesArrays();
+
+        // Allocate memory for the define key string.
+        Size  l_DefineStrlen = strlen(p_SyntaxNode->m_String);
+        Char* l_DefineKey = GABLE_calloc(l_DefineStrlen + 1, Char);
+        GABLE_pexpect(l_DefineKey != NULL, "Failed to allocate memory for define key string");
+        strncpy(l_DefineKey, p_SyntaxNode->m_String, l_DefineStrlen);
+
+        // Point to the next available define.
+        s_Builder.m_DefineKeys[s_Builder.m_DefineCount] = l_DefineKey;
+        s_Builder.m_DefineValues[s_Builder.m_DefineCount] = GABUILD_CopyValue(l_Value);
+        s_Builder.m_DefineCount++;
+    }
+
+    GABUILD_DestroyValue(l_Value);
+    return GABUILD_CreateVoidValue();
+}
+
 GABUILD_Value* GABUILD_EvaluateBlock (const GABUILD_Syntax* p_SyntaxNode)
 {
     // Create a new value to hold the result of the block.
@@ -690,6 +877,10 @@ GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode)
             l_Result = GABUILD_EvaluateData(p_SyntaxNode);
             break;
 
+        case GABUILD_ST_DEF:
+            l_Result = GABUILD_EvaluateDefine(p_SyntaxNode);
+            break;
+
         case GABUILD_ST_BLOCK:
             l_Result = GABUILD_EvaluateBlock(p_SyntaxNode);
             break;
@@ -701,8 +892,7 @@ GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode)
 
     if (l_Result == NULL)
     {
-        GABLE_error("Failed to evaluate syntax node.");
-        GABLE_error(" - In file '%s:%zu:%zu.",
+        fprintf(stderr, " - In file '%s:%zu:%zu.\n",
             p_SyntaxNode->m_Token.m_SourceFile,
             p_SyntaxNode->m_Token.m_Line,
             p_SyntaxNode->m_Token.m_Column
@@ -721,10 +911,27 @@ void GABUILD_InitBuilder ()
     GABLE_pexpect(s_Builder.m_Labels != NULL, "Failed to allocate memory for the builder's address labels array");
     s_Builder.m_LabelCapacity = GABUILD_BUILDER_INITIAL_CAPACITY;
     s_Builder.m_LabelCount = 0;
+
+    // Initialize defines.
+    s_Builder.m_DefineValues = GABLE_malloc(GABUILD_BUILDER_INITIAL_CAPACITY, GABUILD_Value*);
+    GABLE_pexpect(s_Builder.m_DefineValues != NULL, "Failed to allocate memory for the builder's define values array");
+    s_Builder.m_DefineKeys = GABLE_malloc(GABUILD_BUILDER_INITIAL_CAPACITY, Char*);
+    GABLE_pexpect(s_Builder.m_DefineKeys != NULL, "Failed to allocate memory for the builder's define keys array");
+    s_Builder.m_DefineCapacity = GABUILD_BUILDER_INITIAL_CAPACITY;
+    s_Builder.m_DefineCount = 0;
 }
 
 void GABUILD_ShutdownBuilder ()
 {
+    // Free defines.
+    for (Size i = 0; i < s_Builder.m_DefineCount; ++i)
+    {
+        GABUILD_DestroyValue(s_Builder.m_DefineValues[i]);
+        GABLE_free(s_Builder.m_DefineKeys[i]);
+    }
+    GABLE_free(s_Builder.m_DefineValues);
+    GABLE_free(s_Builder.m_DefineKeys);
+
     // Free labels.
     for (Size i = 0; i < s_Builder.m_LabelCount; ++i)
     {

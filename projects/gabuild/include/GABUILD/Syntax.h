@@ -20,15 +20,7 @@ typedef enum GABUILD_SyntaxType
     // Statement Nodes
     GABUILD_ST_LABEL,                   ///< @brief Label Statement (eg. `label:`).
     GABUILD_ST_DATA,                    ///< @brief Data Statement (eg. `db 0x00`, `db "Hello, World!"`, `dw 0x0000`).
-    GABUILD_ST_INCLUDE,                 ///< @brief Include Statement (eg. `include "file.asm"`).
-    GABUILD_ST_INCBIN,                  ///< @brief Include Binary Statement (eg. `incbin "file.bin"`).
     GABUILD_ST_DEF,                     ///< @brief Define Statement (eg. `def x = 0x00`).
-    GABUILD_ST_MACRO,                   ///< @brief Macro Definition Statement (eg. `macro name`).
-    GABUILD_ST_MACRO_CALL,              ///< @brief Macro Call Statement (eg. `name`, `name 1, 2, 3`).
-    GABUILD_ST_ENDM,                    ///< @brief End Macro Statement (eg. `endm`).
-    GABUILD_ST_SHIFT,                   ///< @brief Shift Statement (eg. `shift 2`).
-    GABUILD_ST_REPEAT,                  ///< @brief Repeat Statement (eg. `repeat 3`, `rept 5`).
-    GABUILD_ST_ENDR,                    ///< @brief End Repeat, End For Statement (eg. `endr`).
 
     // Expression Nodes
     GABUILD_ST_BINARY_EXP,              ///< @brief Binary Expression (eg. `1 + 2`, `3 * 4`).
@@ -51,12 +43,7 @@ typedef struct GABUILD_Syntax
 
     // Some nodes keep a string of text.
     // - `GABUILD_ST_LABEL` nodes have a string of text to hold the label name.
-    // - `GABUILD_ST_INCLUDE` nodes have a string of text to hold the file path.
-    // - `GABUILD_ST_INCBIN` nodes have a string of text to hold the file path.
     // - `GABUILD_ST_DEF` nodes have a string of text to hold the variable name.
-    // - `GABUILD_ST_MACRO` nodes have a string of text to hold the macro name.
-    // - `GABUILD_ST_MACRO_CALL` nodes have a string of text to hold the macro name.
-    // - `GABUILD_ST_FOR` nodes have a string of text to hold the loop variable name.
     // - `GABUILD_ST_IDENTIFIER` nodes have a string of text to hold the symbol name.
     // - `GABUILD_ST_STRING` nodes have a string of text to hold the string.
     // - `GABUILD_ST_NUMBER` nodes have a string of text to hold the number in string form.
@@ -65,10 +52,6 @@ typedef struct GABUILD_Syntax
     // Some nodes hold a number.
     // - `GABUILD_ST_NUMBER` nodes have a number value.
     Float64                      m_Number;       ///< @brief Number Value
-
-    // Some nodes keep an index value.
-    // - `GABUILD_ST_ARGUMENT` nodes have an index value to hold the argument index.
-    Uint32                       m_Index;        ///< @brief Index value
 
     // Some nodes may need to keep track of the keyword type of its lead token.
     // - `GABUILD_ST_DATA` nodes have a keyword type to hold the data type.
@@ -82,9 +65,8 @@ typedef struct GABUILD_Syntax
     Size                         m_BodySize;     ///< @brief Number of Child Syntax Nodes
     Size                         m_BodyCapacity; ///< @brief Capacity of Child Syntax Nodes
 
-    // Some nodes are loop nodes, with their own parameters and a branch of child nodes.
-    // - `GABUILD_ST_REPEAT` nodes have a loop count parameter.
-    struct GABUILD_Syntax*       m_LoopBranch;   ///< @brief Branch of Child Syntax Nodes
+    // Some nodes keep track of a count.
+    // - `GABUILD_ST_DATA` nodes have a count of the number of parameters.
     struct GABUILD_Syntax*       m_CountExpr;    ///< @brief Count Expression
 
     // Some nodes are unary and binary expression nodes, with left and/or right child nodes 
@@ -100,5 +82,6 @@ typedef struct GABUILD_Syntax
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
 
 GABUILD_Syntax* GABUILD_CreateSyntax (GABUILD_SyntaxType p_Type, const GABUILD_Token* p_Token);
+GABUILD_Syntax* GABUILD_CopySyntax (const GABUILD_Syntax* p_Syntax);
 void GABUILD_DestroySyntax (GABUILD_Syntax* p_Syntax);
 void GABUILD_PushToSyntaxBody (GABUILD_Syntax* p_Parent, GABUILD_Syntax* p_Child);
