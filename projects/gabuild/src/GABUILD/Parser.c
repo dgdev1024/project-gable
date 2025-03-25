@@ -917,6 +917,11 @@ GABUILD_Syntax* GABUILD_ParseMacroCallSyntax ()
 {
     // Store the identifier token, then advance past it.
     const GABUILD_Token* l_IdentifierToken = GABUILD_AdvanceToken();
+    if (l_IdentifierToken->m_Type != GABUILD_TOKEN_IDENTIFIER)
+    {
+        GABLE_error("Expected an identifier token in a macro call.");
+        return NULL;
+    }
 
     // Create the macro call syntax node.
     GABUILD_Syntax* l_MacroCallSyntax = GABUILD_CreateSyntax(GABUILD_ST_MACRO_CALL, l_IdentifierToken);

@@ -52,6 +52,13 @@ workspace "project-gable"
         links {
             "gable", "m"
         }
+
+        -- Post-Build Command: Run GABUILD on the "res" directory
+        filter { "system:linux" }
+            postbuildcommands {
+                "cd ../.. && ./scripts/assets.sh"
+            }
+        filter {}
         
     -- Hello, World! Example
     project "hello"

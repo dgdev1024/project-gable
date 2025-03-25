@@ -52,6 +52,8 @@ const Char* GABUILD_StringifyKeywordType (GABUILD_KeywordType p_Type)
         case GABUILD_KT_DW:         return "DW";
         case GABUILD_KT_DL:         return "DL";
         case GABUILD_KT_DS:         return "DS";
+        case GABUILD_KT_DF:         return "DF";
+        case GABUILD_KT_DD:         return "DD";
         case GABUILD_KT_INCLUDE:    return "INCLUDE";
         case GABUILD_KT_INCBIN:     return "INCBIN";
         case GABUILD_KT_DEF:        return "DEF";

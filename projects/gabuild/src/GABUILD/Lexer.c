@@ -866,6 +866,12 @@ static Bool GABUILD_Lex (FILE* p_File)
             continue;
         }
 
+        // If the lexer is currently in a comment, skip the current character.
+        if (l_Comment)
+        {
+            continue;
+        }
+
         // Check for the start of a comment, indicated by a semicolon (';').)
         if (s_Lexer.m_Char == ';')
         {

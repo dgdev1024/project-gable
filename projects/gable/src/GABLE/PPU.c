@@ -10,7 +10,10 @@
 
 static const Uint32 GABLE_PPU_DMG_PALETTE[4] =
 {
-    0x000000FF, 0x808080FF, 0xC0C0C0FF, 0xFFFFFFFF
+    0xFFFFFFFF,
+    0xC0C0C0FF, 
+    0x808080FF, 
+    0x000000FF 
 };
 
 static const Uint8 GABLE_PPU_DMG_PALETTE_RGB555[8] = {

@@ -234,8 +234,15 @@ const GABLE_DataHandle* GABLE_LoadDataFromBuffer (GABLE_Engine* p_Engine, const 
     l_Handle->m_BankHigh = (p_BankNumber >> 8) & 0xFF;
     l_Handle->m_BankLow = p_BankNumber & 0xFF;
 
+    // If the bank number is not zero, then offset the handle's address to be accessible from
+    // map address `$4000` onwards.
+    if (p_BankNumber != 0)
+    {
+        l_Handle->m_Address += GABLE_DS_BANK_SIZE;
+    }
+
     // Copy the data to the data store, then update the data store's bank size.
-    Size l_Offset = p_BankNumber * GABLE_DS_BANK_SIZE + l_Handle->m_Address;
+    Size l_Offset = p_BankNumber * GABLE_DS_BANK_SIZE + l_BankSize;
     memcpy(&l_DataStore->m_Data[l_Offset], p_Buffer, p_Size);
     l_DataStore->m_DataSizes[p_BankNumber] += p_Size;
 
@@ -321,8 +328,15 @@ const GABLE_DataHandle* GABLE_LoadDataFromFile (GABLE_Engine* p_Engine, const Ch
     l_Handle->m_BankHigh = (p_BankNumber >> 8) & 0xFF;
     l_Handle->m_BankLow = p_BankNumber & 0xFF;
 
+    // If the bank number is not zero, then offset the handle's address to be accessible from
+    // map address `$4000` onwards.
+    if (p_BankNumber != 0)
+    {
+        l_Handle->m_Address += GABLE_DS_BANK_SIZE;
+    }
+
     // Read the file's contents into the data store, then update the data store's bank size.
-    Size l_Offset = p_BankNumber * GABLE_DS_BANK_SIZE + l_Handle->m_Address;
+    Size l_Offset = p_BankNumber * GABLE_DS_BANK_SIZE + l_BankSize;
     Size l_ReadSize = fread(&l_DataStore->m_Data[l_Offset], 1, l_FileSize, l_File);
     if (l_ReadSize != l_FileSize || (ferror(l_File) && !feof(l_File)))
     {

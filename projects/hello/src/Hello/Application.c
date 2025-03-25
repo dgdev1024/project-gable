@@ -373,6 +373,9 @@ Hello_Application* Hello_CreateApplication ()
     Hello_Application* l_App = GABLE_calloc(1, Hello_Application);
     GABLE_pexpect(l_App != NULL, "Failed to allocate application context");
 
+    // Set a hint to support anti-aliasing.
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
     // Create the SDL window.
     l_App->m_Window = SDL_CreateWindow(
         HELLO_WINDOW_TITLE, 
@@ -475,6 +478,36 @@ void Hello_StartApplication (Hello_Application* p_App)
 
     // Start the audio device.
     SDL_PauseAudioDevice(p_App->m_AudioDevice, 0);
+
+    const GABLE_DataHandle* l_TileData = 
+        GABLE_LoadDataFromFile(p_App->m_Engine, "TileData", "assets/hello-world/tile-data.bin", 0);
+    const GABLE_DataHandle* l_TileMaps = 
+        GABLE_LoadDataFromFile(p_App->m_Engine, "TileMaps", "assets/hello-world/tile-maps.bin", 0);
+    GABLE_expect(l_TileData != NULL, "Failed to load tile data");
+    GABLE_expect(l_TileMaps != NULL, "Failed to load tile maps");
+
+    GABLE_WriteByte(p_App->m_Engine, GABLE_HP_NR52, 0x00);
+    GABLE_WaitForVerticalBlank(p_App->m_Engine);
+    GABLE_WriteByte(p_App->m_Engine, GABLE_HP_LCDC, 0x00);
+    GABLE_WriteByte(p_App->m_Engine, GABLE_HP_DSBKL, l_TileMaps->m_BankLow);
+
+    for (Uint16 i = 0; i < l_TileData->m_Length; ++i)
+    {
+        Uint8 l_Byte = 0;
+        GABLE_ReadByte(p_App->m_Engine, l_TileData->m_Address + i, &l_Byte);
+        GABLE_WriteByte(p_App->m_Engine, 0x9000 + i, l_Byte);
+    }
+
+    for (Uint16 i = 0; i < l_TileMaps->m_Length; ++i)
+    {
+        Uint8 l_Byte = 0;
+        GABLE_ReadByte(p_App->m_Engine, l_TileMaps->m_Address + i, &l_Byte);
+        GABLE_WriteByte(p_App->m_Engine, 0x9800 + i, l_Byte);
+    }
+
+    GABLE_WriteByte(p_App->m_Engine, GABLE_HP_GRPM, 0x00);
+    GABLE_WriteByte(p_App->m_Engine, GABLE_HP_BGP, 0b11100100);
+    GABLE_WriteByte(p_App->m_Engine, GABLE_HP_LCDC, 0b10000001);
 
     // Start the application loop.
     p_App->m_Running = true;
