@@ -200,20 +200,20 @@ static Bool GABUILD_LexSymbol (FILE* p_File)
             // '+' = Plus, '+=' = Assign Plus, '++' = Increment
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_PLUS, "+="); }
-            else if (l_Peek1 == '+') { return GABUILD_InsertToken(GABUILD_TOKEN_INCREMENT, "++"); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_PLUS, ""); }
+            else if (l_Peek1 == '+') { return GABUILD_InsertToken(GABUILD_TOKEN_INCREMENT, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_PLUS, "+");
+            return GABUILD_InsertToken(GABUILD_TOKEN_PLUS, "");
         case '-':
             // '-' = Minus, '-=' = Assign Minus, '--' = Decrement
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_MINUS, "-="); }
-            else if (l_Peek1 == '-') { return GABUILD_InsertToken(GABUILD_TOKEN_DECREMENT, "--"); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_MINUS, ""); }
+            else if (l_Peek1 == '-') { return GABUILD_InsertToken(GABUILD_TOKEN_DECREMENT, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_MINUS, "-");
+            return GABUILD_InsertToken(GABUILD_TOKEN_MINUS, "");
         case '*':
             // '*' = Multiply, '**' = Exponent, '*=' = Assign Multiply, '**=' = Assign Exponent
             l_Peek1 = fgetc(p_File);
@@ -222,60 +222,60 @@ static Bool GABUILD_LexSymbol (FILE* p_File)
             {
                 l_Peek2 = fgetc(p_File);
 
-                if (l_Peek2 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_EXPONENT, "**="); }
+                if (l_Peek2 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_EXPONENT, ""); }
                 else { ungetc(l_Peek2, p_File); }
 
-                return GABUILD_InsertToken(GABUILD_TOKEN_EXPONENT, "**");
+                return GABUILD_InsertToken(GABUILD_TOKEN_EXPONENT, "");
             }
-            else if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_MULTIPLY, "*="); }
+            else if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_MULTIPLY, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_MULTIPLY, "*");
+            return GABUILD_InsertToken(GABUILD_TOKEN_MULTIPLY, "");
         case '/':
             // '/' = Divide, '/=' = Assign Divide
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_DIVIDE, "/="); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_DIVIDE, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_DIVIDE, "/");
+            return GABUILD_InsertToken(GABUILD_TOKEN_DIVIDE, "");
         case '%':
             // '%' = Modulo, '%=' = Assign Modulo
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_MODULO, "%%="); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_MODULO, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_MODULO, "%%");
+            return GABUILD_InsertToken(GABUILD_TOKEN_MODULO, "");
         case '&':
             // '&' = Bitwise And, '&=' = Assign Bitwise And, '&&' = Logical And
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '&') { return GABUILD_InsertToken(GABUILD_TOKEN_LOGICAL_AND, "&&"); }
-            else if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_AND, "&="); }
+            if (l_Peek1 == '&') { return GABUILD_InsertToken(GABUILD_TOKEN_LOGICAL_AND, ""); }
+            else if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_AND, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_AND, "&");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_AND, "");
         case '|':
             // '|' = Bitwise Or, '|=' = Assign Bitwise Or, '||' = Logical Or
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '|') { return GABUILD_InsertToken(GABUILD_TOKEN_LOGICAL_OR, "||"); }
-            else if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_OR, "|="); }
+            if (l_Peek1 == '|') { return GABUILD_InsertToken(GABUILD_TOKEN_LOGICAL_OR, ""); }
+            else if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_OR, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_OR, "|");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_OR, "");
         case '^':
             // '^' = Bitwise Xor, '^=' = Assign Bitwise Xor
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_XOR, "^="); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_XOR, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_XOR, "^");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_XOR, "");
         case '~':
             // '~' = Bitwise Not
-            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_NOT, "~");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_NOT, "");
         case '<':
             // '<' = Compare Less, '<<' = Bitwise Shift Left, '<=' = Compare Less Equal, '<<=' = Assign Bitwise Shift Left
             l_Peek1 = fgetc(p_File);
@@ -284,18 +284,18 @@ static Bool GABUILD_LexSymbol (FILE* p_File)
             {
                 l_Peek2 = fgetc(p_File);
 
-                if (l_Peek2 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_LEFT, "<<="); }
+                if (l_Peek2 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_LEFT, ""); }
                 else { ungetc(l_Peek2, p_File); }
 
-                return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_SHIFT_LEFT, "<<");
+                return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_SHIFT_LEFT, "");
             }
             else if (l_Peek1 == '=')
             {
-                return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_LESS_EQUAL, "<=");
+                return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_LESS_EQUAL, "");
             }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_LESS, "<");
+            return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_LESS, "");
         case '>':
             // '>' = Compare Greater, '>>' = Bitwise Shift Right, '>=' = Compare Greater Equal, '>>=' = Assign Bitwise Shift Right
             l_Peek1 = fgetc(p_File);
@@ -304,67 +304,67 @@ static Bool GABUILD_LexSymbol (FILE* p_File)
             {
                 l_Peek2 = fgetc(p_File);
 
-                if (l_Peek2 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_RIGHT, ">>="); }
+                if (l_Peek2 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_BITWISE_SHIFT_RIGHT, ""); }
                 else { ungetc(l_Peek2, p_File); }
 
-                return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_SHIFT_RIGHT, ">>");
+                return GABUILD_InsertToken(GABUILD_TOKEN_BITWISE_SHIFT_RIGHT, "");
             }
             else if (l_Peek1 == '=')
             {
-                return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_GREATER_EQUAL, ">=");
+                return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_GREATER_EQUAL, "");
             }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_GREATER, ">");
+            return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_GREATER, "");
         case '=':
             // '=' = Assign Equal, '==' = Compare Equal
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_EQUAL, "=="); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_EQUAL, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_EQUAL, "=");
+            return GABUILD_InsertToken(GABUILD_TOKEN_ASSIGN_EQUAL, "");
         case '!':
             // '!' = Logical Not, '!=' = Compare Not Equal
             l_Peek1 = fgetc(p_File);
 
-            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_NOT_EQUAL, "!="); }
+            if (l_Peek1 == '=') { return GABUILD_InsertToken(GABUILD_TOKEN_COMPARE_NOT_EQUAL, ""); }
             else { ungetc(l_Peek1, p_File); }
 
-            return GABUILD_InsertToken(GABUILD_TOKEN_LOGICAL_NOT, "!");
+            return GABUILD_InsertToken(GABUILD_TOKEN_LOGICAL_NOT, "");
         case '(':
             // '(' = Open Parenthesis
-            return GABUILD_InsertToken(GABUILD_TOKEN_PARENTHESIS_OPEN, "(");
+            return GABUILD_InsertToken(GABUILD_TOKEN_PARENTHESIS_OPEN, "");
         case ')':
             // ')' = Close Parenthesis
-            return GABUILD_InsertToken(GABUILD_TOKEN_PARENTHESIS_CLOSE, ")");
+            return GABUILD_InsertToken(GABUILD_TOKEN_PARENTHESIS_CLOSE, "");
         case '[':
             // '[' = Open Bracket
-            return GABUILD_InsertToken(GABUILD_TOKEN_BRACKET_OPEN, "[");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BRACKET_OPEN, "");
         case ']':
             // ']' = Close Bracket
-            return GABUILD_InsertToken(GABUILD_TOKEN_BRACKET_CLOSE, "]");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BRACKET_CLOSE, "");
         case '{':
             // '{' = Open Brace
-            return GABUILD_InsertToken(GABUILD_TOKEN_BRACE_OPEN, "{");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BRACE_OPEN, "");
         case '}':
             // '}' = Close Brace
-            return GABUILD_InsertToken(GABUILD_TOKEN_BRACE_CLOSE, "}");
+            return GABUILD_InsertToken(GABUILD_TOKEN_BRACE_CLOSE, "");
         case ',':
             // ',' = Comma
-            return GABUILD_InsertToken(GABUILD_TOKEN_COMMA, ",");
+            return GABUILD_InsertToken(GABUILD_TOKEN_COMMA, "");
         case ':':
             // ':' = Colon
-            return GABUILD_InsertToken(GABUILD_TOKEN_COLON, ":");
+            return GABUILD_InsertToken(GABUILD_TOKEN_COLON, "");
         case '.':
             // '.' = Dot
-            return GABUILD_InsertToken(GABUILD_TOKEN_PERIOD, ".");
+            return GABUILD_InsertToken(GABUILD_TOKEN_PERIOD, "");
         case '?':
             // '?' = Question Mark
-            return GABUILD_InsertToken(GABUILD_TOKEN_QUESTION, "?");
+            return GABUILD_InsertToken(GABUILD_TOKEN_QUESTION, "");
         case '#':
             // '#' = Pound Sign
-            return GABUILD_InsertToken(GABUILD_TOKEN_POUND, "#");
+            return GABUILD_InsertToken(GABUILD_TOKEN_POUND, "");
         default:
             GABLE_error("Unexpected character '%c' at line %zu, column %zu.", s_Lexer.m_Char, s_Lexer.m_CurrentLine, s_Lexer.m_CurrentColumn);
             return false;

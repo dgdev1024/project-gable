@@ -242,6 +242,45 @@ static Bool GABUILD_DefineStringASCII (const Char* p_String)
     return true;
 }
 
+static Bool GABUILD_DefineBinaryFile (const Char* p_Filename)
+{
+    FILE* l_File = fopen(p_Filename, "rb");
+    if (l_File == NULL)
+    {
+        GABLE_perror("Failed to open binary file '%s' for reading", p_Filename);
+        return false;
+    }
+
+    // Get the file size.
+    fseek(l_File, 0, SEEK_END);
+    Int64 l_FileSize = ftell(l_File);
+    if (l_FileSize < 0)
+    {
+        GABLE_perror("Failed to get size of binary file '%s'", p_Filename);
+        fclose(l_File);
+        return false;
+    }
+    else if (s_Builder.m_OutputSize + l_FileSize >= GABUILD_BUILDER_OUTPUT_CAPACITY)
+    {
+        GABLE_error("Output buffer overflowed while defining a binary file.");
+        fclose(l_File);
+        return false;
+    }
+    rewind(l_File);
+
+    // Read the file into the output buffer.
+    Size l_Read = fread(&s_Builder.m_Output[s_Builder.m_OutputSize], 1, l_FileSize, l_File);
+    if (l_Read != l_FileSize || (ferror(l_File) && !feof(l_File)))
+    {
+        GABLE_perror("Failed to read binary file '%s'", p_Filename);
+        fclose(l_File);
+        return false;
+    }
+
+    fclose(l_File);
+    return true;
+}
+
 // Static Functions - Assignment Operations ////////////////////////////////////////////////////////
 
 static GABUILD_Value* GABUILD_PerformAssignmentOperation (const GABUILD_Value* p_LeftValue,
@@ -1104,6 +1143,115 @@ GABUILD_Value* GABUILD_EvaluateRepeatStatement (const GABUILD_Syntax* p_SyntaxNo
     return GABUILD_CreateVoidValue();
 }
 
+GABUILD_Value* GABUILD_EvaluateIfStatement (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Evaluate the condition expression.
+    GABUILD_Value* l_ConditionValue = GABUILD_Evaluate(p_SyntaxNode->m_CondExpr);
+    if (l_ConditionValue == NULL)
+    {
+        return NULL;
+    }
+
+    // Check the type of the value. It must be a number.
+    if (l_ConditionValue->m_Type != GABUILD_VT_NUMBER)
+    {
+        GABLE_error("Unexpected value type for condition expression in 'if' statement.");
+        GABUILD_DestroyValue(l_ConditionValue);
+        return NULL;
+    }
+
+    // Evaluate the block expression.
+    GABUILD_Value* l_Result = NULL;
+    if (l_ConditionValue->m_Number != 0)
+    {
+        l_Result = GABUILD_EvaluateBlock(p_SyntaxNode->m_LeftExpr);
+    }
+    else if (p_SyntaxNode->m_RightExpr != NULL)
+    {
+        l_Result = GABUILD_EvaluateBlock(p_SyntaxNode->m_RightExpr);
+    }
+
+    GABUILD_DestroyValue(l_ConditionValue);
+    return l_Result;
+}
+
+GABUILD_Value* GABUILD_EvaluateIncludeStatement (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Evaluate the string expression.
+    GABUILD_Value* l_StringValue = GABUILD_Evaluate(p_SyntaxNode->m_LeftExpr);
+    if (l_StringValue == NULL)
+    {
+        return NULL;
+    }
+
+    // Check the type of the value. It must be a string.
+    if (l_StringValue->m_Type != GABUILD_VT_STRING)
+    {
+        GABLE_error("Unexpected value type for string expression in 'include' statement.");
+        GABUILD_DestroyValue(l_StringValue);
+        return NULL;
+    }
+    
+    // Prepare the lexer for the new file.
+    GABUILD_ResetLexer();
+    if (GABUILD_LexFile(l_StringValue->m_String) == false)
+    {
+        GABUILD_DestroyValue(l_StringValue);
+        return NULL;
+    }
+
+    // Parse the lexed tokens.
+    GABUILD_Syntax* l_Syntax = GABUILD_CreateSyntax(GABUILD_ST_BLOCK, GABUILD_PeekToken(0));
+    if (GABUILD_Parse(l_Syntax) == false)
+    {
+        GABUILD_DestroySyntax(l_Syntax);
+        GABUILD_DestroyValue(l_StringValue);
+        return NULL;
+    }
+
+    // Evaluate the parsed syntax.
+    GABUILD_Value* l_Result = GABUILD_Evaluate(l_Syntax);
+    if (l_Result == NULL)
+    {
+        GABUILD_DestroySyntax(l_Syntax);
+        GABUILD_DestroyValue(l_StringValue);
+        return NULL;
+    }
+
+    GABUILD_DestroySyntax(l_Syntax);
+    GABUILD_DestroyValue(l_Result);
+    GABUILD_DestroyValue(l_StringValue);
+    return GABUILD_CreateVoidValue();
+}
+
+GABUILD_Value* GABUILD_EvaluateIncbinStatement (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Evaluate the string expression.
+    GABUILD_Value* l_StringValue = GABUILD_Evaluate(p_SyntaxNode->m_LeftExpr);
+    if (l_StringValue == NULL)
+    {
+        return NULL;
+    }
+
+    // Check the type of the value. It must be a string.
+    if (l_StringValue->m_Type != GABUILD_VT_STRING)
+    {
+        GABLE_error("Unexpected value type for string expression in 'incbin' statement.");
+        GABUILD_DestroyValue(l_StringValue);
+        return NULL;
+    }
+
+    // Load the file.
+    if (GABUILD_DefineBinaryFile(l_StringValue->m_String) == false)
+    {
+        GABUILD_DestroyValue(l_StringValue);
+        return NULL;
+    }
+
+    GABUILD_DestroyValue(l_StringValue);
+    return GABUILD_CreateVoidValue();
+}
+
 GABUILD_Value* GABUILD_EvaluateBlock (const GABUILD_Syntax* p_SyntaxNode)
 {
     // Create a new value to hold the result of the block.
@@ -1187,8 +1335,20 @@ GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode)
             l_Result = GABUILD_EvaluateRepeatStatement(p_SyntaxNode);
             break;
 
+        case GABUILD_ST_IF:
+            l_Result = GABUILD_EvaluateIfStatement(p_SyntaxNode);
+            break;
+
         case GABUILD_ST_BLOCK:
             l_Result = GABUILD_EvaluateBlock(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_INCLUDE:
+            l_Result = GABUILD_EvaluateIncludeStatement(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_INCBIN:
+            l_Result = GABUILD_EvaluateIncbinStatement(p_SyntaxNode);
             break;
 
         default:

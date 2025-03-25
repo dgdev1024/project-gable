@@ -25,6 +25,9 @@ typedef enum GABUILD_SyntaxType
     GABUILD_ST_MACRO_CALL,              ///< @brief Macro Call Statement (eg. `x`, `place_byte $42`).
     GABUILD_ST_SHIFT,                   ///< @brief Shift Statement (eg. `shift 2`).
     GABUILD_ST_REPEAT,                  ///< @brief Repeat Statement (eg. `repeat 3`, `rept 5`).
+    GABUILD_ST_IF,                      ///< @brief If Statement (eg. `if x == 0`).
+    GABUILD_ST_INCLUDE,                 ///< @brief Include Statement (eg. `include "file.asm"`).
+    GABUILD_ST_INCBIN,                  ///< @brief Include Binary Statement (eg. `incbin "file.bin"`).
 
     // Expression Nodes
     GABUILD_ST_BINARY_EXP,              ///< @brief Binary Expression (eg. `1 + 2`, `3 * 4`).
@@ -81,10 +84,15 @@ typedef struct GABUILD_Syntax
     // - `GABUILD_ST_REPEAT` nodes have a count of the number of times to repeat the block.
     struct GABUILD_Syntax*       m_CountExpr;    ///< @brief Count Expression
 
+    // Some nodes have a conditional expression.
+    // - `GABUILD_ST_IF` nodes have a conditional expression.
+    struct GABUILD_Syntax*       m_CondExpr;     ///< @brief Conditional Expression
+
     // Some nodes are unary and binary expression nodes, with left and/or right child nodes 
     // and an operator token.
     // - `GABUILD_ST_MACRO` nodes contain their body in the left child node.
     // - `GABUILD_ST_REPEAT` nodes contain their body in the left child node.
+    // - `GABUILD_ST_IF` nodes contain their true block in the left child node and their false block in the right child node.
     // - `GABUILD_ST_BINARY_EXP` nodes have a left and right child node.
     // - `GABUILD_ST_UNARY_EXP` nodes have a right child node.
     struct GABUILD_Syntax*       m_LeftExpr;     ///< @brief Left Expression

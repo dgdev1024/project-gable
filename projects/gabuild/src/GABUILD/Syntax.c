@@ -22,6 +22,7 @@ GABUILD_Syntax* GABUILD_CreateSyntax (GABUILD_SyntaxType p_Type, const GABUILD_T
         p_Type == GABUILD_ST_DEF ||
         p_Type == GABUILD_ST_MACRO ||
         p_Type == GABUILD_ST_MACRO_CALL ||
+        p_Type == GABUILD_ST_INCLUDE ||
         p_Type == GABUILD_ST_IDENTIFIER ||
         p_Type == GABUILD_ST_STRING
     )
@@ -71,6 +72,7 @@ GABUILD_Syntax* GABUILD_CopySyntax (const GABUILD_Syntax* p_Syntax)
 
     // Copy the other child syntax nodes, if they exist.
     l_Copy->m_CountExpr = GABUILD_CopySyntax(p_Syntax->m_CountExpr);
+    l_Copy->m_CondExpr = GABUILD_CopySyntax(p_Syntax->m_CondExpr);
     l_Copy->m_LeftExpr = GABUILD_CopySyntax(p_Syntax->m_LeftExpr);
     l_Copy->m_RightExpr = GABUILD_CopySyntax(p_Syntax->m_RightExpr);
     l_Copy->m_Operator = p_Syntax->m_Operator;
@@ -103,6 +105,7 @@ void GABUILD_DestroySyntax (GABUILD_Syntax* p_Syntax)
 
         // Destroy the other child syntax nodes, if they exist.
         GABUILD_DestroySyntax(p_Syntax->m_CountExpr);
+        GABUILD_DestroySyntax(p_Syntax->m_CondExpr);
         GABUILD_DestroySyntax(p_Syntax->m_LeftExpr);
         GABUILD_DestroySyntax(p_Syntax->m_RightExpr);
 

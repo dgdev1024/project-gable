@@ -22,7 +22,6 @@ static const GABUILD_Keyword GABUILD_KEYWORD_TABLE[] = {
     { "REPT",       GABUILD_KT_REPEAT,     0 },
     { "FOR",        GABUILD_KT_FOR,        0 },
     { "IF",         GABUILD_KT_IF,         0 },
-    { "ELIF",       GABUILD_KT_ELIF,       0 },
     { "ELSE",       GABUILD_KT_ELSE,       0 },
     { "ENDR",       GABUILD_KT_ENDR,       0 },
     { "ENDC",       GABUILD_KT_ENDC,       0 },
@@ -63,7 +62,6 @@ const Char* GABUILD_StringifyKeywordType (GABUILD_KeywordType p_Type)
         case GABUILD_KT_REPEAT:     return "REPEAT";
         case GABUILD_KT_FOR:        return "FOR";
         case GABUILD_KT_IF:         return "IF";
-        case GABUILD_KT_ELIF:       return "ELIF";
         case GABUILD_KT_ELSE:       return "ELSE";
         case GABUILD_KT_ENDR:       return "ENDR";
         case GABUILD_KT_ENDC:       return "ENDC";
