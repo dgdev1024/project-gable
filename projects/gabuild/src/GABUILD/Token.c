@@ -22,6 +22,7 @@ const Char* GABUILD_StringifyTokenType (GABUILD_TokenType p_Type)
         case GABUILD_TOKEN_HEXADECIMAL: return "Hexadecimal";
         case GABUILD_TOKEN_CHARACTER: return "Character";
         case GABUILD_TOKEN_ARGUMENT: return "Argument";
+        case GABUILD_TOKEN_GRAPHICS: return "Graphics";
 
         // Arithmetic Operators
         case GABUILD_TOKEN_PLUS: return "Plus";

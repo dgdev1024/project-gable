@@ -831,6 +831,59 @@ static Bool GABUILD_LexArgument (FILE* p_File)
     return GABUILD_InsertToken(GABUILD_TOKEN_ARGUMENT, l_Buffer);
 }
 
+static Bool GABUILD_LexGraphics (FILE* p_File)
+{
+    // Advance past the '`' character.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Keep a string buffer for the graphics, and a counter for the current length.
+    // For a graphics literal, this token's lexeme must be EXACTLY eight characters long.
+    Char l_Buffer[9];
+    Index l_Length = 0;
+
+    // Add characters to the buffer until a non-graphics character is found.
+    while (
+        s_Lexer.m_Char >= '0' &&
+        s_Lexer.m_Char <= '3'
+    )
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= 8)
+        {
+            GABLE_error("Graphics literal exceeds maximum length of 8 characters.");
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Make sure the graphics literal's lexeme is exactly eight characters long.
+    if (l_Length != 8)
+    {
+        GABLE_error("Graphics literal must be exactly 8 characters long.");
+        return false;
+    }
+
+    // Put the non-graphics character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+    s_Lexer.m_CurrentColumn--;
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the graphics literal token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_GRAPHICS, l_Buffer);
+}
+
 static Bool GABUILD_Lex (FILE* p_File)
 {
     Bool l_Comment = false;     // Whether the lexer is currently in a comment.
@@ -907,6 +960,8 @@ static Bool GABUILD_Lex (FILE* p_File)
             { l_Good = GABUILD_LexOctal(p_File); }
         else if (s_Lexer.m_Char == '%')                             
             { l_Good = GABUILD_LexBinary(p_File); }
+        else if (s_Lexer.m_Char == '`')
+            { l_Good = GABUILD_LexGraphics(p_File); }
         else                                                        
             { l_Good = GABUILD_LexSymbol(p_File); }
 

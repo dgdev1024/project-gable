@@ -158,6 +158,33 @@ GABUILD_Syntax* GABUILD_ParsePrimaryExpression ()
             return l_ExpressionSyntax;
         }
 
+        case GABUILD_TOKEN_GRAPHICS:
+        {
+            Uint8 l_HiByte = 0, l_LoByte = 0, l_HiBit = 0, l_LoBit = 0;
+            for (Uint8 i = 0; i < 8; ++i)
+            {
+                Uint8 l_Bit = 7 - i;
+                switch (l_LeadToken->m_Lexeme[i])
+                {
+                    case '0': l_HiBit = 0; l_LoBit = 0; break;
+                    case '1': l_HiBit = 0; l_LoBit = 1; break;
+                    case '2': l_HiBit = 1; l_LoBit = 0; break;
+                    case '3': l_HiBit = 1; l_LoBit = 1; break;
+                    default:
+                        GABLE_error("Invalid character '%c' in graphics literal expression.", 
+                            l_LeadToken->m_Lexeme[i]);
+                        return NULL;
+                }
+
+                l_HiByte |= (l_HiBit << l_Bit);
+                l_LoByte |= (l_LoBit << l_Bit);
+            }
+            
+            GABUILD_Syntax* l_Syntax = GABUILD_CreateSyntax(GABUILD_ST_NUMBER, l_LeadToken);
+            l_Syntax->m_Number = (Float64) ((l_HiByte << 8) | l_LoByte);
+            return l_Syntax;
+        }
+
         default:
             GABLE_error("Unexpected '%s' token = '%s'.", 
                 GABUILD_StringifyTokenType(l_LeadToken->m_Type), l_LeadToken->m_Lexeme);
