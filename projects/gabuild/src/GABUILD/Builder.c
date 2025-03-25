@@ -10,6 +10,7 @@
 
 #define GABUILD_BUILDER_INITIAL_CAPACITY 8
 #define GABUILD_BUILDER_OUTPUT_CAPACITY 0x10000
+#define GABUILD_BUILDER_CALL_STACK_SIZE 32
 
 // Label Structure /////////////////////////////////////////////////////////////////////////////////
 
@@ -23,6 +24,24 @@ typedef struct GABUILD_Label
     Bool        m_Resolved;
 } GABUILD_Label;
 
+// Macro Structure /////////////////////////////////////////////////////////////////////////////////
+
+typedef struct GABUILD_Macro
+{
+    Char*           m_Name;
+    GABUILD_Syntax* m_Block;
+} GABUILD_Macro;
+
+// Macro Call Structure ////////////////////////////////////////////////////////////////////////////
+
+typedef struct GABUILD_MacroCall
+{
+    GABUILD_Macro*  m_Macro;
+    GABUILD_Value** m_Arguments;
+    Size            m_ArgumentCount;
+    Size            m_ArgumentOffset;
+} GABUILD_MacroCall;
+
 // Builder Context Structure ///////////////////////////////////////////////////////////////////////
 
 static struct
@@ -34,10 +53,17 @@ static struct
     Size                m_LabelCount;
     Size                m_LabelCapacity;
 
+    GABUILD_Macro*      m_Macros;
+    Size                m_MacroCount;
+    Size                m_MacroCapacity;
+
     GABUILD_Value**     m_DefineValues;
     Char**              m_DefineKeys;
     Size                m_DefineCount;
     Size                m_DefineCapacity;
+
+    GABUILD_MacroCall*  m_MacroCallStack[GABUILD_BUILDER_CALL_STACK_SIZE];
+    Size                m_MacroCallStackIndex;
 
     Size                m_OutputSize;
 } s_Builder = {
@@ -46,10 +72,15 @@ static struct
     .m_Labels = NULL,
     .m_LabelCount = 0,
     .m_LabelCapacity = 0,
+    .m_Macros = NULL,
+    .m_MacroCount = 0,
+    .m_MacroCapacity = 0,
     .m_DefineValues = NULL,
     .m_DefineKeys = NULL,
     .m_DefineCount = 0,
     .m_DefineCapacity = 0,
+    .m_MacroCallStack = { 0 },
+    .m_MacroCallStackIndex = 0,
     .m_OutputSize = 0
 };
 
@@ -57,6 +88,39 @@ static struct
 
 static GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode);
 static GABUILD_Value* GABUILD_EvaluateBlock (const GABUILD_Syntax* p_SyntaxNode);
+
+// Static Functions - Macro Call Management ////////////////////////////////////////////////////////
+
+static GABUILD_MacroCall* GABUILD_CreateMacroCall (Size p_ArgumentCount)
+{
+    GABUILD_MacroCall* l_MacroCall = GABLE_calloc(1, GABUILD_MacroCall);
+    GABLE_pexpect(l_MacroCall != NULL, "Failed to allocate memory for macro call structure");
+
+    l_MacroCall->m_Arguments = GABLE_calloc(p_ArgumentCount, GABUILD_Value*);
+    GABLE_pexpect(l_MacroCall->m_Arguments != NULL, "Failed to allocate memory for macro call arguments");
+
+    l_MacroCall->m_ArgumentCount = p_ArgumentCount;
+    l_MacroCall->m_ArgumentOffset = 0;
+    return l_MacroCall;
+}
+
+static void GABUILD_DestroyMacroCall (GABUILD_MacroCall* p_MacroCall)
+{
+    if (p_MacroCall != NULL)
+    {
+        if (p_MacroCall->m_Arguments != NULL)
+        {
+            for (Size i = 0; i < p_MacroCall->m_ArgumentCount; ++i)
+            {
+                GABUILD_DestroyValue(p_MacroCall->m_Arguments[i]);
+            }
+
+            GABLE_free(p_MacroCall->m_Arguments);
+        }
+
+        GABLE_free(p_MacroCall);
+    }
+}
 
 // Static Functions - Internal Array Management ////////////////////////////////////////////////////
 
@@ -83,6 +147,19 @@ static void GABUILD_ResizeLabelsArray ()
 
         s_Builder.m_Labels          = l_NewLabels;
         s_Builder.m_LabelCapacity   = l_NewCapacity;
+    }
+}
+
+static void GABUILD_ResizeMacrosArray ()
+{
+    if (s_Builder.m_MacroCount + 1 >= s_Builder.m_MacroCapacity)
+    {
+        Size l_NewCapacity  = s_Builder.m_MacroCapacity * 2;
+        GABUILD_Macro* l_NewMacros = GABLE_realloc(s_Builder.m_Macros, l_NewCapacity, GABUILD_Macro);
+        GABLE_pexpect(l_NewMacros != NULL, "Failed to reallocate memory for the builder's macros array");
+
+        s_Builder.m_Macros          = l_NewMacros;
+        s_Builder.m_MacroCapacity   = l_NewCapacity;
     }
 }
 
@@ -822,6 +899,211 @@ static GABUILD_Value* GABUILD_EvaluateDefine (const GABUILD_Syntax* p_SyntaxNode
     return GABUILD_CreateVoidValue();
 }
 
+static GABUILD_Value* GABUILD_EvaluateMacroDefinition (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Check if the macro has already been defined.
+    for (Index i = 0; i < s_Builder.m_MacroCount; ++i)
+    {
+        if (strcmp(s_Builder.m_Macros[i].m_Name, p_SyntaxNode->m_String) == 0)
+        {
+            GABLE_error("Macro '%s' has already been defined.", p_SyntaxNode->m_String);
+            return NULL;
+        }
+    }
+
+    // Resize the macros array.
+    GABUILD_ResizeMacrosArray();
+
+    // Copy the name of the macro.
+    Size  l_NameStrlen = strlen(p_SyntaxNode->m_String);
+    Char* l_Name = GABLE_calloc(l_NameStrlen + 1, Char);
+    GABLE_pexpect(l_Name != NULL, "Failed to allocate memory for macro name string");
+    strncpy(l_Name, p_SyntaxNode->m_String, l_NameStrlen);
+
+    // Resize the macros array.
+    GABUILD_Macro* l_Macro = &s_Builder.m_Macros[s_Builder.m_MacroCount++];
+    l_Macro->m_Name = l_Name;
+    l_Macro->m_Block = GABUILD_CopySyntax(p_SyntaxNode->m_LeftExpr);
+
+    return GABUILD_CreateVoidValue();
+}
+
+static GABUILD_Value* GABUILD_EvaluateMacroCall (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Find the macro by name.
+    GABUILD_Macro* l_Macro = NULL;
+    for (Index i = 0; i < s_Builder.m_MacroCount; ++i)
+    {
+        if (strcmp(s_Builder.m_Macros[i].m_Name, p_SyntaxNode->m_String) == 0)
+        {
+            l_Macro = &s_Builder.m_Macros[i];
+            break;
+        }
+    }
+
+    // Was the macro found?
+    if (l_Macro == NULL)
+    {
+        GABLE_error("Macro '%s' was not found.", p_SyntaxNode->m_String);
+        return NULL;
+    }
+
+    // Check the macro call stack. Is it full?
+    if (s_Builder.m_MacroCallStackIndex >= GABUILD_BUILDER_CALL_STACK_SIZE)
+    {
+        GABLE_error("Macro call stack overflowed.");
+        return NULL;
+    }
+
+    // Set up the macro call context.
+    GABUILD_MacroCall* l_Call = GABUILD_CreateMacroCall(p_SyntaxNode->m_BodySize);
+    s_Builder.m_MacroCallStack[s_Builder.m_MacroCallStackIndex++] = l_Call;
+
+    // Evaluate the macro call's arguments.
+    for (Index i = 0; i < p_SyntaxNode->m_BodySize; ++i)
+    {
+        GABUILD_Value* l_Value = GABUILD_Evaluate(p_SyntaxNode->m_Body[i]);
+        if (l_Value == NULL)
+        {
+            GABUILD_DestroyMacroCall(l_Call);
+            s_Builder.m_MacroCallStack[--s_Builder.m_MacroCallStackIndex] = NULL;
+            return NULL;
+        }
+
+        l_Call->m_Arguments[i] = l_Value;
+    }
+
+    // Evaluate the macro block.
+    GABUILD_Value* l_Result = GABUILD_EvaluateBlock(l_Macro->m_Block);
+    if (l_Result == NULL)
+    {
+        GABUILD_DestroyMacroCall(l_Call);
+        s_Builder.m_MacroCallStack[--s_Builder.m_MacroCallStackIndex] = NULL;
+        return NULL;
+    }
+
+    // Clean up the macro call context.
+    GABUILD_DestroyMacroCall(l_Call);
+    s_Builder.m_MacroCallStack[--s_Builder.m_MacroCallStackIndex] = NULL;
+    
+    return l_Result;
+}
+
+GABUILD_Value* GABUILD_EvaluateNARGExpression (const GABUILD_Syntax* p_Syntax)
+{
+    // Make sure the macro call stack is not empty.
+    if (s_Builder.m_MacroCallStackIndex == 0)
+    {
+        GABLE_error("NARG syntax outside of a macro call.");
+        return NULL;
+    }
+
+    // Get the macro call context at the top of the stack.
+    GABUILD_MacroCall* l_Call = s_Builder.m_MacroCallStack[s_Builder.m_MacroCallStackIndex - 1];
+
+    // Return a number value with the number of arguments in the macro call.
+    return GABUILD_CreateNumberValue((Float64) l_Call->m_ArgumentCount);
+}
+
+GABUILD_Value* GABUILD_EvaluateMacroArgument (const GABUILD_Syntax* p_Syntax)
+{
+    // Make sure the macro call stack is not empty.
+    if (s_Builder.m_MacroCallStackIndex == 0)
+    {
+        GABLE_error("Macro argument syntax outside of a macro call.");
+        return NULL;
+    }
+
+    // Get the macro call context at the top of the stack.
+    GABUILD_MacroCall* l_Call = s_Builder.m_MacroCallStack[s_Builder.m_MacroCallStackIndex - 1];
+
+    // Check the index of the argument. Macro arguments are 1-indexed ('\1' is the first argument).
+    Index l_ArgIndex = (Index) p_Syntax->m_Number;
+
+    // Offset the argument index by the shift offset.
+    l_ArgIndex += l_Call->m_ArgumentOffset;
+
+    if (l_ArgIndex < 1 || l_ArgIndex > l_Call->m_ArgumentCount)
+    {
+        GABLE_error("Macro argument index %zu out of range.", l_ArgIndex);
+        return NULL;
+    }
+
+    // Return a copy of the argument value.
+    return GABUILD_CopyValue(l_Call->m_Arguments[l_ArgIndex - 1]);
+}
+
+GABUILD_Value* GABUILD_EvaluateShiftStatement (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Make sure the macro call stack is not empty.
+    if (s_Builder.m_MacroCallStackIndex == 0)
+    {
+        GABLE_error("Shift syntax outside of a macro call.");
+        return NULL;
+    }
+
+    // Get the macro call context at the top of the stack.
+    GABUILD_MacroCall* l_Call = s_Builder.m_MacroCallStack[s_Builder.m_MacroCallStackIndex - 1];
+
+    // Evaluate the shift expression.
+    GABUILD_Value* l_ShiftValue = GABUILD_Evaluate(p_SyntaxNode->m_CountExpr);
+    if (l_ShiftValue == NULL)
+    {
+        return NULL;
+    }
+
+    // Check the type of the value. It must be a number.
+    if (l_ShiftValue->m_Type != GABUILD_VT_NUMBER)
+    {
+        GABLE_error("Unexpected value type for shift expression in 'shift' statement.");
+        GABUILD_DestroyValue(l_ShiftValue);
+        return NULL;
+    }
+
+    // Shift the argument offset by the value of the shift expression.
+    l_Call->m_ArgumentOffset += (Index) l_ShiftValue->m_IntegerPart;
+    GABUILD_DestroyValue(l_ShiftValue);
+
+    return GABUILD_CreateVoidValue();
+}
+
+GABUILD_Value* GABUILD_EvaluateRepeatStatement (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Evaluate the count expression.
+    GABUILD_Value* l_CountValue = GABUILD_Evaluate(p_SyntaxNode->m_CountExpr);
+    if (l_CountValue == NULL)
+    {
+        return NULL;
+    }
+
+    // Check the type of the value. It must be a number.
+    if (l_CountValue->m_Type != GABUILD_VT_NUMBER)
+    {
+        GABLE_error("Unexpected value type for count expression in 'repeat' statement.");
+        GABUILD_DestroyValue(l_CountValue);
+        return NULL;
+    }
+
+    // Evaluate the block expression.
+    GABUILD_Value* l_Result = NULL;
+    Uint64 l_Count = l_CountValue->m_IntegerPart;
+    GABUILD_DestroyValue(l_CountValue);
+
+    while (l_Count > 0)
+    {
+        l_Result = GABUILD_EvaluateBlock(p_SyntaxNode->m_LeftExpr);
+        if (l_Result == NULL)
+        {
+            return NULL;
+        }
+
+        GABUILD_DestroyValue(l_Result);
+        l_Count--;
+    }
+
+    return GABUILD_CreateVoidValue();
+}
+
 GABUILD_Value* GABUILD_EvaluateBlock (const GABUILD_Syntax* p_SyntaxNode)
 {
     // Create a new value to hold the result of the block.
@@ -881,6 +1163,30 @@ GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode)
             l_Result = GABUILD_EvaluateDefine(p_SyntaxNode);
             break;
 
+        case GABUILD_ST_MACRO:
+            l_Result = GABUILD_EvaluateMacroDefinition(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_MACRO_CALL:
+            l_Result = GABUILD_EvaluateMacroCall(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_NARG:
+            l_Result = GABUILD_EvaluateNARGExpression(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_ARGUMENT:
+            l_Result = GABUILD_EvaluateMacroArgument(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_SHIFT:
+            l_Result = GABUILD_EvaluateShiftStatement(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_REPEAT:
+            l_Result = GABUILD_EvaluateRepeatStatement(p_SyntaxNode);
+            break;
+
         case GABUILD_ST_BLOCK:
             l_Result = GABUILD_EvaluateBlock(p_SyntaxNode);
             break;
@@ -912,6 +1218,12 @@ void GABUILD_InitBuilder ()
     s_Builder.m_LabelCapacity = GABUILD_BUILDER_INITIAL_CAPACITY;
     s_Builder.m_LabelCount = 0;
 
+    // Initialize macros.
+    s_Builder.m_Macros = GABLE_malloc(GABUILD_BUILDER_INITIAL_CAPACITY, GABUILD_Macro);
+    GABLE_pexpect(s_Builder.m_Macros != NULL, "Failed to allocate memory for the builder's macros array");
+    s_Builder.m_MacroCapacity = GABUILD_BUILDER_INITIAL_CAPACITY;
+    s_Builder.m_MacroCount = 0;
+
     // Initialize defines.
     s_Builder.m_DefineValues = GABLE_malloc(GABUILD_BUILDER_INITIAL_CAPACITY, GABUILD_Value*);
     GABLE_pexpect(s_Builder.m_DefineValues != NULL, "Failed to allocate memory for the builder's define values array");
@@ -931,6 +1243,14 @@ void GABUILD_ShutdownBuilder ()
     }
     GABLE_free(s_Builder.m_DefineValues);
     GABLE_free(s_Builder.m_DefineKeys);
+
+    // Free macros.
+    for (Size i = 0; i < s_Builder.m_MacroCount; ++i)
+    {
+        GABLE_free(s_Builder.m_Macros[i].m_Name);
+        GABUILD_DestroySyntax(s_Builder.m_Macros[i].m_Block);
+    }
+    GABLE_free(s_Builder.m_Macros);
 
     // Free labels.
     for (Size i = 0; i < s_Builder.m_LabelCount; ++i)

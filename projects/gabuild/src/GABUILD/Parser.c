@@ -67,6 +67,29 @@ GABUILD_Syntax* GABUILD_ParsePrimaryExpression ()
     // Check the type of the token.
     switch (l_LeadToken->m_Type)
     {
+        case GABUILD_TOKEN_KEYWORD:
+        {
+            switch (l_LeadToken->m_Keyword->m_Type)
+            {
+                case GABUILD_KT_NARG:
+                {
+                    GABUILD_Syntax* l_NargSyntax = GABUILD_CreateSyntax(GABUILD_ST_NARG, l_LeadToken);
+                    return l_NargSyntax;
+                }
+
+                default:
+                    GABLE_error("Unexpected keyword '%s' while parsing primary expression.", l_LeadToken->m_Lexeme);
+                    return NULL;
+            }
+        }
+
+        case GABUILD_TOKEN_ARGUMENT:
+        {
+            GABUILD_Syntax* l_ArgumentSyntax = GABUILD_CreateSyntax(GABUILD_ST_ARGUMENT, l_LeadToken);
+            l_ArgumentSyntax->m_Number = (Float64) strtoul(l_LeadToken->m_Lexeme, NULL, 10);
+            return l_ArgumentSyntax;
+        }
+
         case GABUILD_TOKEN_NUMBER:
         {
             GABUILD_Syntax* l_NumberSyntax = GABUILD_CreateSyntax(GABUILD_ST_NUMBER, l_LeadToken);
@@ -822,6 +845,212 @@ GABUILD_Syntax* GABUILD_ParseDefineSyntax ()
     return l_DefineSyntax;
 }
 
+// Macro Statement
+//
+// A macro statement is a statement that is used to define a macro which can be expanded into code
+// by the assembler. Macros are used to define reusable code snippets that can be used multiple
+// times in the code.
+//
+// The syntax of a macro statement is as follows:
+//
+// ```
+//     macro <identifier> ; Define a macro.
+//         <statement>    ; Macro body.
+//         <statement>    ; Macro body.
+//         ...
+//     endm               ; End of macro.
+// ```
+//
+GABUILD_Syntax* GABUILD_ParseMacroSyntax ()
+{
+    // Store the identifier token, then advance past it.
+    const GABUILD_Token* l_IdentifierToken = GABUILD_AdvanceToken();
+
+    // Create the macro syntax node.
+    GABUILD_Syntax* l_MacroSyntax = GABUILD_CreateSyntax(GABUILD_ST_MACRO, l_IdentifierToken);
+    strncpy(l_MacroSyntax->m_String, l_IdentifierToken->m_Lexeme, GABUILD_STRING_CAPACITY);
+    l_MacroSyntax->m_LeftExpr = GABUILD_CreateSyntax(GABUILD_ST_BLOCK, l_IdentifierToken);
+
+    // Parse the macro body.
+    while (true)
+    {
+        // Skip any newline tokens.
+        if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_NEWLINE) != NULL)
+        {
+            continue;
+        }
+
+        // If the next token is an `endm` token, then break the loop.
+        if (GABUILD_AdvanceTokenIfKeyword(GABUILD_KT_ENDM) != NULL)
+        {
+            break;
+        }
+
+        // Parse the next statement.
+        GABUILD_Syntax* l_Statement = GABUILD_ParseStatement();
+        if (l_Statement == NULL)
+        {
+            GABLE_error("Failed to parse statement in a macro body.");
+            GABUILD_DestroySyntax(l_MacroSyntax);
+            return NULL;
+        }
+
+        // Add the statement to the macro syntax node.
+        GABUILD_PushToSyntaxBody(l_MacroSyntax->m_LeftExpr, l_Statement);
+    }
+
+    return l_MacroSyntax;
+}
+
+// Macro Call Statement
+//
+// A macro call statement is a statement that is used to call a macro that has been defined in the
+// code. Macro calls are used to expand a macro into code at the location of the call.
+//
+// The syntax of a macro call statement is as follows:
+//
+// ```
+//    <identifier> [ <expression> [, <expression> ...] ]    ; Call a macro.
+// ```
+//
+GABUILD_Syntax* GABUILD_ParseMacroCallSyntax ()
+{
+    // Store the identifier token, then advance past it.
+    const GABUILD_Token* l_IdentifierToken = GABUILD_AdvanceToken();
+
+    // Create the macro call syntax node.
+    GABUILD_Syntax* l_MacroCallSyntax = GABUILD_CreateSyntax(GABUILD_ST_MACRO_CALL, l_IdentifierToken);
+    strncpy(l_MacroCallSyntax->m_String, l_IdentifierToken->m_Lexeme, GABUILD_STRING_CAPACITY);
+
+    // Keep track of the number of arguments parsed.
+    Count l_ArgumentCount = 0;
+
+    // Parse expressions until a newline or end of file is reached.
+    while (true)
+    {
+        // Peek the next token. Is it a newline or end of file token?
+        const GABUILD_Token* l_Token = GABUILD_PeekToken(0);
+        if (l_Token->m_Type == GABUILD_TOKEN_NEWLINE || l_Token->m_Type == GABUILD_TOKEN_EOF)
+        {
+            GABUILD_AdvanceToken();
+            break;
+        }
+
+        // Parse the next expression.
+        GABUILD_Syntax* l_Expression = GABUILD_ParseExpression();
+        if (l_Expression == NULL)
+        {
+            GABUILD_DestroySyntax(l_MacroCallSyntax);
+            return NULL;
+        }
+
+        // Add the expression to the macro call syntax node.
+        GABUILD_PushToSyntaxBody(l_MacroCallSyntax, l_Expression);
+
+        // Increment the argument count.
+        l_ArgumentCount++;
+
+        // Expect either a comma or newline after the expression.
+        if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_COMMA) != NULL)
+        {
+            continue;
+        }
+        else if (
+            GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_NEWLINE) != NULL ||
+            GABUILD_PeekToken(0)->m_Type == GABUILD_TOKEN_EOF
+        )
+        {
+            break;
+        }
+        else
+        {
+            GABLE_error("Expected a comma or newline after an expression in a macro call.");
+            GABUILD_DestroySyntax(l_MacroCallSyntax);
+            return NULL;
+        }
+    }
+
+    // Set the argument count of the macro call syntax node.
+    l_MacroCallSyntax->m_Number = l_ArgumentCount;
+
+    return l_MacroCallSyntax;
+}
+
+// Shift Statement
+//
+// A shift statement is used to shift arguments leftward and out of the argument list of a macro
+// call. The shift statement is used to remove arguments from the argument list of a macro call.
+//
+// The syntax of a shift statement is as follows:
+//
+// ```
+//     shift <count>    ; Shift arguments leftward.
+// ```
+//
+GABUILD_Syntax* GABUILD_ParseShiftSyntax ()
+{
+    // Parse the count expression.
+    GABUILD_Syntax* l_CountExpr = GABUILD_ParseExpression();
+    if (l_CountExpr == NULL)
+    {
+        return NULL;
+    }
+
+    // Create the shift syntax node.
+    GABUILD_Syntax* l_ShiftSyntax = GABUILD_CreateSyntax(GABUILD_ST_SHIFT, s_Parser.m_LeadToken);
+    l_ShiftSyntax->m_CountExpr = l_CountExpr;
+
+    return l_ShiftSyntax;
+}
+
+GABUILD_Syntax* GABUILD_ParseRepeatStatement ()
+{
+    // Store the repeat token.
+    const GABUILD_Token* l_RepeatToken = GABUILD_PeekToken(0);
+
+    // Parse the count expression.
+    GABUILD_Syntax* l_CountExpr = GABUILD_ParseExpression();
+    if (l_CountExpr == NULL)
+    {
+        return NULL;
+    }
+
+    // Create the repeat syntax node.
+    GABUILD_Syntax* l_RepeatSyntax = GABUILD_CreateSyntax(GABUILD_ST_REPEAT, l_RepeatToken);
+    l_RepeatSyntax->m_CountExpr = l_CountExpr;
+    l_RepeatSyntax->m_LeftExpr = GABUILD_CreateSyntax(GABUILD_ST_BLOCK, l_RepeatToken);
+
+    // Parse the block of statements to repeat.
+    while (true)
+    {
+        // Skip any newline tokens.
+        if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_NEWLINE) != NULL)
+        {
+            continue;
+        }
+
+        // If the next token is an `endr` token, then break the loop.
+        if (GABUILD_AdvanceTokenIfKeyword(GABUILD_KT_ENDR) != NULL)
+        {
+            break;
+        }
+
+        // Parse the next statement.
+        GABUILD_Syntax* l_Statement = GABUILD_ParseStatement();
+        if (l_Statement == NULL)
+        {
+            GABLE_error("Failed to parse statement in a repeat block.");
+            GABUILD_DestroySyntax(l_RepeatSyntax);
+            return NULL;
+        }
+
+        // Add the statement to the repeat syntax node.
+        GABUILD_PushToSyntaxBody(l_RepeatSyntax->m_LeftExpr, l_Statement);
+    }
+
+    return l_RepeatSyntax;
+}
+
 GABUILD_Syntax* GABUILD_ParseStatement ()
 {
     // Skip any newline tokens.
@@ -860,6 +1089,23 @@ GABUILD_Syntax* GABUILD_ParseStatement ()
             return GABUILD_ParseDefineSyntax();
         }
 
+        // If the keyword token is a macro keyword, then parse a macro statement.
+        else if (l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_MACRO)
+        {
+            return GABUILD_ParseMacroSyntax();
+        }
+
+        // If the keyword token is a shift keyword, then parse a shift statement.
+        else if (l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_SHIFT)
+        {
+            return GABUILD_ParseShiftSyntax();
+        }
+
+        else if (l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_REPEAT)
+        {
+            return GABUILD_ParseRepeatStatement();
+        }
+
         else
         {
             GABLE_error("Unexpected keyword token '%s'.", l_KeywordToken->m_Keyword->m_Name);
@@ -867,9 +1113,8 @@ GABUILD_Syntax* GABUILD_ParseStatement ()
         }
     }
 
-    // If all else fails, then emit an error.
-    GABLE_error("Unexpected token '%s'.", GABUILD_PeekToken(0)->m_Lexeme);
-    return NULL;
+    // If all else fails, then we have to be parsing a macro call statement.
+    return GABUILD_ParseMacroCallSyntax();
 }
 
 // Public Functions ////////////////////////////////////////////////////////////////////////////////

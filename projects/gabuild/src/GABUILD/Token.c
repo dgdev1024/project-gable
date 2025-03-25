@@ -98,7 +98,7 @@ const Char* GABUILD_StringifyToken (const GABUILD_Token* p_Token)
 void GABUILD_PrintToken (const GABUILD_Token* p_Token)
 {
     printf("  Token '%s'", GABUILD_StringifyToken(p_Token));
-    if (p_Token != NULL && p_Token->m_Lexeme[0] != '\0')
+    if (p_Token->m_Lexeme != NULL && p_Token->m_Lexeme[0] != '\0')
     {
         printf(" = '%s'", p_Token->m_Lexeme);
     }

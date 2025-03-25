@@ -20,6 +20,8 @@ GABUILD_Syntax* GABUILD_CreateSyntax (GABUILD_SyntaxType p_Type, const GABUILD_T
     if (
         p_Type == GABUILD_ST_LABEL ||
         p_Type == GABUILD_ST_DEF ||
+        p_Type == GABUILD_ST_MACRO ||
+        p_Type == GABUILD_ST_MACRO_CALL ||
         p_Type == GABUILD_ST_IDENTIFIER ||
         p_Type == GABUILD_ST_STRING
     )
@@ -31,7 +33,8 @@ GABUILD_Syntax* GABUILD_CreateSyntax (GABUILD_SyntaxType p_Type, const GABUILD_T
     // If the syntax node calls for a body of child nodes, allocate it.
     if (
         p_Type == GABUILD_ST_BLOCK ||
-        p_Type == GABUILD_ST_DATA
+        p_Type == GABUILD_ST_DATA ||
+        p_Type == GABUILD_ST_MACRO_CALL
     )
     {
         l_Syntax->m_Body = GABLE_calloc(GABUILD_SYNTAX_BODY_INITIAL_CAPACITY, GABUILD_Syntax*);
@@ -99,6 +102,7 @@ void GABUILD_DestroySyntax (GABUILD_Syntax* p_Syntax)
         }
 
         // Destroy the other child syntax nodes, if they exist.
+        GABUILD_DestroySyntax(p_Syntax->m_CountExpr);
         GABUILD_DestroySyntax(p_Syntax->m_LeftExpr);
         GABUILD_DestroySyntax(p_Syntax->m_RightExpr);
 

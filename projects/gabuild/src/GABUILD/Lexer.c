@@ -190,444 +190,6 @@ static void GABUILD_FreeTokens ()
 
 // Static Functions - Lexing ///////////////////////////////////////////////////////////////////////
 
-static Bool GABUILD_LexIdentifier (FILE* p_File)
-{
-    // Keep a string buffer for the identifier, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Also, keep a separate buffer for the identifier in uppercase.
-    Char l_Upper[GABUILD_TOKEN_MAX_LENGTH];
-
-    // Add characters to the buffer until a non-alphanumeric, non-underscore character is found.
-    while (isalnum(s_Lexer.m_Char) || s_Lexer.m_Char == '_' || s_Lexer.m_Char == '#' || s_Lexer.m_Char == '.')
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("Identifier exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-
-        // Add the character to the buffer.
-        l_Buffer[l_Length]  = (Char) s_Lexer.m_Char;
-        l_Upper[l_Length]   = (Char) toupper(s_Lexer.m_Char);
-        l_Length++;
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-
-        // Update the current column.
-        s_Lexer.m_CurrentColumn++;
-    }
-
-    // Put the non-alphanumeric or non-underscore character back into the file stream.
-    ungetc(s_Lexer.m_Char, p_File);
-    s_Lexer.m_CurrentColumn--;
-
-    // Add a null terminator to the buffers.
-    l_Buffer[l_Length] = '\0';
-    l_Upper[l_Length]  = '\0';
-
-    // Check if the identifier is a keyword.
-    const GABUILD_Keyword* l_Keyword = GABUILD_LookupKeyword(l_Upper);
-    if (l_Keyword->m_Type != GABUILD_KT_NONE)
-    {
-        // Insert the keyword token, then attach the keyword to the token.
-        GABUILD_InsertToken(GABUILD_TOKEN_KEYWORD, l_Buffer);
-        s_Lexer.m_Tokens[s_Lexer.m_TokenCount - 1].m_Keyword = l_Keyword;
-
-        return true;
-    }
-    else
-    {
-        return GABUILD_InsertToken(GABUILD_TOKEN_IDENTIFIER, l_Buffer);
-    }
-}
-
-static Bool GABUILD_LexString (FILE* p_File)
-{
-    // Advance past the opening double quote.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-
-    // Keep a string buffer for the string, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Add characters to the buffer until a closing double quote is found.
-    while (s_Lexer.m_Char != '"')
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("String exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-        
-        // Check for an escape character.
-        if (s_Lexer.m_Char == '\\')
-        {
-            // Read the next character from the file.
-            s_Lexer.m_Char = fgetc(p_File);
-            s_Lexer.m_CurrentColumn++;
-
-            // Check for the escape character.
-            switch (s_Lexer.m_Char)
-            {
-                case '0': l_Buffer[l_Length] = '\0'; break;
-                case 'a': l_Buffer[l_Length] = '\a'; break;
-                case 'b': l_Buffer[l_Length] = '\b'; break;
-                case 'f': l_Buffer[l_Length] = '\f'; break;
-                case 'n': l_Buffer[l_Length] = '\n'; break;
-                case 'r': l_Buffer[l_Length] = '\r'; break;
-                case 't': l_Buffer[l_Length] = '\t'; break;
-                case 'v': l_Buffer[l_Length] = '\v'; break;
-                case '\\': l_Buffer[l_Length] = '\\'; break;
-                case '"': l_Buffer[l_Length] = '"'; break;
-                case '?': l_Buffer[l_Length] = '?'; break;
-                default:
-                    GABLE_error("Invalid escape character '\\%c'.", s_Lexer.m_Char);
-                    return false;
-            }
-        }
-        else
-        {
-            // The character is not an escape character.
-            l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        }
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-        s_Lexer.m_CurrentColumn++;
-
-        // Update the current length.
-        l_Length++;
-    }
-
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
-    // Insert the string token.
-    return GABUILD_InsertToken(GABUILD_TOKEN_STRING, l_Buffer);
-}
-
-static Bool GABUILD_LexCharacter (FILE* p_File)
-{
-    // Advance past the opening single quote.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-    
-    // Keep exactly one character for the character token.
-    Char l_Character = 0;
-
-    // Check to see if the current character is an escape character.
-    if (s_Lexer.m_Char == '\\')
-    {
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-        s_Lexer.m_CurrentColumn++;
-
-        // Check for the escape character.
-        switch (s_Lexer.m_Char)
-        {
-            case '0': l_Character = '\0'; break;
-            case 'a': l_Character = '\a'; break;
-            case 'b': l_Character = '\b'; break;
-            case 'f': l_Character = '\f'; break;
-            case 'n': l_Character = '\n'; break;
-            case 'r': l_Character = '\r'; break;
-            case 't': l_Character = '\t'; break;
-            case 'v': l_Character = '\v'; break;
-            case '\\': l_Character = '\\'; break;
-            case '\'': l_Character = '\''; break;
-            case '"': l_Character = '"'; break;
-            case '?': l_Character = '?'; break;
-            default:
-                GABLE_error("Invalid escape character '\\%c'.", s_Lexer.m_Char);
-                return false;
-        }
-    }
-    else
-    {
-        // The character is not an escape character.
-        l_Character = (Char) s_Lexer.m_Char;
-    }
-    
-    // Read the next character from the file. It should be a closing single quote.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-    if (s_Lexer.m_Char != '\'')
-    {
-        GABLE_error("Expected closing single quote after character literal.");
-        return false;
-    }
-
-    // Insert the character token.
-    Char l_Buffer[2] = { l_Character, '\0' };
-    return GABUILD_InsertToken(GABUILD_TOKEN_CHARACTER, l_Buffer);
-}
-
-static Bool GABUILD_LexBinary (FILE* p_File)
-{
-    // Advance past the 'b' character.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-
-    // Keep a string buffer for the binary number, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Add characters to the buffer until a non-binary character is found.
-    while (s_Lexer.m_Char == '0' || s_Lexer.m_Char == '1')
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("Binary number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-
-        // Add the character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-
-        // Update the current column.
-        s_Lexer.m_CurrentColumn++;
-    }
-
-    // Make sure the binary number is not empty.
-    if (l_Length == 0)
-    {
-        GABLE_error("Expected binary number after '0b' prefix.");
-        return false;
-    }
-
-    // Put the non-binary character back into the file stream.
-    ungetc(s_Lexer.m_Char, p_File);
-
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
-    // Insert the binary number token.
-    return GABUILD_InsertToken(GABUILD_TOKEN_BINARY, l_Buffer);
-}
-
-static Bool GABUILD_LexOctal (FILE* p_File)
-{
-    // Advance past the 'o' character.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-
-    // Keep a string buffer for the octal number, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Add characters to the buffer until a non-octal character is found.
-    while (s_Lexer.m_Char >= '0' && s_Lexer.m_Char <= '7')
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("Octal number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-
-        // Add the character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-
-        // Update the current column.
-        s_Lexer.m_CurrentColumn++;
-    }
-
-    // Make sure the octal number is not empty.
-    if (l_Length == 0)
-    {
-        GABLE_error("Expected octal number after '0o' prefix.");
-        return false;
-    }
-
-    // Put the non-octal character back into the file stream.
-    ungetc(s_Lexer.m_Char, p_File);
-
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
-    // Insert the octal number token.
-    return GABUILD_InsertToken(GABUILD_TOKEN_OCTAL, l_Buffer);
-}
-
-static Bool GABUILD_LexHexadecimal (FILE* p_File)
-{
-    // Advance past the 'x' character.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-
-    // Keep a string buffer for the hexadecimal number, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Add characters to the buffer until a non-hexadecimal character is found.
-    while (isxdigit(s_Lexer.m_Char))
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("Hexadecimal number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-
-        // Add the character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-
-        // Update the current column.
-        s_Lexer.m_CurrentColumn++;
-    }
-
-    // Make sure the hexadecimal number is not empty.
-    if (l_Length == 0)
-    {
-        GABLE_error("Expected hexadecimal number after '0x' prefix.");
-        return false;
-    }
-
-    // Put the non-hexadecimal character back into the file stream.
-    ungetc(s_Lexer.m_Char, p_File);
-
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
-    // Insert the hexadecimal number token.
-    return GABUILD_InsertToken(GABUILD_TOKEN_HEXADECIMAL, l_Buffer);
-}
-
-static Bool GABUILD_LexNumber (FILE* p_File)
-{
-    // If the first digit is zero, then check the next character. We may be dealing with a binary,
-    // octal, or hexadecimal number.
-    if (s_Lexer.m_Char == '0')
-    {
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-        s_Lexer.m_CurrentColumn++;
-
-        // Check for a binary, octal, or hexadecimal number.
-        if (s_Lexer.m_Char == 'b' || s_Lexer.m_Char == 'B') { return GABUILD_LexBinary(p_File); }
-        if (s_Lexer.m_Char == 'o' || s_Lexer.m_Char == 'O') { return GABUILD_LexOctal(p_File); }
-        if (s_Lexer.m_Char == 'x' || s_Lexer.m_Char == 'X') { return GABUILD_LexHexadecimal(p_File); }
-
-        // Put the non-binary, non-octal, non-hexadecimal character back into the file stream.
-        ungetc(s_Lexer.m_Char, p_File);
-        s_Lexer.m_Char = '0';
-        s_Lexer.m_CurrentColumn--;
-    }
-
-    // Keep a string buffer for the number, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Keep a flag for whether a decimal point has been found.
-    Bool l_Decimal = false;
-
-    // Add characters to the buffer until a non-numeric character is found.
-    while (isdigit(s_Lexer.m_Char) || s_Lexer.m_Char == '.')
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("Number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-
-        // Check for a decimal point.
-        if (s_Lexer.m_Char == '.')
-        {
-            // Check if a decimal point has already been found. If so, return an error.
-            if (l_Decimal)
-            {
-                GABLE_error("Number contains multiple decimal points.");
-                return false;
-            }
-
-            l_Decimal = true;
-        }
-
-        // Add the character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-
-        // Update the current column.
-        s_Lexer.m_CurrentColumn++;
-    }
-
-    // Put the non-numeric character back into the file stream.
-    ungetc(s_Lexer.m_Char, p_File);
-    s_Lexer.m_CurrentColumn--;
-
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
-    // Insert the number token.
-    return GABUILD_InsertToken(GABUILD_TOKEN_NUMBER, l_Buffer);
-}
-
-static Bool GABUILD_LexArgument (FILE* p_File)
-{
-    // This works the same as `GABUILD_LexNumber`, only that it allows only integers.
-    // Keep a string buffer for the number, and a counter for the current length.
-    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
-    Index l_Length = 0;
-
-    // Advance past the `@` character.
-    s_Lexer.m_Char = fgetc(p_File);
-    s_Lexer.m_CurrentColumn++;
-
-    // Add characters to the buffer until a non-numeric character is found.
-    while (isdigit(s_Lexer.m_Char))
-    {
-        // Check if the buffer is full. If so, return an error.
-        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
-        {
-            GABLE_error("Argument exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
-            return false;
-        }
-
-        // Add the character to the buffer.
-        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
-        l_Length++;
-
-        // Read the next character from the file.
-        s_Lexer.m_Char = fgetc(p_File);
-
-        // Update the current column.
-        s_Lexer.m_CurrentColumn++;
-    }
-
-    // Put the non-numeric character back into the file stream.
-    ungetc(s_Lexer.m_Char, p_File);
-    s_Lexer.m_CurrentColumn--;
-
-    // Add a null terminator to the buffer.
-    l_Buffer[l_Length] = '\0';
-
-    // Insert the argument token.
-    return GABUILD_InsertToken(GABUILD_TOKEN_ARGUMENT, l_Buffer);
-}
-
 static Bool GABUILD_LexSymbol (FILE* p_File)
 {
     Int32 l_Peek1 = 0, l_Peek2 = 0;
@@ -809,6 +371,466 @@ static Bool GABUILD_LexSymbol (FILE* p_File)
     }
 }
 
+static Bool GABUILD_LexIdentifier (FILE* p_File)
+{
+    // Keep a string buffer for the identifier, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Also, keep a separate buffer for the identifier in uppercase.
+    Char l_Upper[GABUILD_TOKEN_MAX_LENGTH];
+
+    // Add characters to the buffer until a non-alphanumeric, non-underscore character is found.
+    while (isalnum(s_Lexer.m_Char) || s_Lexer.m_Char == '_' || s_Lexer.m_Char == '#' || s_Lexer.m_Char == '.')
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Identifier exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length]  = (Char) s_Lexer.m_Char;
+        l_Upper[l_Length]   = (Char) toupper(s_Lexer.m_Char);
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Put the non-alphanumeric or non-underscore character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+    s_Lexer.m_CurrentColumn--;
+
+    // Add a null terminator to the buffers.
+    l_Buffer[l_Length] = '\0';
+    l_Upper[l_Length]  = '\0';
+
+    // Check if the identifier is a keyword.
+    const GABUILD_Keyword* l_Keyword = GABUILD_LookupKeyword(l_Upper);
+    if (l_Keyword->m_Type != GABUILD_KT_NONE)
+    {
+        // Insert the keyword token, then attach the keyword to the token.
+        GABUILD_InsertToken(GABUILD_TOKEN_KEYWORD, l_Buffer);
+        s_Lexer.m_Tokens[s_Lexer.m_TokenCount - 1].m_Keyword = l_Keyword;
+
+        return true;
+    }
+    else
+    {
+        return GABUILD_InsertToken(GABUILD_TOKEN_IDENTIFIER, l_Buffer);
+    }
+}
+
+static Bool GABUILD_LexString (FILE* p_File)
+{
+    // Advance past the opening double quote.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Keep a string buffer for the string, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Add characters to the buffer until a closing double quote is found.
+    while (s_Lexer.m_Char != '"')
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("String exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+        
+        // Check for an escape character.
+        if (s_Lexer.m_Char == '\\')
+        {
+            // Read the next character from the file.
+            s_Lexer.m_Char = fgetc(p_File);
+            s_Lexer.m_CurrentColumn++;
+
+            // Check for the escape character.
+            switch (s_Lexer.m_Char)
+            {
+                case '0': l_Buffer[l_Length] = '\0'; break;
+                case 'a': l_Buffer[l_Length] = '\a'; break;
+                case 'b': l_Buffer[l_Length] = '\b'; break;
+                case 'f': l_Buffer[l_Length] = '\f'; break;
+                case 'n': l_Buffer[l_Length] = '\n'; break;
+                case 'r': l_Buffer[l_Length] = '\r'; break;
+                case 't': l_Buffer[l_Length] = '\t'; break;
+                case 'v': l_Buffer[l_Length] = '\v'; break;
+                case '\\': l_Buffer[l_Length] = '\\'; break;
+                case '"': l_Buffer[l_Length] = '"'; break;
+                case '?': l_Buffer[l_Length] = '?'; break;
+                default:
+                    GABLE_error("Invalid escape character '\\%c'.", s_Lexer.m_Char);
+                    return false;
+            }
+        }
+        else
+        {
+            // The character is not an escape character.
+            l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        }
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+        s_Lexer.m_CurrentColumn++;
+
+        // Update the current length.
+        l_Length++;
+    }
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the string token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_STRING, l_Buffer);
+}
+
+static Bool GABUILD_LexCharacter (FILE* p_File)
+{
+    // Advance past the opening single quote.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+    
+    // Keep exactly one character for the character token.
+    Char l_Character = 0;
+
+    // Check to see if the current character is an escape character.
+    if (s_Lexer.m_Char == '\\')
+    {
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+        s_Lexer.m_CurrentColumn++;
+
+        // Check for the escape character.
+        switch (s_Lexer.m_Char)
+        {
+            case '0': l_Character = '\0'; break;
+            case 'a': l_Character = '\a'; break;
+            case 'b': l_Character = '\b'; break;
+            case 'f': l_Character = '\f'; break;
+            case 'n': l_Character = '\n'; break;
+            case 'r': l_Character = '\r'; break;
+            case 't': l_Character = '\t'; break;
+            case 'v': l_Character = '\v'; break;
+            case '\\': l_Character = '\\'; break;
+            case '\'': l_Character = '\''; break;
+            case '"': l_Character = '"'; break;
+            case '?': l_Character = '?'; break;
+            default:
+                GABLE_error("Invalid escape character '\\%c'.", s_Lexer.m_Char);
+                return false;
+        }
+    }
+    else
+    {
+        // The character is not an escape character.
+        l_Character = (Char) s_Lexer.m_Char;
+    }
+    
+    // Read the next character from the file. It should be a closing single quote.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+    if (s_Lexer.m_Char != '\'')
+    {
+        GABLE_error("Expected closing single quote after character literal.");
+        return false;
+    }
+
+    // Insert the character token.
+    Char l_Buffer[2] = { l_Character, '\0' };
+    return GABUILD_InsertToken(GABUILD_TOKEN_CHARACTER, l_Buffer);
+}
+
+static Bool GABUILD_LexBinary (FILE* p_File)
+{
+    Bool l_IsPercent = s_Lexer.m_Char == '%';
+
+    // Advance past the 'b' or '%' character.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Keep a string buffer for the binary number, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Add characters to the buffer until a non-binary character is found.
+    while (s_Lexer.m_Char == '0' || s_Lexer.m_Char == '1')
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Binary number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Make sure the binary number is not empty.
+    if (l_Length == 0)
+    {
+        if (l_IsPercent == true)
+        {
+            ungetc(s_Lexer.m_Char, p_File);
+            s_Lexer.m_Char = '%';
+            s_Lexer.m_CurrentColumn--;
+            return GABUILD_LexSymbol(p_File);
+        }
+
+        GABLE_error("Expected binary number after '0b' prefix.");
+        return false;
+    }
+
+    // Put the non-binary character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the binary number token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_BINARY, l_Buffer);
+}
+
+static Bool GABUILD_LexOctal (FILE* p_File)
+{
+    Bool l_IsAmpersand = s_Lexer.m_Char == '&';
+
+    // Advance past the 'o' or '&' character.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Keep a string buffer for the octal number, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Add characters to the buffer until a non-octal character is found.
+    while (s_Lexer.m_Char >= '0' && s_Lexer.m_Char <= '7')
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Octal number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Make sure the octal number is not empty.
+    if (l_Length == 0)
+    {
+        if (l_IsAmpersand == true)
+        {
+            ungetc(s_Lexer.m_Char, p_File);
+            s_Lexer.m_Char = '&';
+            s_Lexer.m_CurrentColumn--;
+            return GABUILD_LexSymbol(p_File);
+        }
+
+        GABLE_error("Expected octal number after '0o' prefix.");
+        return false;
+    }
+
+    // Put the non-octal character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the octal number token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_OCTAL, l_Buffer);
+}
+
+static Bool GABUILD_LexHexadecimal (FILE* p_File)
+{
+    Bool l_IsDollar = s_Lexer.m_Char == '$';
+
+    // Advance past the 'x' or '$' character.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Keep a string buffer for the hexadecimal number, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Add characters to the buffer until a non-hexadecimal character is found.
+    while (isxdigit(s_Lexer.m_Char))
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Hexadecimal number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Make sure the hexadecimal number is not empty.
+    if (l_Length == 0)
+    {
+        GABLE_error("Expected hexadecimal number after '0x' or '$' prefix.");
+        return false;
+    }
+
+    // Put the non-hexadecimal character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the hexadecimal number token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_HEXADECIMAL, l_Buffer);
+}
+
+static Bool GABUILD_LexNumber (FILE* p_File)
+{
+    // If the first digit is zero, then check the next character. We may be dealing with a binary,
+    // octal, or hexadecimal number.
+    if (s_Lexer.m_Char == '0')
+    {
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+        s_Lexer.m_CurrentColumn++;
+
+        // Check for a binary, octal, or hexadecimal number.
+        if (s_Lexer.m_Char == 'b' || s_Lexer.m_Char == 'B') { return GABUILD_LexBinary(p_File); }
+        if (s_Lexer.m_Char == 'o' || s_Lexer.m_Char == 'O') { return GABUILD_LexOctal(p_File); }
+        if (s_Lexer.m_Char == 'x' || s_Lexer.m_Char == 'X') { return GABUILD_LexHexadecimal(p_File); }
+
+        // Put the non-binary, non-octal, non-hexadecimal character back into the file stream.
+        ungetc(s_Lexer.m_Char, p_File);
+        s_Lexer.m_Char = '0';
+        s_Lexer.m_CurrentColumn--;
+    }
+
+    // Keep a string buffer for the number, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Keep a flag for whether a decimal point has been found.
+    Bool l_Decimal = false;
+
+    // Add characters to the buffer until a non-numeric character is found.
+    while (isdigit(s_Lexer.m_Char) || s_Lexer.m_Char == '.')
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Number exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Check for a decimal point.
+        if (s_Lexer.m_Char == '.')
+        {
+            // Check if a decimal point has already been found. If so, return an error.
+            if (l_Decimal)
+            {
+                GABLE_error("Number contains multiple decimal points.");
+                return false;
+            }
+
+            l_Decimal = true;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Put the non-numeric character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+    s_Lexer.m_CurrentColumn--;
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the number token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_NUMBER, l_Buffer);
+}
+
+static Bool GABUILD_LexArgument (FILE* p_File)
+{
+    // This works the same as `GABUILD_LexNumber`, only that it allows only integers.
+    // Keep a string buffer for the number, and a counter for the current length.
+    Char l_Buffer[GABUILD_TOKEN_MAX_LENGTH];
+    Index l_Length = 0;
+
+    // Advance past the `@` or '\' character.
+    s_Lexer.m_Char = fgetc(p_File);
+    s_Lexer.m_CurrentColumn++;
+
+    // Add characters to the buffer until a non-numeric character is found.
+    while (isdigit(s_Lexer.m_Char))
+    {
+        // Check if the buffer is full. If so, return an error.
+        if (l_Length >= GABUILD_TOKEN_MAX_LENGTH)
+        {
+            GABLE_error("Argument exceeds maximum length of %d characters.", GABUILD_TOKEN_MAX_LENGTH);
+            return false;
+        }
+
+        // Add the character to the buffer.
+        l_Buffer[l_Length] = (Char) s_Lexer.m_Char;
+        l_Length++;
+
+        // Read the next character from the file.
+        s_Lexer.m_Char = fgetc(p_File);
+
+        // Update the current column.
+        s_Lexer.m_CurrentColumn++;
+    }
+
+    // Put the non-numeric character back into the file stream.
+    ungetc(s_Lexer.m_Char, p_File);
+    s_Lexer.m_CurrentColumn--;
+
+    // Add a null terminator to the buffer.
+    l_Buffer[l_Length] = '\0';
+
+    // Insert the argument token.
+    return GABUILD_InsertToken(GABUILD_TOKEN_ARGUMENT, l_Buffer);
+}
+
 static Bool GABUILD_Lex (FILE* p_File)
 {
     Bool l_Comment = false;     // Whether the lexer is currently in a comment.
@@ -863,12 +885,24 @@ static Bool GABUILD_Lex (FILE* p_File)
         //   prefixes.
         // - Symbols are any other character.
         Bool l_Good = false;
-        if (isalpha(s_Lexer.m_Char) || s_Lexer.m_Char == '_' || s_Lexer.m_Char == '.')   { l_Good = GABUILD_LexIdentifier(p_File); }
-        else if (s_Lexer.m_Char == '"')                         { l_Good = GABUILD_LexString(p_File); }
-        else if (s_Lexer.m_Char == '\'')                        { l_Good = GABUILD_LexCharacter(p_File); }
-        else if (s_Lexer.m_Char == '@')                         { l_Good = GABUILD_LexArgument(p_File); }
-        else if (isdigit(s_Lexer.m_Char))                       { l_Good = GABUILD_LexNumber(p_File); }
-        else                                                    { l_Good = GABUILD_LexSymbol(p_File); }
+        if (isalpha(s_Lexer.m_Char) || s_Lexer.m_Char == '_' || s_Lexer.m_Char == '.')   
+            { l_Good = GABUILD_LexIdentifier(p_File); }
+        else if (s_Lexer.m_Char == '"')                             
+            { l_Good = GABUILD_LexString(p_File); }
+        else if (s_Lexer.m_Char == '\'')                            
+            { l_Good = GABUILD_LexCharacter(p_File); }
+        else if (s_Lexer.m_Char == '@' || s_Lexer.m_Char == '\\')   
+            { l_Good = GABUILD_LexArgument(p_File); }
+        else if (isdigit(s_Lexer.m_Char))                           
+            { l_Good = GABUILD_LexNumber(p_File); }
+        else if (s_Lexer.m_Char == '$')                             
+            { l_Good = GABUILD_LexHexadecimal(p_File); }
+        else if (s_Lexer.m_Char == '&')                             
+            { l_Good = GABUILD_LexOctal(p_File); }
+        else if (s_Lexer.m_Char == '%')                             
+            { l_Good = GABUILD_LexBinary(p_File); }
+        else                                                        
+            { l_Good = GABUILD_LexSymbol(p_File); }
 
         if (l_Good == false)
         {

@@ -25,6 +25,7 @@ typedef enum GABUILD_KeywordType
     GABUILD_KT_DEF,                     ///< @brief "Define" keyword (eg. `def x = 0x00`).
     GABUILD_KT_MACRO,                   ///< @brief "Macro" keyword (eg. `macro name`).
     GABUILD_KT_ENDM,                    ///< @brief "End Macro" keyword (eg. `endm`).
+    GABUILD_KT_NARG,                    ///< @brief "Number of Arguments" keyword (eg. `narg`).
     GABUILD_KT_SHIFT,                   ///< @brief "Shift" keyword (eg. `shift 2`).
     GABUILD_KT_REPEAT,                  ///< @brief "Repeat" keyword (eg. `repeat 3`, `rept 5`).
     GABUILD_KT_FOR,                     ///< @brief "For" keyword (eg. `for n, 256`, `for x, 0, 20, 4`).

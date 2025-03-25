@@ -16,6 +16,7 @@ static const GABUILD_Keyword GABUILD_KEYWORD_TABLE[] = {
     { "DEF",        GABUILD_KT_DEF,        0 },
     { "MACRO",      GABUILD_KT_MACRO,      0 },
     { "ENDM",       GABUILD_KT_ENDM,       0 },
+    { "_NARG",      GABUILD_KT_NARG,       0 },
     { "SHIFT",      GABUILD_KT_SHIFT,      0 },
     { "REPEAT",     GABUILD_KT_REPEAT,     0 },
     { "REPT",       GABUILD_KT_REPEAT,     0 },
@@ -48,6 +49,24 @@ const Char* GABUILD_StringifyKeywordType (GABUILD_KeywordType p_Type)
 {
     switch (p_Type)
     {
+        case GABUILD_KT_DB:         return "DB";
+        case GABUILD_KT_DW:         return "DW";
+        case GABUILD_KT_DL:         return "DL";
+        case GABUILD_KT_DS:         return "DS";
+        case GABUILD_KT_INCLUDE:    return "INCLUDE";
+        case GABUILD_KT_INCBIN:     return "INCBIN";
+        case GABUILD_KT_DEF:        return "DEF";
+        case GABUILD_KT_MACRO:      return "MACRO";
+        case GABUILD_KT_ENDM:       return "ENDM";
+        case GABUILD_KT_NARG:       return "_NARG";
+        case GABUILD_KT_SHIFT:      return "SHIFT";
+        case GABUILD_KT_REPEAT:     return "REPEAT";
+        case GABUILD_KT_FOR:        return "FOR";
+        case GABUILD_KT_IF:         return "IF";
+        case GABUILD_KT_ELIF:       return "ELIF";
+        case GABUILD_KT_ELSE:       return "ELSE";
+        case GABUILD_KT_ENDR:       return "ENDR";
+        case GABUILD_KT_ENDC:       return "ENDC";
         default:                    return "NONE";
     }
 }
