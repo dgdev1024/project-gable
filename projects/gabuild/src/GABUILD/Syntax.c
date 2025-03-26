@@ -14,7 +14,19 @@ GABUILD_Syntax* GABUILD_CreateSyntax (GABUILD_SyntaxType p_Type, const GABUILD_T
     GABLE_pexpect(l_Syntax, "Could not allocate memory for syntax node");
 
     l_Syntax->m_Type = p_Type;
-    l_Syntax->m_Token = *p_Token;
+    l_Syntax->m_Token.m_Type = p_Token->m_Type;
+    l_Syntax->m_Token.m_Line = p_Token->m_Line;
+    l_Syntax->m_Token.m_Column = p_Token->m_Column;
+    l_Syntax->m_Token.m_SourceFile = p_Token->m_SourceFile;
+    l_Syntax->m_Token.m_Keyword = p_Token->m_Keyword;
+
+    if (p_Token->m_Lexeme != NULL && p_Token->m_Lexeme[0] != '\0')
+    {
+        Size l_LexemeStrlen = strlen(p_Token->m_Lexeme);
+        l_Syntax->m_Token.m_Lexeme = GABLE_calloc(l_LexemeStrlen + 1, Char);
+        GABLE_pexpect(l_Syntax->m_Token.m_Lexeme, "Could not allocate memory for token lexeme");
+        strncpy(l_Syntax->m_Token.m_Lexeme, p_Token->m_Lexeme, l_LexemeStrlen);
+    }
 
     // If the syntax node calls for a string, allocate it.
     if (
@@ -86,6 +98,12 @@ void GABUILD_DestroySyntax (GABUILD_Syntax* p_Syntax)
 {
     if (p_Syntax != NULL)
     {
+        // Destroy the syntax lead token's lexeme, if it exists.
+        if (p_Syntax->m_Token.m_Lexeme != NULL)
+        {
+            GABLE_free(p_Syntax->m_Token.m_Lexeme);
+        }
+
         // Destroy the string, if it exists.
         if (p_Syntax->m_String != NULL)
         {

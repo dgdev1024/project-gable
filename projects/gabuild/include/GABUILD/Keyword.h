@@ -32,6 +32,7 @@ typedef enum GABUILD_KeywordType
     GABUILD_KT_REPEAT,                  ///< @brief "Repeat" keyword (eg. `repeat 3`, `rept 5`).
     GABUILD_KT_FOR,                     ///< @brief "For" keyword (eg. `for n, 256`, `for x, 0, 20, 4`).
     GABUILD_KT_IF,                      ///< @brief "If" keyword (eg. `if n == 0`).
+    GABUILD_KT_ELIF,                    ///< @brief "Else If" keyword (eg. `elif n == 1`).
     GABUILD_KT_ELSE,                    ///< @brief "Else" keyword (eg. `else`).
     GABUILD_KT_ENDR,                    ///< @brief "End Repeat", "End For" keyword (eg. `endr`).
     GABUILD_KT_ENDC,                    ///< @brief "End If" keyword (eg. `endc`).

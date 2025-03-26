@@ -731,6 +731,10 @@ GABUILD_Syntax* GABUILD_ParseLabelSyntax ()
     const GABUILD_Token* l_IdentifierToken = GABUILD_AdvanceToken();
     GABUILD_AdvanceToken();
 
+    // Some label strings may be followed by two colons '::' instead of just one.
+    // If this is the case, then advance past the second colon.
+    GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_COLON);
+
     // Create the label syntax node.
     GABUILD_Syntax* l_LabelSyntax = GABUILD_CreateSyntax(GABUILD_ST_LABEL, l_IdentifierToken);
 
@@ -1099,10 +1103,9 @@ GABUILD_Syntax* GABUILD_ParseIfStatement ()
     GABUILD_Syntax* l_IfSyntax = GABUILD_CreateSyntax(GABUILD_ST_IF, l_IfToken);
     l_IfSyntax->m_CondExpr = l_ConditionExpr;
     l_IfSyntax->m_LeftExpr = GABUILD_CreateSyntax(GABUILD_ST_BLOCK, l_IfToken);
-    l_IfSyntax->m_RightExpr = GABUILD_CreateSyntax(GABUILD_ST_BLOCK, l_IfToken);
 
     // Parse the block of statements to execute if the condition is true.
-    Bool l_HasElse = false;
+    Bool l_HasElse = false, l_HasElif = false;
     while (true)
     {
         // Skip any newline tokens.
@@ -1111,10 +1114,15 @@ GABUILD_Syntax* GABUILD_ParseIfStatement ()
             continue;
         }
 
-        // If the next token is an `else` token, then break the loop.
+        // If the next token is an `else` or `elif` token, then break the loop.
         if (GABUILD_AdvanceTokenIfKeyword(GABUILD_KT_ELSE) != NULL)
         {
             l_HasElse = true;
+            break;
+        }
+        else if (GABUILD_AdvanceTokenIfKeyword(GABUILD_KT_ELIF) != NULL)
+        {
+            l_HasElif = true;
             break;
         }
 
@@ -1137,32 +1145,48 @@ GABUILD_Syntax* GABUILD_ParseIfStatement ()
         GABUILD_PushToSyntaxBody(l_IfSyntax->m_LeftExpr, l_Statement);
     }
 
-    // Parse the block of statements to execute if the condition is false.
-    while (l_HasElse == true)
+    // If an `elif` token was found, then the false block of the if statement is another if statement.
+    if (l_HasElif == true)
     {
-        // Skip any newline tokens.
-        if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_NEWLINE) != NULL)
+        l_IfSyntax->m_RightExpr = GABUILD_ParseIfStatement();
+        if (l_IfSyntax->m_RightExpr == NULL)
         {
-            continue;
-        }
-
-        // If the next token is an `endif` token, then break the loop.
-        if (GABUILD_AdvanceTokenIfKeyword(GABUILD_KT_ENDC) != NULL)
-        {
-            break;
-        }
-
-        // Parse the next statement.
-        GABUILD_Syntax* l_Statement = GABUILD_ParseStatement();
-        if (l_Statement == NULL)
-        {
-            GABLE_error("Failed to parse statement in an else block.");
             GABUILD_DestroySyntax(l_IfSyntax);
             return NULL;
         }
+    }
 
-        // Add the statement to the if syntax node.
-        GABUILD_PushToSyntaxBody(l_IfSyntax->m_RightExpr, l_Statement);
+    // Parse the block of statements to execute if the condition is false.
+    else if (l_HasElse == true)
+    {
+        l_IfSyntax->m_RightExpr = GABUILD_CreateSyntax(GABUILD_ST_BLOCK, l_IfToken);
+
+        while (true)
+        {
+            // Skip any newline tokens.
+            if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_NEWLINE) != NULL)
+            {
+                continue;
+            }
+    
+            // If the next token is an `endif` token, then break the loop.
+            if (GABUILD_AdvanceTokenIfKeyword(GABUILD_KT_ENDC) != NULL)
+            {
+                break;
+            }
+    
+            // Parse the next statement.
+            GABUILD_Syntax* l_Statement = GABUILD_ParseStatement();
+            if (l_Statement == NULL)
+            {
+                GABLE_error("Failed to parse statement in an else block.");
+                GABUILD_DestroySyntax(l_IfSyntax);
+                return NULL;
+            }
+    
+            // Add the statement to the if syntax node.
+            GABUILD_PushToSyntaxBody(l_IfSyntax->m_RightExpr, l_Statement);
+        }
     }
 
     return l_IfSyntax;
@@ -1199,9 +1223,31 @@ GABUILD_Syntax* GABUILD_ParseIncbinStatement ()
         return NULL;
     }
 
+    GABUILD_Syntax* l_OffsetExpr = NULL;
+    if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_COMMA) != NULL)
+    {
+        l_OffsetExpr = GABUILD_ParseExpression();
+        if (l_OffsetExpr == NULL)
+        {
+            return NULL;
+        }
+    }
+
+    GABUILD_Syntax* l_LengthExpr = NULL;
+    if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_COMMA) != NULL)
+    {
+        l_LengthExpr = GABUILD_ParseExpression();
+        if (l_LengthExpr == NULL)
+        {
+            return NULL;
+        }
+    }
+
     // Create the incbin syntax node.
     GABUILD_Syntax* l_IncbinSyntax = GABUILD_CreateSyntax(GABUILD_ST_INCBIN, l_IncbinToken);
     l_IncbinSyntax->m_LeftExpr = l_IncbinExpr;
+    l_IncbinSyntax->m_RightExpr = l_OffsetExpr;
+    l_IncbinSyntax->m_CountExpr = l_LengthExpr;
 
     return l_IncbinSyntax;
 }

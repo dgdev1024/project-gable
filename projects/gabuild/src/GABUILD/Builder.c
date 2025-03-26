@@ -242,41 +242,61 @@ static Bool GABUILD_DefineStringASCII (const Char* p_String)
     return true;
 }
 
-static Bool GABUILD_DefineBinaryFile (const Char* p_Filename)
+static Bool GABUILD_DefineBinaryFile (const Char* p_Filename, Size p_Offset, Size p_Length)
 {
+    // Attempt to open the binary file for reading.
     FILE* l_File = fopen(p_Filename, "rb");
     if (l_File == NULL)
     {
-        GABLE_perror("Failed to open binary file '%s' for reading", p_Filename);
+        GABLE_perror("Failed to open included binary file '%s' for reading", p_Filename);
         return false;
     }
 
-    // Get the file size.
+    // Attempt to get and validate the file size.
     fseek(l_File, 0, SEEK_END);
-    Int64 l_FileSize = ftell(l_File);
-    if (l_FileSize < 0)
+    Int64 l_SignedFilesize = ftell(l_File);
+    if (l_SignedFilesize < 0)
     {
-        GABLE_perror("Failed to get size of binary file '%s'", p_Filename);
+        GABLE_perror("Failed to get the size of included binary file '%s'", p_Filename);
         fclose(l_File);
         return false;
     }
-    else if (s_Builder.m_OutputSize + l_FileSize >= GABUILD_BUILDER_OUTPUT_CAPACITY)
-    {
-        GABLE_error("Output buffer overflowed while defining a binary file.");
-        fclose(l_File);
-        return false;
-    }
+    Size l_Filesize = (Size) l_SignedFilesize;
     rewind(l_File);
 
-    // Read the file into the output buffer.
-    Size l_Read = fread(&s_Builder.m_Output[s_Builder.m_OutputSize], 1, l_FileSize, l_File);
-    if (l_Read != l_FileSize || (ferror(l_File) && !feof(l_File)))
+    // Correct the length according to the file's size and the provided offset.
+    if (p_Length == 0)
     {
-        GABLE_perror("Failed to read binary file '%s'", p_Filename);
+        p_Length = l_Filesize - p_Offset;
+    }
+    else if (p_Offset + p_Length > l_Filesize)
+    {
+        GABLE_error("Attempted to read past the end of included binary file '%s'", p_Filename);
         fclose(l_File);
         return false;
     }
 
+    // Ensure the output buffer has enough space for the binary data.
+    if (s_Builder.m_OutputSize + p_Length >= GABUILD_BUILDER_OUTPUT_CAPACITY)
+    {
+        GABLE_error("Output buffer overflowed while including a binary file.");
+        fclose(l_File);
+        return false;
+    }
+
+    // Read the binary data from the file into the output buffer.
+    fseek(l_File, p_Offset, SEEK_SET);
+    fread(s_Builder.m_Output + s_Builder.m_OutputSize, 1, p_Length, l_File);
+    if (ferror(l_File) && !feof(l_File))
+    {
+        GABLE_perror("Failed to read included binary file '%s'", p_Filename);
+        fclose(l_File);
+        return false;
+    }
+
+    s_Builder.m_OutputSize += p_Length;
+
+    // Close the file and return success.
     fclose(l_File);
     return true;
 }
@@ -1164,11 +1184,11 @@ GABUILD_Value* GABUILD_EvaluateIfStatement (const GABUILD_Syntax* p_SyntaxNode)
     GABUILD_Value* l_Result = NULL;
     if (l_ConditionValue->m_Number != 0)
     {
-        l_Result = GABUILD_EvaluateBlock(p_SyntaxNode->m_LeftExpr);
+        l_Result = GABUILD_Evaluate(p_SyntaxNode->m_LeftExpr);
     }
     else if (p_SyntaxNode->m_RightExpr != NULL)
     {
-        l_Result = GABUILD_EvaluateBlock(p_SyntaxNode->m_RightExpr);
+        l_Result = GABUILD_Evaluate(p_SyntaxNode->m_RightExpr);
     }
 
     GABUILD_DestroyValue(l_ConditionValue);
@@ -1241,8 +1261,58 @@ GABUILD_Value* GABUILD_EvaluateIncbinStatement (const GABUILD_Syntax* p_SyntaxNo
         return NULL;
     }
 
+    // The syntax's right expression, if provided, will contain an offset value.
+    Size l_Offset = 0;
+    if (p_SyntaxNode->m_RightExpr != NULL)
+    {
+        // Evaluate the offset expression.
+        GABUILD_Value* l_OffsetValue = GABUILD_Evaluate(p_SyntaxNode->m_RightExpr);
+        if (l_OffsetValue == NULL)
+        {
+            GABUILD_DestroyValue(l_StringValue);
+            return NULL;
+        }
+
+        // Check the type of the value. It must be a number.
+        if (l_OffsetValue->m_Type != GABUILD_VT_NUMBER)
+        {
+            GABLE_error("Unexpected value type for offset expression in 'incbin' statement.");
+            GABUILD_DestroyValue(l_OffsetValue);
+            GABUILD_DestroyValue(l_StringValue);
+            return NULL;
+        }
+
+        l_Offset = (Size) l_OffsetValue->m_IntegerPart;
+        GABUILD_DestroyValue(l_OffsetValue);
+    }
+
+    // The syntax's count expression, if provided, will contain a length value.
+    Size l_Length = 0;
+    if (p_SyntaxNode->m_CountExpr != NULL)
+    {
+        // Evaluate the length expression.
+        GABUILD_Value* l_LengthValue = GABUILD_Evaluate(p_SyntaxNode->m_CountExpr);
+        if (l_LengthValue == NULL)
+        {
+            GABUILD_DestroyValue(l_StringValue);
+            return NULL;
+        }
+
+        // Check the type of the value. It must be a number.
+        if (l_LengthValue->m_Type != GABUILD_VT_NUMBER)
+        {
+            GABLE_error("Unexpected value type for length expression in 'incbin' statement.");
+            GABUILD_DestroyValue(l_LengthValue);
+            GABUILD_DestroyValue(l_StringValue);
+            return NULL;
+        }
+
+        l_Length = (Size) l_LengthValue->m_IntegerPart;
+        GABUILD_DestroyValue(l_LengthValue);
+    }
+
     // Load the file.
-    if (GABUILD_DefineBinaryFile(l_StringValue->m_String) == false)
+    if (GABUILD_DefineBinaryFile(l_StringValue->m_String, l_Offset, l_Length) == false)
     {
         GABUILD_DestroyValue(l_StringValue);
         return NULL;
@@ -1403,6 +1473,12 @@ void GABUILD_ShutdownBuilder ()
     }
     GABLE_free(s_Builder.m_DefineValues);
     GABLE_free(s_Builder.m_DefineKeys);
+
+    // Free macro call stack.
+    for (Index i = 0; i < s_Builder.m_MacroCallStackIndex; ++i)
+    {
+        GABUILD_DestroyMacroCall(s_Builder.m_MacroCallStack[i]);
+    }
 
     // Free macros.
     for (Size i = 0; i < s_Builder.m_MacroCount; ++i)
