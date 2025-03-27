@@ -20,6 +20,44 @@ workspace "project-gable"
         cdialect "gnu17"
     filter {}
 
+    -- Enable Extra Warnings, but ignore any unused warnings
+    warnings "Extra"
+    disablewarnings {
+        "unused-parameter",
+        "unused-variable",
+        "unused-function",
+        "unused-value",
+        "unused-label",
+        "unused-but-set-variable",
+        "unused-const-variable",
+        "unused-local-typedefs",
+        "unused-macros",
+        "unused-result",
+        "unused-parameter",
+        "unused-variable",
+        "unused-function",
+        "unused-value",
+        "unused-label",
+        "unused-but-set-variable",
+        "unused-const-variable",
+        "unused-local-typedefs",
+        "unused-macros",
+        "unused-result",
+        "unused-parameter",
+        "unused-variable",
+        "unused-function",
+        "unused-value",
+        "unused-label",
+        "unused-but-set-variable",
+        "unused-const-variable",
+        "unused-local-typedefs",
+        "unused-macros",
+        "unused-result"
+    }
+
+    -- Treat Warnings as Errors
+    flags { "FatalWarnings" }
+
     -- GABLE (GAmeBoy-Like Engine) Library
     project "gable"
         kind "SharedLib"

@@ -18,6 +18,8 @@
 typedef struct GABLE_Engine
 {
     Uint64                  m_Cycles;       ///< @brief The number of cycles elapsed on the engine.
+    GABLE_RestartVector     m_RST[8];       ///< @brief The engine's "CPU" restart vectors.
+    GABLE_Registers         m_Registers;    ///< @brief The engine's "CPU" registers.
     GABLE_InterruptContext* m_Interrupts;   ///< @brief The engine's interrupt context.
     GABLE_Timer*            m_Timer;        ///< @brief The engine's timer.
     GABLE_Realtime*         m_Realtime;     ///< @brief The engine's real-time clock.
@@ -37,6 +39,18 @@ GABLE_Engine* GABLE_CreateEngine ()
     // Allocate the GABLE Engine instance.
     GABLE_Engine* l_Engine = GABLE_calloc(1, GABLE_Engine);
     GABLE_pexpect(l_Engine != NULL, "Failed to allocate GABLE Engine");
+
+    // Initialize the engine's "CPU" registers.
+    l_Engine->m_Registers.m_A   = 0x11;
+    l_Engine->m_Registers.m_F   = 0x80;
+    l_Engine->m_Registers.m_B   = 0x00;
+    l_Engine->m_Registers.m_C   = 0x00;
+    l_Engine->m_Registers.m_D   = 0xFF;
+    l_Engine->m_Registers.m_E   = 0x56;
+    l_Engine->m_Registers.m_H   = 0x00;
+    l_Engine->m_Registers.m_L   = 0x0D;
+    l_Engine->m_Registers.m_SP  = 0xFFFE;
+    l_Engine->m_Registers.m_RST = 0xFF;
 
     // Create the engine's components.
     l_Engine->m_Interrupts = GABLE_CreateInterruptContext();
@@ -96,6 +110,22 @@ Bool GABLE_CycleEngine (GABLE_Engine* p_Engine, Count p_Cycles)
             GABLE_TickAPU(p_Engine->m_APU, p_Engine);
             GABLE_TickPPU(p_Engine->m_PPU, p_Engine);
             GABLE_TickNetworkContext(p_Engine->m_Network, p_Engine);
+
+            // If an RST has been requested, service it.
+            if (p_Engine->m_Registers.m_RST <= 0b111)
+            {
+                if (p_Engine->m_RST[p_Engine->m_Registers.m_RST] != NULL)
+                {
+                    if (p_Engine->m_RST[p_Engine->m_Registers.m_RST](p_Engine) == false)
+                    {
+                        // Return failure.
+                        return false;
+                    }
+                }
+
+                // Reset the RST register.
+                p_Engine->m_Registers.m_RST = 0xFF;
+            }
 
             // Service an interrupt if requested.
             if (GABLE_ServiceInterrupt(p_Engine->m_Interrupts, p_Engine) == -1)
@@ -408,6 +438,185 @@ Bool GABLE_WriteWord (GABLE_Engine* p_Engine, Uint16 p_Address, Uint16 p_Value)
     return true;
 }
 
+Bool GABLE_PushWord (GABLE_Engine* p_Engine, Uint16 p_Value)
+{
+    // Validate the engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Push the word onto the stack.
+    return
+        GABLE_WriteByte(p_Engine, --p_Engine->m_Registers.m_SP, (p_Value & 0xFF00) >> 8) &&
+        GABLE_WriteByte(p_Engine, --p_Engine->m_Registers.m_SP, (p_Value & 0x00FF));
+}
+
+Bool GABLE_PopWord (GABLE_Engine* p_Engine, Uint16* p_Value)
+{
+    // Validate the engine instance and value pointer.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    GABLE_expect(p_Value != NULL, "Value pointer is NULL!");
+
+    // Pop the word from the stack.
+    Uint8 l_Byte0 = 0, l_Byte1 = 0;
+    if (
+        GABLE_ReadByte(p_Engine, p_Engine->m_Registers.m_SP++, &l_Byte0) == false ||
+        GABLE_ReadByte(p_Engine, p_Engine->m_Registers.m_SP++, &l_Byte1) == false
+    )
+    {
+        return false;
+    }
+
+    // Combine the bytes into a word.
+    *p_Value = (l_Byte1 << 8) | l_Byte0;
+    return true;
+}
+
+Bool GABLE_ReadByteRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint8* p_Value)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    GABLE_expect(p_Value != NULL, "Value pointer is NULL!");
+
+    switch (p_Register)
+    {
+        case GABLE_RT_A:    *p_Value = p_Engine->m_Registers.m_A; break;
+        case GABLE_RT_F:    *p_Value = p_Engine->m_Registers.m_F; break;
+        case GABLE_RT_B:    *p_Value = p_Engine->m_Registers.m_B; break;
+        case GABLE_RT_C:    *p_Value = p_Engine->m_Registers.m_C; break;
+        case GABLE_RT_D:    *p_Value = p_Engine->m_Registers.m_D; break;
+        case GABLE_RT_E:    *p_Value = p_Engine->m_Registers.m_E; break;
+        case GABLE_RT_H:    *p_Value = p_Engine->m_Registers.m_H; break;
+        case GABLE_RT_L:    *p_Value = p_Engine->m_Registers.m_L; break;
+        default:
+            GABLE_error("Register type %d is not a valid 8-bit register.", p_Register);
+            return false;
+    }
+
+    return true;
+}
+
+Bool GABLE_ReadWordRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint16* p_Value)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+    GABLE_expect(p_Value != NULL, "Value pointer is NULL!");
+
+    switch (p_Register)
+    {
+        case GABLE_RT_AF:   *p_Value = (p_Engine->m_Registers.m_A << 8) | p_Engine->m_Registers.m_F; break;
+        case GABLE_RT_BC:   *p_Value = (p_Engine->m_Registers.m_B << 8) | p_Engine->m_Registers.m_C; break;
+        case GABLE_RT_DE:   *p_Value = (p_Engine->m_Registers.m_D << 8) | p_Engine->m_Registers.m_E; break;
+        case GABLE_RT_HL:   *p_Value = (p_Engine->m_Registers.m_H << 8) | p_Engine->m_Registers.m_L; break;
+        case GABLE_RT_SP:   *p_Value = p_Engine->m_Registers.m_SP; break;
+        default:
+            GABLE_error("Register type %d is not a valid 16-bit register pair.", p_Register);
+            return false;
+    }
+
+    return true;
+}
+
+Bool GABLE_WriteByteRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint8 p_Value)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    switch (p_Register)
+    {
+        case GABLE_RT_A:    p_Engine->m_Registers.m_A = p_Value; break;
+        case GABLE_RT_F:    /* Flags register cannot be written to directly. */ break;
+        case GABLE_RT_B:    p_Engine->m_Registers.m_B = p_Value; break;
+        case GABLE_RT_C:    p_Engine->m_Registers.m_C = p_Value; break;
+        case GABLE_RT_D:    p_Engine->m_Registers.m_D = p_Value; break;
+        case GABLE_RT_E:    p_Engine->m_Registers.m_E = p_Value; break;
+        case GABLE_RT_H:    p_Engine->m_Registers.m_H = p_Value; break;
+        case GABLE_RT_L:    p_Engine->m_Registers.m_L = p_Value; break;
+        default:
+            GABLE_error("Register type %d is not a valid 8-bit register.", p_Register);
+            return false;
+    }
+
+    return true;
+}
+
+Bool GABLE_WriteWordRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint16 p_Value)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    switch (p_Register)
+    {
+        case GABLE_RT_AF:
+            // Flags register cannot be written directly.
+            p_Engine->m_Registers.m_A = (p_Value & 0xFF00) >> 8;
+            break;
+        case GABLE_RT_BC:
+            p_Engine->m_Registers.m_B = (p_Value & 0xFF00) >> 8;
+            p_Engine->m_Registers.m_C = (p_Value & 0x00FF);
+            break;
+        case GABLE_RT_DE:
+            p_Engine->m_Registers.m_D = (p_Value & 0xFF00) >> 8;
+            p_Engine->m_Registers.m_E = (p_Value & 0x00FF);
+            break;
+        case GABLE_RT_HL:
+            p_Engine->m_Registers.m_H = (p_Value & 0xFF00) >> 8;
+            p_Engine->m_Registers.m_L = (p_Value & 0x00FF);
+            break;
+        case GABLE_RT_SP:
+            // Stack pointer cannot be placed in the ROM area.
+            if (p_Value <= GABLE_GB_ROM_END)
+            {
+                GABLE_error("Attempted to set stack pointer to ROM address: $%04X.", p_Value);
+                return false;
+            }
+
+            p_Engine->m_Registers.m_SP = p_Value;
+            break;
+        default:
+            GABLE_error("Register type %d is not a valid 16-bit register pair.", p_Register);
+            return false;
+    }
+
+    return true;
+}
+
+Bool GABLE_GetFlag (GABLE_Engine* p_Engine, GABLE_FlagType p_Flag)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    switch (p_Flag)
+    {
+        case GABLE_FT_Z: return GABLE_bit(p_Engine->m_Registers.m_F, GABLE_FT_Z);
+        case GABLE_FT_N: return GABLE_bit(p_Engine->m_Registers.m_F, GABLE_FT_N);
+        case GABLE_FT_H: return GABLE_bit(p_Engine->m_Registers.m_F, GABLE_FT_H);
+        case GABLE_FT_C: return GABLE_bit(p_Engine->m_Registers.m_F, GABLE_FT_C);
+        default:
+            GABLE_error("Flag type %d is not a valid flag.", p_Flag);
+            return false;
+    }
+}
+
+void GABLE_SetFlag (GABLE_Engine* p_Engine, GABLE_FlagType p_Flag, Bool p_Value)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    switch (p_Flag)
+    {
+        case GABLE_FT_Z: GABLE_changebit(p_Engine->m_Registers.m_F, GABLE_FT_Z, p_Value); break;
+        case GABLE_FT_N: GABLE_changebit(p_Engine->m_Registers.m_F, GABLE_FT_N, p_Value); break;
+        case GABLE_FT_H: GABLE_changebit(p_Engine->m_Registers.m_F, GABLE_FT_H, p_Value); break;
+        case GABLE_FT_C: GABLE_changebit(p_Engine->m_Registers.m_F, GABLE_FT_C, p_Value); break;
+        default:
+            GABLE_error("Flag type %d is not a valid flag.", p_Flag);
+            break;
+    }
+}
+
+void GABLE_SetFlags (GABLE_Engine* p_Engine, Bool p_Z, Bool p_N, Bool p_H, Bool p_C)
+{
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    GABLE_SetFlag(p_Engine, GABLE_FT_Z, p_Z);
+    GABLE_SetFlag(p_Engine, GABLE_FT_N, p_N);
+    GABLE_SetFlag(p_Engine, GABLE_FT_H, p_H);
+    GABLE_SetFlag(p_Engine, GABLE_FT_C, p_C);
+}
+
 Uint64 GABLE_GetCycleCount (const GABLE_Engine* p_Engine)
 {
     // Validate the engine instance.
@@ -415,6 +624,46 @@ Uint64 GABLE_GetCycleCount (const GABLE_Engine* p_Engine)
 
     // Return the engine's cycle count.
     return p_Engine->m_Cycles;
+}
+
+void GABLE_SetRestartVectorHandler (GABLE_Engine* p_Engine, Uint8 p_RST, GABLE_RestartVector p_Handler)
+{
+    // Validate the engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Make sure the restart vector index is within bounds.
+    if (p_RST > 0b111)
+    {
+        GABLE_error("Invalid restart vector index: $%02X.", p_RST);
+        return;
+    }
+
+    // Set the restart vector handler.
+    p_Engine->m_RST[p_RST] = p_Handler;
+}
+
+Bool GABLE_CallRestartVector (GABLE_Engine* p_Engine, Uint8 p_RST)
+{
+    // Validate the engine instance.
+    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
+
+    // Make sure the restart vector index is within bounds.
+    if (p_RST > 0b111)
+    {
+        GABLE_error("Invalid restart vector index: $%02X.", p_RST);
+        return false;
+    }
+
+    // Call the restart vector handler.
+    GABLE_RestartVector l_Handler = p_Engine->m_RST[p_RST];
+    if (l_Handler == NULL)
+    {
+        GABLE_error("No restart vector handler is registered for RST $%02X.", p_RST);
+        return false;
+    }
+
+    p_Engine->m_Registers.m_RST = p_RST;
+    return true;
 }
 
 // Public Functions - Component Getters ////////////////////////////////////////////////////////////

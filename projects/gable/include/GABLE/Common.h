@@ -201,6 +201,63 @@ typedef time_t      Time;
 #define GABLE_GB_HRAM_START      0xFF80
 #define GABLE_GB_HRAM_END        0xFFFE
 
+// Register and Flag Type Enumerations /////////////////////////////////////////////////////////////
+
+/**
+ * @brief Enumerates the 8-bit and 16-bit registers of the Sharp LR35902 CPU.
+ * 
+ * @note Because the GABLE Engine is intended to create "Gameboy-like" games, and is not an emulator,
+ *       the program counter is not included in this enumeration.
+ */
+typedef enum GABLE_RegisterType
+{
+    GABLE_RT_A,     ///< @brief The CPU's 8-bit accumulator register.
+    GABLE_RT_F,     ///< @brief The CPU's 8-bit flags register.
+    GABLE_RT_B,     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    GABLE_RT_C,     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    GABLE_RT_D,     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    GABLE_RT_E,     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    GABLE_RT_H,     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    GABLE_RT_L,     ///< @brief One of the CPU's 8-bit general-purpose registers.
+
+    GABLE_RT_AF,    ///< @brief One of the CPU's 16-bit register pairs.
+    GABLE_RT_BC,    ///< @brief One of the CPU's 16-bit register pairs.
+    GABLE_RT_DE,    ///< @brief One of the CPU's 16-bit register pairs.
+    GABLE_RT_HL,    ///< @brief One of the CPU's 16-bit register pairs.
+
+    GABLE_RT_SP,    ///< @brief The CPU's 16-bit stack pointer register.
+} GABLE_RegisterType;
+
+/**
+ * @brief Enumerates the flags of the Sharp LR35902 CPU.
+ * 
+ * @note The flags register is an 8-bit register, with the following layout:
+ * 
+ * @code
+ *  7 6 5 4 3 2 1 0
+ *  Z N H C 0 0 0 0
+ * @endcode
+ */
+typedef enum GABLE_FlagType
+{
+    GABLE_FT_Z = 7, ///< @brief Zero Flag
+    GABLE_FT_N = 6, ///< @brief Subtract Flag
+    GABLE_FT_H = 5, ///< @brief Half-Carry Flag
+    GABLE_FT_C = 4, ///< @brief Carry Flag
+} GABLE_FlagType;
+
+/**
+ * @brief Enumerates the condition types for the Sharp LR35902 CPU's control-transfer instructions.
+ */
+typedef enum GABLE_ConditionType
+{
+    GABLE_CT_NONE,  ///< @brief No condition.
+    GABLE_CT_NZ,    ///< @brief Not Zero.
+    GABLE_CT_Z,     ///< @brief Zero.
+    GABLE_CT_NC,    ///< @brief Not Carry.
+    GABLE_CT_C,     ///< @brief Carry.
+} GABLE_ConditionType;
+
 // Hardware Port Register Enumeration //////////////////////////////////////////////////////////////
 
 /// @brief Enumerates the hardware ports of the Nintendo Game Boy, the Game Boy Color, and

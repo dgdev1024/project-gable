@@ -461,6 +461,8 @@ Bool GABLE_TryAddPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
 
     }
 
+    return true;
+
 }
 
 void GABLE_ShiftNextPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher)
@@ -576,8 +578,6 @@ Uint32 GABLE_FetchObjectPixel (GABLE_PPU* p_PPU, GABLE_PixelFetcher* p_Fetcher, 
                 Uint8 l_BitPair = (l_Object->m_Attributes.m_DMGPalette == 0) ?
                     (p_PPU->m_OBP0 >> (l_ColorIndex * 2)) & 0b11 :
                     (p_PPU->m_OBP1 >> (l_ColorIndex * 2)) & 0b11;
-
-                GABLE_debug("OBP0: %d, OBP1: %d, BitPair: %d", p_PPU->m_OBP0, p_PPU->m_OBP1, l_BitPair);
 
                 // Get the RGBA color value from the DMG palette.
                 p_RGBAColorValue = GABLE_PPU_DMG_PALETTE[l_BitPair];

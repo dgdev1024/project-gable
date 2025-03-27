@@ -23,6 +23,11 @@
  * - The Network Interface replaces the Game Boy's serial port with a simple network interface which
  *   allows for the transfer of data between the game software and another source, such as a server
  *   or another game instance.
+ * 
+ * It's important to note that the GABLE Engine is NOT an emulator. It is not intended to be used
+ * for the emulation of Gameboy or Gameboy Color ROMS. Instead, it is intended to be used for the
+ * creation of games which look, feel and sound like Gameboy games, but which are written in C (or
+ * C++, or any other language which can interface with C) and can run on modern hardware.
  */
 
 #pragma once
@@ -79,6 +84,30 @@ typedef struct GABLE_NetworkContext GABLE_NetworkContext;
  * @brief      The GABLE Engine's core context structure.
  */
 typedef struct GABLE_Engine GABLE_Engine;
+
+/**
+ * @brief      A function pointer used for simulating the "CPU"'s `RST` instruction.
+ */
+typedef Bool (*GABLE_RestartVector) (GABLE_Engine*);
+
+// Registers Structure /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief      This context structure simulates the Game Boy CPU's registers.
+ */
+typedef struct GABLE_Registers
+{
+    Uint8  m_A;     ///< @brief The CPU's 8-bit accumulator register.
+    Uint8  m_F;     ///< @brief The CPU's 8-bit flags register.
+    Uint8  m_B;     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    Uint8  m_C;     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    Uint8  m_D;     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    Uint8  m_E;     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    Uint8  m_H;     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    Uint8  m_L;     ///< @brief One of the CPU's 8-bit general-purpose registers.
+    Uint16 m_SP;    ///< @brief The CPU's 16-bit stack pointer register.
+    Uint8  m_RST;   ///< @brief An internal register used to store the current restart vector.
+} GABLE_Registers;
 
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
 
@@ -151,6 +180,104 @@ Bool GABLE_WriteByte (GABLE_Engine* p_Engine, Uint16 p_Address, Uint8 p_Value);
 Bool GABLE_WriteWord (GABLE_Engine* p_Engine, Uint16 p_Address, Uint16 p_Value);
 
 /**
+ * @brief      Pushes a value at the current stack pointer in the GABLE Engine's memory map.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Value          The value to push.
+ * 
+ * @return     `true` if the value was pushed successfully; `false` otherwise.
+ */
+Bool GABLE_PushWord (GABLE_Engine* p_Engine, Uint16 p_Value);
+
+/**
+ * @brief      Pops a value from the current stack pointer in the GABLE Engine's memory map.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Value          A pointer to the variable to store the popped value.
+ * 
+ * @return     `true` if the value was popped successfully; `false` otherwise.
+ */
+Bool GABLE_PopWord (GABLE_Engine* p_Engine, Uint16* p_Value);
+
+/**
+ * @brief      Reads a byte from the specified 8-bit register in the GABLE Engine's CPU.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Register       The register to read from.
+ * @param      p_Value          A pointer to the variable to store the read byte.
+ * 
+ * @return     `true` if the register was read from successfully; `false` otherwise, or if the
+ *             register is not an 8-bit register.
+ */
+Bool GABLE_ReadByteRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint8* p_Value);
+
+/**
+ * @brief      Reads a word from the specified 16-bit register pair in the GABLE Engine's CPU.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Register       The register to read from.
+ * @param      p_Value          A pointer to the variable to store the read word.
+ * 
+ * @return     `true` if the register was read from successfully; `false` otherwise, or if the
+ *             register is not a 16-bit register pair or the stack pointer.
+ */
+Bool GABLE_ReadWordRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint16* p_Value);
+
+/**
+ * @brief      Writes a byte to the specified 8-bit register in the GABLE Engine's "CPU".
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Register       The register to write to.
+ * @param      p_Value          The byte to write.
+ * 
+ * @return     `true` if the register was written to successfully; `false` otherwise, or if the
+ *             register is not an 8-bit register.
+ */
+Bool GABLE_WriteByteRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint8 p_Value);
+
+/**
+ * @brief      Writes a word to the specified 16-bit register pair in the GABLE Engine's "CPU".
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Register       The register to write to.
+ * @param      p_Value          The word to write.
+ * 
+ * @return     `true` if the register was written to successfully; `false` otherwise, or if the
+ *             register is not a 16-bit register pair or the stack pointer.
+ */
+Bool GABLE_WriteWordRegister (GABLE_Engine* p_Engine, GABLE_RegisterType p_Register, Uint16 p_Value);
+
+/**
+ * @brief      Retrieves the value of the specified flag in the GABLE Engine's "CPU" flags register.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Flag           The flag to retrieve the value of.
+ * 
+ * @return     The value of the specified flag in the "CPU" flags register.
+ */
+Bool GABLE_GetFlag (GABLE_Engine* p_Engine, GABLE_FlagType p_Flag);
+
+/**
+ * @brief      Sets the value of the specified flag in the GABLE Engine's "CPU" flags register.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Flag           The flag to set the value of.
+ * @param      p_Value          The value to set the flag to.
+ */
+void GABLE_SetFlag (GABLE_Engine* p_Engine, GABLE_FlagType p_Flag, Bool p_Value);
+
+/**
+ * @brief      Sets the flags of the GABLE Engine's "CPU" flags register.
+ * 
+ * @param      p_Engine         A pointer to the GABLE Engine instance.
+ * @param      p_Z              The value to set the Zero flag to.
+ * @param      p_N              The value to set the Subtract flag to.
+ * @param      p_H              The value to set the Half-Carry flag to.
+ * @param      p_C              The value to set the Carry flag to.
+ */
+void GABLE_SetFlags (GABLE_Engine* p_Engine, Bool p_Z, Bool p_N, Bool p_H, Bool p_C);
+
+/**
  * @brief      Gets the number of cycles elapsed on the GABLE Engine.
  * 
  * @param      p_Engine  A pointer to the GABLE Engine instance.
@@ -158,6 +285,27 @@ Bool GABLE_WriteWord (GABLE_Engine* p_Engine, Uint16 p_Address, Uint16 p_Value);
  * @return     The number of cycles elapsed on the GABLE Engine.
  */
 Uint64 GABLE_GetCycleCount (const GABLE_Engine* p_Engine);
+
+/**
+ * @brief      Sets a handler function to call when the `RST` instruction is simulated.
+ * 
+ * @param      p_Engine  A pointer to the GABLE Engine instance.
+ * @param      p_RST     The restart vector to set the handler for (0x00 - 0x07).
+ * @param      p_Handler A pointer to the handler function to call for the restart vector.
+ */
+void GABLE_SetRestartVectorHandler (GABLE_Engine* p_Engine, Uint8 p_RST, GABLE_RestartVector p_Handler);
+
+/**
+ * @brief      When the `RST` instruction is simulated, sets the next restart vector to call.
+ *             The handler function is not called immediately; it is called at the end of the next
+ *             cycle.
+ * 
+ * @param      p_Engine  A pointer to the GABLE Engine instance.
+ * @param      p_RST     The restart vector to call (0x00 - 0x07).
+ * 
+ * @return     `true` if the restart vector was set successfully; `false` otherwise.
+ */
+Bool GABLE_CallRestartVector (GABLE_Engine* p_Engine, Uint8 p_RST);
 
 // Public Functions - Component Getters ////////////////////////////////////////////////////////////
 

@@ -19,6 +19,7 @@ extern "C" {
 #include <GABLE/PPU.h>
 #include <GABLE/Joypad.h>
 #include <GABLE/Network.h>
+#include <GABLE/Instructions.h>
 
 #if defined(__cplusplus)
 }
