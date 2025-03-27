@@ -454,8 +454,16 @@ typedef enum GABLE_HardwarePort
 
 #define G_NTCF_BANK         0b00001111
 #define G_NTCF_DIR          0b00010000
+#define G_NTCF_SEND         0b00010000
+#define G_NTCF_RECV         0b00000000
 #define G_NTCF_STAT         0b01100000
+#define G_NTCF_READY        0b00000000
+#define G_NTCF_BUSY         0b00100000
+#define G_NTCF_TIMEOUT      0b01000000
+#define G_NTCF_ERROR        0b01100000
 #define G_NTCF_START        0b10000000
+#define G_NTCF_ON           0b10000000
+#define G_NTCF_OFF          0b00000000
 #define G_NTCB_DIR          4
 #define G_NTCB_START        7
 

@@ -157,7 +157,7 @@ static void H_Main ()
 
     H_Main__Loop:
     {
-        G_JR_GOTO(s_Engine, GABLE_CT_NONE, H_Main__Loop);
+        G_JR_GOTO(s_Engine, G_NOCOND, H_Main__Loop);
     }
 }
 
