@@ -333,3 +333,318 @@ typedef enum GABLE_HardwarePort
     GABLE_HP_PCM34     = 0xFF77,    ///< @brief `PCM34` - CGB Only - PCM Channel 3/4 Output
     GABLE_HP_IE        = 0xFFFF     ///< @brief `IE` - Interrupt Enable
 } GABLE_HardwarePort;
+
+// Shortform Macros - Memory-Mapped Registers //////////////////////////////////////////////////////
+
+/*
+    The following macros are used to provide shortform names for the memory-mapped registers of the
+    GABLE Engine's components, and their settings. This is done to make the code more readable and
+    maintainable, and to provide a consistent naming convention for the registers and their settings.
+
+    The code below is based on "hardware.inc", which is a file commonly used in the Game Boy homebrew
+    development community in the development of games on the Game Boy. "hardware.inc" is released
+    under the Creative Commons CC0-1.0 License, and is available at the following URL:
+
+        `https://gbdev.io/gbdev/hardware.inc`
+        `https://creativecommons.org/publicdomain/zero/1.0/`
+*/
+
+#define G_P1                GABLE_HP_JOYP
+#define G_NTC               GABLE_HP_NTC
+#define G_NTS               GABLE_HP_NTS
+#define G_DIV               GABLE_HP_DIV
+#define G_TIMA              GABLE_HP_TIMA
+#define G_TMA               GABLE_HP_TMA
+#define G_TAC               GABLE_HP_TAC
+#define G_RTCS              GABLE_HP_RTCS
+#define G_RTCM              GABLE_HP_RTCM
+#define G_RTCH              GABLE_HP_RTCH
+#define G_RTCDH             GABLE_HP_RTCDH
+#define G_RTCDL             GABLE_HP_RTCDL
+#define G_RTCL              GABLE_HP_RTCL
+#define G_IF                GABLE_HP_IF
+#define G_NR10              GABLE_HP_NR10
+#define G_NR11              GABLE_HP_NR11
+#define G_NR12              GABLE_HP_NR12
+#define G_NR13              GABLE_HP_NR13
+#define G_NR14              GABLE_HP_NR14
+#define G_NR21              GABLE_HP_NR21
+#define G_NR22              GABLE_HP_NR22
+#define G_NR23              GABLE_HP_NR23
+#define G_NR24              GABLE_HP_NR24
+#define G_NR30              GABLE_HP_NR30
+#define G_NR31              GABLE_HP_NR31
+#define G_NR32              GABLE_HP_NR32
+#define G_NR33              GABLE_HP_NR33
+#define G_NR34              GABLE_HP_NR34
+#define G_NR41              GABLE_HP_NR41
+#define G_NR42              GABLE_HP_NR42
+#define G_NR43              GABLE_HP_NR43
+#define G_NR44              GABLE_HP_NR44
+#define G_NR50              GABLE_HP_NR50
+#define G_NR51              GABLE_HP_NR51
+#define G_NR52              GABLE_HP_NR52
+#define G_LCDC              GABLE_HP_LCDC
+#define G_STAT              GABLE_HP_STAT
+#define G_SCY               GABLE_HP_SCY
+#define G_SCX               GABLE_HP_SCX
+#define G_LY                GABLE_HP_LY
+#define G_LYC               GABLE_HP_LYC
+#define G_DMA               GABLE_HP_DMA
+#define G_BGP               GABLE_HP_BGP
+#define G_OBP0              GABLE_HP_OBP0
+#define G_OBP1              GABLE_HP_OBP1
+#define G_WY                GABLE_HP_WY
+#define G_WX                GABLE_HP_WX
+#define G_KEY1              GABLE_HP_KEY1
+#define G_VBK               GABLE_HP_VBK
+#define G_HDMA1             GABLE_HP_HDMA1 
+#define G_HDMA2             GABLE_HP_HDMA2
+#define G_HDMA3             GABLE_HP_HDMA3 
+#define G_HDMA4             GABLE_HP_HDMA4
+#define G_HDMA5             GABLE_HP_HDMA5
+#define G_RP                GABLE_HP_RP
+#define G_BGPI              GABLE_HP_BGPI
+#define G_BGPD              GABLE_HP_BGPD
+#define G_OBPI              GABLE_HP_OBPI
+#define G_OBPD              GABLE_HP_OBPD
+#define G_OPRI              GABLE_HP_OPRI
+#define G_GRPM              GABLE_HP_GRPM
+#define G_SVBK              GABLE_HP_SVBK
+#define G_SSBK              GABLE_HP_SSBK
+#define G_DSBKH             GABLE_HP_DSBKH
+#define G_DSBKL             GABLE_HP_DSBKL
+#define G_PCM12             GABLE_HP_PCM12
+#define G_PCM34             GABLE_HP_PCM34
+#define G_IE                GABLE_HP_IE
+
+#define G_AUD1SWEEP         G_NR10
+#define G_AUD1LEN           G_NR11
+#define G_AUD1ENV           G_NR12
+#define G_AUD1LOW           G_NR13
+#define G_AUD1HIGH          G_NR14
+#define G_AUD2LEN           G_NR21
+#define G_AUD2ENV           G_NR22
+#define G_AUD2LOW           G_NR23
+#define G_AUD2HIGH          G_NR24
+#define G_AUD3ENA           G_NR30
+#define G_AUD3LEN           G_NR31
+#define G_AUD3LEVEL         G_NR32
+#define G_AUD3LOW           G_NR33
+#define G_AUD3HIGH          G_NR34
+#define G_AUD4LEN           G_NR41
+#define G_AUD4ENV           G_NR42
+#define G_AUD4POLY          G_NR43
+#define G_AUD4FREQ          G_NR44
+#define G_AUDVOL            G_NR50
+#define G_AUDTERM           G_NR51
+#define G_AUDENA            G_NR52
+
+// Shortform Macros - Memory-Mapped Register Bitfields /////////////////////////////////////////////
+
+#define G_P1F_5             0b00100000
+#define G_P1F_4             0b00010000
+#define G_P1F_3             0b00001000
+#define G_P1F_2             0b00000100
+#define G_P1F_1             0b00000010
+#define G_P1F_0             0b00000001
+#define G_P1F_GET_DPAD      G_P1F_5
+#define G_P1F_GET_BTN       G_P1F_4
+#define G_P1F_GET_NONE      (G_P1F_5 | G_P1F_4)
+
+#define G_NTCF_BANK         0b00001111
+#define G_NTCF_DIR          0b00010000
+#define G_NTCF_STAT         0b01100000
+#define G_NTCF_START        0b10000000
+#define G_NTCB_DIR          4
+#define G_NTCB_START        7
+
+#define G_TACF_STOP         0b00000000
+#define G_TACF_START        0b00000100
+#define G_TACF_4KHZ         0b00000000
+#define G_TACF_262KHZ       0b00000001
+#define G_TACF_65KHZ        0b00000010
+#define G_TACF_16KHZ        0b00000011
+#define G_TACB_START        2
+
+#define G_AUD1SWEEP_UP      0b00000000
+#define G_AUD1SWEEP_DOWN    0b00001000
+#define G_AUD3ENA_OFF       0b00000000
+#define G_AUD3ENA_ON        0b10000000
+#define G_AUD3LEVEL_MUTE    0b00000000
+#define G_AUD3LEVEL_100     0b00100000
+#define G_AUD3LEVEL_50      0b01000000
+#define G_AUD3LEVEL_25      0b01100000
+#define G_AUD4POLY_15STEP   0b00000000
+#define G_AUD4POLY_7STEP    0b00010000
+#define G_AUDVOL_VIN_LEFT   0b10000000
+#define G_AUDVOL_VIN_RIGHT  0b00001000
+#define G_AUDTERM_4_LEFT    0b10000000
+#define G_AUDTERM_3_LEFT    0b01000000
+#define G_AUDTERM_2_LEFT    0b00100000
+#define G_AUDTERM_1_LEFT    0b00010000
+#define G_AUDTERM_4_RIGHT   0b00001000
+#define G_AUDTERM_3_RIGHT   0b00000100
+#define G_AUDTERM_2_RIGHT   0b00000010
+#define G_AUDTERM_1_RIGHT   0b00000001
+#define G_AUDENA_OFF        0b00000000
+#define G_AUDENA_ON         0b10000000
+
+#define G_LCDCF_OFF         0b00000000
+#define G_LCDCF_ON          0b10000000
+#define G_LCDCF_WIN9800     0b00000000
+#define G_LCDCF_WIN9C00     0b01000000
+#define G_LCDCF_WINOFF      0b00000000
+#define G_LCDCF_WINON       0b00100000
+#define G_LCDCF_BLK21       0b00000000
+#define G_LCDCF_BLK01       0b00010000
+#define G_LCDCF_BG9800      0b00000000
+#define G_LCDCF_BG9C00      0b00001000
+#define G_LCDCF_OBJ8        0b00000000
+#define G_LCDCF_OBJ16       0b00000100
+#define G_LCDCF_OBJOFF      0b00000000
+#define G_LCDCF_OBJON       0b00000010
+#define G_LCDCF_BGOFF       0b00000000
+#define G_LCDCF_BGON        0b00000001
+#define G_LCDCB_ON          7
+#define G_LCDCB_WIN9C00     6
+#define G_LCDCB_WINON       5
+#define G_LCDCB_BLKS        4
+#define G_LCDCB_BG9C00      3
+#define G_LCDCB_OBJ16       2
+#define G_LCDCB_OBJON       1
+#define G_LCDCB_BGON        0
+
+#define G_STATF_LYC           0b01000000
+#define G_STATF_MODE10        0b00100000
+#define G_STATF_MODE01        0b00010000
+#define G_STATF_MODE00        0b00001000
+#define G_STATF_LYCF          0b00000100
+#define G_STATF_HBL           0b00000000
+#define G_STATF_VBL           0b00000001
+#define G_STATF_OAM           0b00000010
+#define G_STATF_LCD           0b00000011
+#define G_STATF_BUSY          0b00000010
+#define G_STATB_LYC           6
+#define G_STATB_MODE10        5
+#define G_STATB_MODE01        4
+#define G_STATB_MODE00        3
+#define G_STATB_LYCF          2
+#define G_STATB_BUSY          1
+
+#define G_HDMA5F_MODE_GP     0b00000000
+#define G_HDMA5F_MODE_HBL    0b10000000
+#define G_HDMA5F_BUSY        0b10000000
+#define G_HDMA5B_MODE        7
+
+#define G_BGPIF_AUTOINC      0b10000000
+#define G_BGPIB_AUTOINC      7
+#define G_BCPSF_AUTOINC      0b10000000
+#define G_BCPSB_AUTOINC      7
+#define G_OBPIF_AUTOINC      0b10000000
+#define G_OBPIB_AUTOINC      7
+#define G_OCPSF_AUTOINC      0b10000000
+#define G_OCPSB_AUTOINC      7
+
+#define G_GRPMF_CGB          0b00000001
+#define G_GRPMF_DMG          0b00000000
+#define G_GRPMB_MODE         0
+
+#define G_IEF_RTC            0b00100000
+#define G_IEF_JOYPAD         0b00010000
+#define G_IEF_NET            0b00001000
+#define G_IEF_TIMER          0b00000100
+#define G_IEF_STAT           0b00000010
+#define G_IEF_VBLANK         0b00000001
+
+// Shortform Macros - Common Sound Channel Flags ///////////////////////////////////////////////////
+
+#define G_AUDLEN_DUTY_12_5          0b00000000
+#define G_AUDLEN_DUTY_25            0b01000000
+#define G_AUDLEN_DUTY_50            0b10000000
+#define G_AUDLEN_DUTY_75            0b11000000
+#define G_AUDENV_UP                 0b00001000
+#define G_AUDENV_DOWN               0b00000000
+#define G_AUDHIGH_RESTART           0b10000000
+#define G_AUDHIGH_LENGTH_ON         0b01000000
+#define G_AUDHIGH_LENGTH_OFF        0b00000000
+
+// Shortform Macros - Joypad Buttons ///////////////////////////////////////////////////////////////
+
+#define G_PADF_DOWN                 0x80
+#define G_PADF_UP                   0x40
+#define G_PADF_LEFT                 0x20
+#define G_PADF_RIGHT                0x10
+#define G_PADF_START                0x08
+#define G_PADF_SELECT               0x04
+#define G_PADF_B                    0x02
+#define G_PADF_A                    0x01
+
+#define G_PADB_DOWN                 7
+#define G_PADB_UP                   6
+#define G_PADB_LEFT                 5
+#define G_PADB_RIGHT                4
+#define G_PADB_START                3
+#define G_PADB_SELECT               2
+#define G_PADB_B                    1
+#define G_PADB_A                    0
+
+// Shortform Macros - Screen Macros ////////////////////////////////////////////////////////////////
+
+#define G_SCRN_X                    160
+#define G_SCRN_Y                    144
+#define G_SCRN_X_B                  20
+#define G_SCRN_Y_B                  18
+#define G_SCRN_VX                   256
+#define G_SCRN_VY                   256
+#define G_SCRN_VX_B                 32
+#define G_SCRN_VY_B                 32
+
+// Shortform Macros - Object Attribute Memory (OAM) ////////////////////////////////////////////////
+
+#define G_OAMA_Y                    0
+#define G_OAMA_X                    1
+#define G_OAMA_TILE                 2
+#define G_OAMA_ATTR                 3
+#define G_OAMA_SIZE                 4
+#define G_OAM_Y_OFS                 16
+#define G_OAM_X_OFS                 8
+#define G_OAM_COUNT                 40
+#define G_OAMF_PRI                  0x80
+#define G_OAMF_YFLIP                0x40
+#define G_OAMF_XFLIP                0x20
+#define G_OAMF_PAL0                 0x00
+#define G_OAMF_PAL1                 0x10
+#define G_OAMF_BANK0                0x00
+#define G_OAMF_BANK1                0x08
+#define G_OAMF_PALMASK              0b00000111
+#define G_OAMB_PRI                  7
+#define G_OAMB_YFLIP                6
+#define G_OAMB_XFLIP                5
+#define G_OAMB_PAL                  4
+#define G_OAMB_BANK                 3
+
+// Shortform Macros - "CPU" Registers, Flags, and Execution Conditions /////////////////////////////
+
+#define G_A                     GABLE_RT_A
+#define G_F                     GABLE_RT_F
+#define G_B                     GABLE_RT_B
+#define G_C                     GABLE_RT_C
+#define G_D                     GABLE_RT_D
+#define G_E                     GABLE_RT_E
+#define G_H                     GABLE_RT_H
+#define G_L                     GABLE_RT_L
+#define G_AF                    GABLE_RT_AF
+#define G_BC                    GABLE_RT_BC
+#define G_DE                    GABLE_RT_DE
+#define G_HL                    GABLE_RT_HL
+#define G_SP                    GABLE_RT_SP
+#define G_FLAG_Z                GABLE_FT_Z
+#define G_FLAG_N                GABLE_FT_N
+#define G_FLAG_H                GABLE_FT_H
+#define G_FLAG_C                GABLE_FT_C
+#define G_NOCOND                GABLE_CT_NONE
+#define G_COND_NZ               GABLE_CT_NZ
+#define G_COND_Z                GABLE_CT_Z
+#define G_COND_NC               GABLE_CT_NC
+#define G_COND_C                GABLE_CT_C

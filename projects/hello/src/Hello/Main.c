@@ -73,7 +73,8 @@ static void H_AtStart ()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    s_Window = SDL_CreateWindow("Hello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 720, SDL_WINDOW_SHOWN);
+    s_Window = SDL_CreateWindow("Hello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 720, 
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     s_Renderer = SDL_CreateRenderer(s_Window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     s_RenderTarget = SDL_CreateTexture(s_Renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
         GABLE_PPU_SCREEN_WIDTH, GABLE_PPU_SCREEN_HEIGHT);
@@ -93,66 +94,66 @@ static void H_AtStart ()
 static void H_Main ()
 {
     // Shut down audio circuitry.
-    G_LD_R8_N8(s_Engine, GABLE_RT_A, 0x00);
-    G_LD_A16_A(s_Engine, GABLE_HP_NR52);
+    G_LD_R8_N8(s_Engine, G_A, G_AUDENA_OFF);
+    G_LD_A16_A(s_Engine, G_NR52);
 
     // Enable VBlank interrupt.
-    G_LD_R8_N8(s_Engine, GABLE_RT_A, 0b00000001);
-    G_LD_A16_A(s_Engine, GABLE_HP_IE);
+    G_LD_R8_N8(s_Engine, G_A, G_IEF_VBLANK);
+    G_LD_A16_A(s_Engine, G_IE);
     G_EI(s_Engine);
 
     // Do not turn the LCD off outside of VBlank
     H_Main__WaitVBlank:
     {
-        G_LD_A_A16(s_Engine, GABLE_HP_LY);
-        G_CP_A_N8(s_Engine, 144);
+        G_LD_A_A16(s_Engine, G_LY);
+        G_CP_A_N8(s_Engine, G_SCRN_Y);
         G_JR_GOTO(s_Engine, GABLE_CT_C, H_Main__WaitVBlank);
     }
 
     // Turn the LCD off.
-    G_LD_R8_N8(s_Engine, GABLE_RT_A, 0x00);
-    G_LD_A16_A(s_Engine, GABLE_HP_LCDC);
+    G_LD_R8_N8(s_Engine, G_A, G_LCDCF_OFF);
+    G_LD_A16_A(s_Engine, G_LCDC);
 
     // Set graphics mode to DMG.
-    G_LD_A16_A(s_Engine, GABLE_HP_GRPM);
+    G_LD_A16_A(s_Engine, G_GRPM);
 
     // Copy the tile data.
-    G_LD_R16_N16(s_Engine, GABLE_RT_DE, s_TileData->m_Address);
-    G_LD_R16_N16(s_Engine, GABLE_RT_HL, 0x9000);
-    G_LD_R16_N16(s_Engine, GABLE_RT_BC, s_TileData->m_Length);
+    G_LD_R16_N16(s_Engine, G_DE, s_TileData->m_Address);
+    G_LD_R16_N16(s_Engine, G_HL, 0x9000);
+    G_LD_R16_N16(s_Engine, G_BC, s_TileData->m_Length);
     H_Main__CopyTiles:
     {
-        G_LD_A_RP16(s_Engine, GABLE_RT_DE);
+        G_LD_A_RP16(s_Engine, G_DE);
         G_LD_HLI_A(s_Engine);
-        G_INC_R16(s_Engine, GABLE_RT_DE);
-        G_DEC_R16(s_Engine, GABLE_RT_BC);
-        G_LD_R8_R8(s_Engine, GABLE_RT_A, GABLE_RT_B);
-        G_OR_A_R8(s_Engine, GABLE_RT_C);
+        G_INC_R16(s_Engine, G_DE);
+        G_DEC_R16(s_Engine, G_BC);
+        G_LD_R8_R8(s_Engine, G_A, G_B);
+        G_OR_A_R8(s_Engine, G_C);
         G_JP_GOTO(s_Engine, GABLE_CT_NZ, H_Main__CopyTiles);
     }
 
     // Copy the tile map.
-    G_LD_R16_N16(s_Engine, GABLE_RT_DE, s_TileMap->m_Address);
-    G_LD_R16_N16(s_Engine, GABLE_RT_HL, 0x9800);
-    G_LD_R16_N16(s_Engine, GABLE_RT_BC, s_TileMap->m_Length);
+    G_LD_R16_N16(s_Engine, G_DE, s_TileMap->m_Address);
+    G_LD_R16_N16(s_Engine, G_HL, 0x9800);
+    G_LD_R16_N16(s_Engine, G_BC, s_TileMap->m_Length);
     H_Main__CopyMap:
     {
-        G_LD_A_RP16(s_Engine, GABLE_RT_DE);
+        G_LD_A_RP16(s_Engine, G_DE);
         G_LD_HLI_A(s_Engine);
-        G_INC_R16(s_Engine, GABLE_RT_DE);
-        G_DEC_R16(s_Engine, GABLE_RT_BC);
-        G_LD_R8_R8(s_Engine, GABLE_RT_A, GABLE_RT_B);
-        G_OR_A_R8(s_Engine, GABLE_RT_C);
+        G_INC_R16(s_Engine, G_DE);
+        G_DEC_R16(s_Engine, G_BC);
+        G_LD_R8_R8(s_Engine, G_A, G_B);
+        G_OR_A_R8(s_Engine, G_C);
         G_JP_GOTO(s_Engine, GABLE_CT_NZ, H_Main__CopyMap);
     }
 
     // Turn the LCD on.
-    G_LD_R8_N8(s_Engine, GABLE_RT_A, 0b10000001);   // LCD On, BG On
-    G_LD_A16_A(s_Engine, GABLE_HP_LCDC);
+    G_LD_R8_N8(s_Engine, G_A, G_LCDCF_ON | G_LCDCF_BGON);   // LCD On, BG On
+    G_LD_A16_A(s_Engine, G_LCDC);
 
     // During the first (blank) frame, initialize display registers.
-    G_LD_R8_N8(s_Engine, GABLE_RT_A, 0b11100100);
-    G_LD_A16_A(s_Engine, GABLE_HP_BGP);
+    G_LD_R8_N8(s_Engine, G_A, 0b11100100);
+    G_LD_A16_A(s_Engine, G_BGP);
 
     H_Main__Loop:
     {
