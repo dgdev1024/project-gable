@@ -408,7 +408,8 @@ Bool GABLE_GotoBankWithDataHandle (GABLE_Engine* p_Engine, const GABLE_DataHandl
     }
 
     // Write the high and low bytes of the bank number to the `DSBKH` and `DSBKL` registers.
-    GABLE_SetDataStoreBankNumber(p_Engine, l_BankNumber);
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_DSBKH, p_Handle->m_BankHigh);
+    GABLE_CycleWriteByte(p_Engine, GABLE_HP_DSBKL, p_Handle->m_BankLow);
     return true;
 }
 
@@ -420,19 +421,6 @@ Uint16 GABLE_GetDataStoreBankCount (GABLE_Engine* p_Engine)
     // Point to the data store instance. Get the number of banks in the data store.
     GABLE_DataStore* l_DataStore = GABLE_GetDataStore(p_Engine);
     return l_DataStore->m_BankCount;
-}
-
-Uint16 GABLE_GetDataStoreBankNumber (GABLE_Engine* p_Engine)
-{
-    // Validate the GABLE Engine instance.
-    GABLE_expect(p_Engine != NULL, "GABLE Engine context is NULL!");
-
-    // Read the `DSBKH` and `DSBKL` registers. Combine the values to get the bank number.
-    Uint8 l_BankHigh = 0x00, l_BankLow = 0x00;
-    GABLE_CycleReadByte(p_Engine, GABLE_HP_DSBKH, &l_BankHigh);
-    GABLE_CycleReadByte(p_Engine, GABLE_HP_DSBKL, &l_BankLow);
-
-    return (l_BankHigh << 8) | l_BankLow;
 }
 
 void GABLE_SetDataStoreBankCount (GABLE_Engine* p_Engine, Uint16 p_BankCount)
@@ -489,14 +477,4 @@ void GABLE_SetDataStoreBankCount (GABLE_Engine* p_Engine, Uint16 p_BankCount)
         // Update the data store's bank count.
         l_DataStore->m_BankCount = p_BankCount;
     }
-}
-
-void GABLE_SetDataStoreBankNumber (GABLE_Engine* p_Engine, Uint16 p_BankNumber)
-{
-    // Validate the GABLE Engine instance.
-    GABLE_expect(p_Engine != NULL, "GABLE Engine context is NULL!");
-
-    // Write the high and low bytes of the bank number to the `DSBKH` and `DSBKL` registers.
-    GABLE_CycleWriteByte(p_Engine, GABLE_HP_DSBKH, (p_BankNumber >> 8) & 0xFF);
-    GABLE_CycleWriteByte(p_Engine, GABLE_HP_DSBKL, p_BankNumber & 0xFF);
 }

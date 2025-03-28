@@ -241,9 +241,5 @@ Bool GABLE_SaveSRAMFile (GABLE_Engine* p_Engine, const Char* p_FilePath);
 
 Uint8 GABLE_GetWRAMBankCount (GABLE_Engine* p_Engine);
 Uint8 GABLE_GetSRAMBankCount (GABLE_Engine* p_Engine);
-Uint8 GABLE_GetWRAMBankNumber (GABLE_Engine* p_Engine);
-Uint8 GABLE_GetSRAMBankNumber (GABLE_Engine* p_Engine);
 void GABLE_SetWRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount);
 void GABLE_SetSRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount);
-void GABLE_SetWRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_BankNumber);
-void GABLE_SetSRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_BankNumber);

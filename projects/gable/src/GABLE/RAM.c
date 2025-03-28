@@ -352,28 +352,6 @@ Uint8 GABLE_GetSRAMBankCount (GABLE_Engine* p_Engine)
     return GABLE_GetRAM(p_Engine)->m_SRAMBankCount;
 }
 
-Uint8 GABLE_GetWRAMBankNumber (GABLE_Engine* p_Engine)
-{
-    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
-
-    // Read from the `SVBK` hardware register and return its value.
-    Uint8 l_SVBK = 0x00;
-    GABLE_CycleReadByte(p_Engine, GABLE_HP_SVBK, &l_SVBK);
-
-    return l_SVBK;
-}
-
-Uint8 GABLE_GetSRAMBankNumber (GABLE_Engine* p_Engine)
-{
-    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
-
-    // Read from the `SSBK` hardware register and return its value.
-    Uint8 l_SSBK = 0x00;
-    GABLE_CycleReadByte(p_Engine, GABLE_HP_SSBK, &l_SSBK);
-
-    return l_SSBK;
-}
-
 void GABLE_SetWRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount)
 {
     GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
@@ -462,20 +440,4 @@ void GABLE_SetSRAMBankCount (GABLE_Engine* p_Engine, Uint8 p_BankCount)
         l_RAM->m_SRAMBankCount = p_BankCount;
 
     }
-}
-
-void GABLE_SetWRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_BankNumber)
-{
-    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
-
-    // Write to the `SVBK` hardware register to set the working RAM bank number.
-    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SVBK, p_BankNumber);
-}
-
-void GABLE_SetSRAMBankNumber (GABLE_Engine* p_Engine, Uint8 p_BankNumber)
-{
-    GABLE_expect(p_Engine != NULL, "Engine context is NULL!");
-
-    // Write to the `SSBK` hardware register to set the static RAM bank number.
-    GABLE_CycleWriteByte(p_Engine, GABLE_HP_SSBK, p_BankNumber);
 }

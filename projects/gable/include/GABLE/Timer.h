@@ -141,11 +141,3 @@ void GABLE_WriteDIV (GABLE_Timer* p_Timer, Uint8 p_Value);
 void GABLE_WriteTIMA (GABLE_Timer* p_Timer, Uint8 p_Value);
 void GABLE_WriteTMA (GABLE_Timer* p_Timer, Uint8 p_Value);
 void GABLE_WriteTAC (GABLE_Timer* p_Timer, Uint8 p_Value);
-
-// Public Functions - High-Level Functions /////////////////////////////////////////////////////////
-
-GABLE_TimerClockSpeed GABLE_GetTimerClockSpeed (GABLE_Engine* p_Engine);
-Bool GABLE_IsTimerEnabled (GABLE_Engine* p_Engine);
-void GABLE_SetTimerClockSpeed (GABLE_Engine* p_Engine, GABLE_TimerClockSpeed p_Speed);
-void GABLE_SetTimerEnable (GABLE_Engine* p_Engine, Bool p_Enable);
-void GABLE_ResetTimerDivider (GABLE_Engine* p_Engine);

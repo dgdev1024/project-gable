@@ -85,6 +85,22 @@ void GABLE_ResetJoypad (GABLE_Joypad* p_Joypad);
  */
 void GABLE_DestroyJoypad (GABLE_Joypad* p_Joypad);
 
+/**
+ * @brief      Presses a button on the GABLE Engine joypad.
+ * 
+ * @param      p_Engine  A pointer to the parent GABLE Engine instance.
+ * @param      p_Button  The button to press.
+ */
+void GABLE_PressButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
+
+/**
+ * @brief      Releases a button on the GABLE Engine joypad.
+ * 
+ * @param      p_Engine  A pointer to the parent GABLE Engine instance.
+ * @param      p_Button  The button to release.
+ */
+void GABLE_ReleaseButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
+
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
 
 /**
@@ -107,9 +123,3 @@ Uint8 GABLE_ReadJOYP (const GABLE_Joypad* p_Joypad);
 void GABLE_WriteJOYP (GABLE_Joypad* p_Joypad, Uint8 p_Value);
 
 // Public Functions - High-Level Functions /////////////////////////////////////////////////////////
-
-Bool GABLE_IsButtonPressed (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
-void GABLE_SetButtonsSelected (GABLE_Engine* p_Engine, Bool p_Selected);
-void GABLE_SetDirectionalPadSelected (GABLE_Engine* p_Engine, Bool p_Selected);
-void GABLE_PressButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);
-void GABLE_ReleaseButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button);

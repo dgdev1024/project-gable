@@ -167,6 +167,4 @@ const GABLE_DataHandle* GABLE_LoadDataFromFile (GABLE_Engine* p_Engine, const Ch
 const GABLE_DataHandle* GABLE_GetDataHandle (GABLE_Engine* p_Engine, const Char* p_Name);
 Bool GABLE_GotoBankWithDataHandle (GABLE_Engine* p_Engine, const GABLE_DataHandle* p_Handle);
 Uint16 GABLE_GetDataStoreBankCount (GABLE_Engine* p_Engine);
-Uint16 GABLE_GetDataStoreBankNumber (GABLE_Engine* p_Engine);
 void GABLE_SetDataStoreBankCount (GABLE_Engine* p_Engine, Uint16 p_BankCount);
-void GABLE_SetDataStoreBankNumber (GABLE_Engine* p_Engine, Uint16 p_BankNumber);

@@ -954,33 +954,3 @@ void GABLE_SetAudioMixCallback (GABLE_Engine* p_Engine, GABLE_AudioMixCallback p
  * @return     A pointer to the latest audio sample mixed by the APU.
  */
 const GABLE_AudioSample* GABLE_GetLatestAudioSample (GABLE_Engine* p_Engine);
-
-Float32 GABLE_GetFrequencyFromNote (GABLE_AudioNote p_Note, Uint8 p_Octave);
-
-GABLE_PulseFrequencySweep GABLE_GetPC1FrequencySweep (GABLE_Engine* p_Engine);
-GABLE_PulseDutyCycle GABLE_GetPulseDutyCycle (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
-GABLE_VolumeEnvelope GABLE_GetVolumeEnvelope (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
-Bool GABLE_GetDACEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
-GABLE_WaveOutputLevel GABLE_GetWaveOutputLevel (GABLE_Engine* p_Engine);
-GABLE_NoiseFrequencyRandomness GABLE_GetNoiseLFSRControl (GABLE_Engine* p_Engine);
-Bool GABLE_GetLengthTimerEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
-GABLE_MasterVolumeControl GABLE_GetMasterVolumeControl (GABLE_Engine* p_Engine);
-GABLE_SoundPanning GABLE_GetSoundPanning (GABLE_Engine* p_Engine);
-GABLE_AudioMasterControl GABLE_GetAudioMasterControl (GABLE_Engine* p_Engine);
-
-void GABLE_SetPC1FrequencySweep (GABLE_Engine* p_Engine, GABLE_PulseFrequencySweep p_Register);
-void GABLE_SetPulseLengthDuty (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_PulseLengthDuty p_Register);
-void GABLE_SetVolumeEnvelope (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_VolumeEnvelope p_Register);
-void GABLE_SetInitialPeriod (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Uint16 p_Period);
-void GABLE_SetInitialFrequency (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Float32 p_Frequency);
-void GABLE_SetInitialNote (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, GABLE_AudioNote p_Note, Uint8 p_Octave);
-void GABLE_SetWaveDACEnable (GABLE_Engine* p_Engine, Bool p_Enable);
-void GABLE_SetWaveInitialLengthTimer (GABLE_Engine* p_Engine, Uint8 p_Length);
-void GABLE_SetWaveOutputLevel (GABLE_Engine* p_Engine, GABLE_WaveOutputLevel p_Level);
-void GABLE_SetNoiseInitialLengthTimer (GABLE_Engine* p_Engine, Uint8 p_Length);
-void GABLE_SetNoiseLFSRControl (GABLE_Engine* p_Engine, GABLE_NoiseFrequencyRandomness p_Register);
-void GABLE_SetLengthTimerEnable (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel, Bool p_Enable);
-void GABLE_SetMasterVolumeControl (GABLE_Engine* p_Engine, GABLE_MasterVolumeControl p_Register);
-void GABLE_SetSoundPanning (GABLE_Engine* p_Engine, GABLE_SoundPanning p_Register);
-void GABLE_SetAudioEnable (GABLE_Engine* p_Engine, Bool p_Enable);
-void GABLE_TriggerChannel (GABLE_Engine* p_Engine, GABLE_AudioChannel p_Channel);
