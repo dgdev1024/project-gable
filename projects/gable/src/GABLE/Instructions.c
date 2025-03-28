@@ -1224,9 +1224,8 @@ Bool G_RET (GABLE_ConditionType p_Cond)
         return GABLE_CycleEngine(s_CurrentEngine, 4);
     }
 
-    return GABLE_CheckCondition(p_Cond) ?
-        GABLE_CycleEngine(s_CurrentEngine, 5) :
-        GABLE_CycleEngine(s_CurrentEngine, 2);
+    Bool l_Condition = GABLE_CheckCondition(p_Cond);
+    return GABLE_CycleEngine(s_CurrentEngine, l_Condition ? 5 : 2) && l_Condition;
 }
 
 Bool G_RETI ()

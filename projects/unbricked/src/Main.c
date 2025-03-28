@@ -229,6 +229,87 @@ static void UB_AtStart ()
     s_Tiles = GABLE_LoadDataFromFile(s_Engine, "Tiles", "assets/unbricked/tile-data.bin", 0);
     s_Tilemap = GABLE_LoadDataFromFile(s_Engine, "Tilemap", "assets/unbricked/tile-map.bin", 0);
     s_Paddle = GABLE_LoadDataFromFile(s_Engine, "Paddle", "assets/unbricked/paddle-data.bin", 0);
+    s_Ball = GABLE_LoadDataFromFile(s_Engine, "Ball", "assets/unbricked/ball-data.bin", 0);
+}
+
+static const Uint8 BRICK_LEFT = 0x05;
+static const Uint8 BRICK_RIGHT = 0x06;
+static const Uint8 BLANK_TILE = 0x08;
+
+static void UB_GetTileByPixel ()
+{
+    // First, we need to divide by 8 to convert the pixel position to a tile position.
+    // After this, we want to multiply the Y position by 32.
+    // These operations effectively cancel out, so we only need to mask the Y value.
+    G_LD_R8_R8(G_A, G_C);
+    G_AND_A_N8(0b11111000);
+    G_LD_R8_R8(G_L, G_A);
+    G_LD_R8_N8(G_H, 0);
+
+    // Now we have the position * 8 in HL.
+    G_ADD_HL_R16(G_HL); // position * 16
+    G_ADD_HL_R16(G_HL); // position * 32
+
+    // Convert the X position into an offset.
+    G_LD_R8_R8(G_A, G_B);
+    G_SRL_R8(G_A); // a / 2
+    G_SRL_R8(G_A); // a / 4
+    G_SRL_R8(G_A); // a / 8
+
+    // Add the two offsets together.
+    G_ADD_A_R8(G_L);
+    G_LD_R8_R8(G_L, G_A);
+    G_ADC_A_R8(G_H);
+    G_SUB_A_R8(G_L);
+    G_LD_R8_R8(G_H, G_A);
+
+    // Add the offset to the tilemap's base address, and we are done!
+    G_LD_R16_N16(G_BC, 0x9800);
+    G_ADD_HL_R16(G_BC);
+    G_RET(G_NOCOND);
+}
+
+static void UB_IsWallTile ()
+{
+    G_CP_A_N8(0x00);
+    if (G_RET(G_COND_Z)) { return; }
+
+    G_CP_A_N8(0x01);
+    if (G_RET(G_COND_Z)) { return; }
+
+    G_CP_A_N8(0x02);
+    if (G_RET(G_COND_Z)) { return; }
+
+    G_CP_A_N8(0x04);
+    if (G_RET(G_COND_Z)) { return; }
+
+    G_CP_A_N8(0x05);
+    if (G_RET(G_COND_Z)) { return; }
+
+    G_CP_A_N8(0x06);
+    if (G_RET(G_COND_Z)) { return; }
+
+    G_CP_A_N8(0x07);
+    G_RET(G_NOCOND);
+}
+
+static void UB_CheckAndHandleBrick ()
+{
+    UB_CheckAndHandleBrick__Left:
+        G_LD_R8_HL(G_A);
+        G_CP_A_N8(BRICK_LEFT);
+        G_JR_GOTO(G_COND_NZ, UB_CheckAndHandleBrick__Right);
+        G_LD_HL_N8(BLANK_TILE);
+        G_INC_R16(G_HL);
+        G_LD_HL_N8(BLANK_TILE);
+
+    UB_CheckAndHandleBrick__Right:
+        G_CP_A_N8(BRICK_RIGHT);
+        if (G_RET(G_COND_NZ)) { return; }
+        G_LD_HL_N8(BLANK_TILE);
+        G_DEC_R16(G_HL);
+        G_LD_HL_N8(BLANK_TILE);
+        G_RET(G_NOCOND);
 }
 
 static void UB_Main ()
@@ -236,6 +317,8 @@ static void UB_Main ()
     static const Uint16 wFrameCounter = G_RAM + 0;
     static const Uint16 wCurKeys = G_RAM + 1;
     static const Uint16 wNewKeys = G_RAM + 2;
+    static const Uint16 wBallVelX = G_RAM + 3;
+    static const Uint16 wBallVelY = G_RAM + 4;
 
     // Don't turn the LCD off outside of VBlank
     G_WaitVBlank();
@@ -262,6 +345,12 @@ static void UB_Main ()
     G_LD_R16_N16(G_BC, s_Paddle->m_Length);
     G_CopyBytes();
 
+    // Copy the ball sprite to VRAM
+    G_LD_R16_N16(G_DE, s_Ball->m_Address);
+    G_LD_R16_N16(G_HL, 0x8000 + s_Paddle->m_Length);
+    G_LD_R16_N16(G_BC, s_Ball->m_Length);
+    G_CopyBytes();
+
     // Clear OAM.
     G_ClearOAM();
 
@@ -273,6 +362,16 @@ static void UB_Main ()
     G_LD_HLI_A();
     G_LD_R8_N8(G_A, 0);
     G_LD_HLI_A();
+    G_LD_HLI_A();
+
+    // Set up the ball sprite.
+    G_LD_R8_N8(G_A, 100 + 16);
+    G_LD_HLI_A();
+    G_LD_R8_N8(G_A, 32 + 8);
+    G_LD_HLI_A();
+    G_LD_R8_N8(G_A, 1);
+    G_LD_HLI_A();
+    G_LD_R8_N8(G_A, 0);
     G_LD_HLI_A();
 
     // Set up the display registers
@@ -295,16 +394,111 @@ static void UB_Main ()
     G_LD_A16_A(wCurKeys);
     G_LD_A16_A(wNewKeys);
 
+    // Set up the ball sprite to go up and to the right.
+    G_LD_R8_N8(G_A, 1);
+    G_LD_A16_A(wBallVelX);
+    G_LD_R8_N8(G_A, -1);
+    G_LD_A16_A(wBallVelY);
+
     // Main loop
     UB_Main__Loop:
         G_WaitAfterVBlank();
         G_WaitVBlank();
-        G_UpdateKeys(wCurKeys, wNewKeys);
 
-        Uint8 l_CurKeys = 0, l_NewKeys = 0;
-        GABLE_ReadByte(s_Engine, wCurKeys, &l_CurKeys);
-        GABLE_ReadByte(s_Engine, wNewKeys, &l_NewKeys);
-        GABLE_debug("CurKeys: %02X, NewKeys: %02X", l_CurKeys, l_NewKeys);
+        // Add the ball sprite's velocity to its position.
+        G_LD_A_A16(wBallVelX);
+        G_LD_R8_R8(G_B, G_A);
+        G_LD_A_A16(G_OAMRAM + 5);
+        G_ADD_A_R8(G_B);
+        G_LD_A16_A(G_OAMRAM + 5);
+        G_LD_A_A16(wBallVelY);
+        G_LD_R8_R8(G_B, G_A);
+        G_LD_A_A16(G_OAMRAM + 4);
+        G_ADD_A_R8(G_B);
+        G_LD_A16_A(G_OAMRAM + 4);
+
+        // Check for collisions with the walls.
+        UB_Main__BounceOnTop:
+            G_LD_A_A16(G_OAMRAM + 4);
+            G_SUB_A_N8(16 + 1);
+            G_LD_R8_R8(G_C, G_A);
+            G_LD_A_A16(G_OAMRAM + 5);
+            G_SUB_A_N8(8);
+            G_LD_R8_R8(G_B, G_A);
+            G_CALL_FUNC(G_NOCOND, UB_GetTileByPixel());
+            G_LD_A_RP16(G_HL);
+            G_CALL_FUNC(G_NOCOND, UB_IsWallTile());
+            G_JP_GOTO(G_COND_NZ, UB_Main__BounceOnRight);
+            G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
+            G_LD_R8_N8(G_A, 1);
+            G_LD_A16_A(wBallVelY);
+
+        UB_Main__BounceOnRight:
+            G_LD_A_A16(G_OAMRAM + 4);
+            G_SUB_A_N8(16);
+            G_LD_R8_R8(G_C, G_A);
+            G_LD_A_A16(G_OAMRAM + 5);
+            G_SUB_A_N8(8 - 1);
+            G_LD_R8_R8(G_B, G_A);
+            G_CALL_FUNC(G_NOCOND, UB_GetTileByPixel());
+            G_LD_A_RP16(G_HL);
+            G_CALL_FUNC(G_NOCOND, UB_IsWallTile());
+            G_JP_GOTO(G_COND_NZ, UB_Main__BounceOnLeft);
+            G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
+            G_LD_R8_N8(G_A, -1);
+            G_LD_A16_A(wBallVelX);
+
+        UB_Main__BounceOnLeft:
+            G_LD_A_A16(G_OAMRAM + 4);
+            G_SUB_A_N8(16);
+            G_LD_R8_R8(G_C, G_A);
+            G_LD_A_A16(G_OAMRAM + 5);
+            G_SUB_A_N8(8 + 1);
+            G_LD_R8_R8(G_B, G_A);
+            G_CALL_FUNC(G_NOCOND, UB_GetTileByPixel());
+            G_LD_A_RP16(G_HL);
+            G_CALL_FUNC(G_NOCOND, UB_IsWallTile());
+            G_JP_GOTO(G_COND_NZ, UB_Main__BounceOnBottom);
+            G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
+            G_LD_R8_N8(G_A, 1);
+            G_LD_A16_A(wBallVelX);
+
+        UB_Main__BounceOnBottom:
+            G_LD_A_A16(G_OAMRAM + 4);
+            G_SUB_A_N8(16 - 1);
+            G_LD_R8_R8(G_C, G_A);
+            G_LD_A_A16(G_OAMRAM + 5);
+            G_SUB_A_N8(8);
+            G_LD_R8_R8(G_B, G_A);
+            G_CALL_FUNC(G_NOCOND, UB_GetTileByPixel());
+            G_LD_A_RP16(G_HL);
+            G_CALL_FUNC(G_NOCOND, UB_IsWallTile());
+            G_JP_GOTO(G_COND_NZ, UB_Main__BounceDone);
+            G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
+            G_LD_R8_N8(G_A, -1);
+            G_LD_A16_A(wBallVelY);
+
+        UB_Main__BounceDone:
+            G_LD_A_A16(G_OAMRAM);
+            G_LD_R8_R8(G_B, G_A);
+            G_LD_A_A16(G_OAMRAM + 4);
+            G_ADD_A_N8(6);
+            G_CP_A_R8(G_B);
+            G_JP_GOTO(G_COND_NZ, UB_Main__PaddleBounceDone);
+            G_LD_A_A16(G_OAMRAM + 5);
+            G_LD_R8_R8(G_B, G_A);
+            G_LD_A_A16(G_OAMRAM + 1);
+            G_SUB_A_N8(8);
+            G_CP_A_R8(G_B);
+            G_JP_GOTO(G_COND_NC, UB_Main__PaddleBounceDone);
+            G_ADD_A_N8(8 + 16);
+            G_CP_A_R8(G_B);
+            G_JP_GOTO(G_COND_C, UB_Main__PaddleBounceDone);
+            G_LD_R8_N8(G_A, -1);
+            G_LD_A16_A(wBallVelY);
+
+        UB_Main__PaddleBounceDone:
+            G_UpdateKeys(wCurKeys, wNewKeys);
 
         UB_Main__CheckLeft:
             G_LD_A_A16(wCurKeys);
