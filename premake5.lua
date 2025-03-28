@@ -90,13 +90,6 @@ workspace "project-gable"
         links {
             "gable", "m"
         }
-
-        -- Post-Build Command: Run GABUILD on the "res" directory
-        filter { "system:linux" }
-            postbuildcommands {
-                "cd ../.. && ./scripts/assets.sh"
-            }
-        filter {}
         
     -- Hello, World! Example
     project "hello"
@@ -118,3 +111,7 @@ workspace "project-gable"
             "gable", "SDL2", "m"
         }
         
+        -- Prebuild Command: Build/Copy Assets
+        prebuildcommands {
+            "cd ../.. && ./scripts/assets.sh hello %{cfg.buildcfg}"
+        }
