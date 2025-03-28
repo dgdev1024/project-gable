@@ -115,3 +115,29 @@ workspace "project-gable"
         prebuildcommands {
             "cd ../.. && ./scripts/assets.sh hello %{cfg.buildcfg}"
         }
+
+    -- "Unbricked" - Breakout Clone
+    project "unbricked"
+        kind "ConsoleApp"
+        location "./generated/unbricked"
+        targetdir "./build/bin/unbricked/%{cfg.buildcfg}"
+        objdir "./build/obj/unbricked/%{cfg.buildcfg}"
+        includedirs {
+            "./projects/gable/include",
+            "./projects/unbricked/include"
+        }
+        files {
+            "./projects/unbricked/src/**.c"
+        }
+        libdirs {
+            "./build/bin/gable/%{cfg.buildcfg}"
+        }
+        links {
+            "gable", "SDL2", "m"
+        }
+        
+        -- Prebuild Command: Build/Copy Assets
+        prebuildcommands {
+            "cd ../.. && ./scripts/assets.sh unbricked %{cfg.buildcfg}"
+        }
+        

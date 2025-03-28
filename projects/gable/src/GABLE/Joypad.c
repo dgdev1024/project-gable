@@ -10,11 +10,10 @@
 
 typedef struct GABLE_Joypad
 {
-    GABLE_Engine*           m_Engine;                   ///< @brief A pointer to the parent GABLE Engine instance.
-    Bool                    m_SelectedButtons;          ///< @brief `true` if the joypad buttons are mapped to the low nibble of the `JOYP` register; `false` if not.
-    Bool                    m_SelectedDirectionalPad;   ///< @brief `true` if the joypad directional pad is mapped to the low nibble of the `JOYP` register; `false` if not.
-    Uint8                   m_Buttons;                  ///< @brief The current state of the joypad buttons.
-    Uint8                   m_DirectionalPad;           ///< @brief The current state of the joypad directional pad.
+    GABLE_Engine*           m_Engine;                       ///< @brief A pointer to the parent GABLE Engine instance.
+    Bool                    m_SelectedButtons;              ///< @brief `true` if the joypad buttons are mapped to the low nibble of the `JOYP` register; `false` if not.
+    Bool                    m_SelectedDirectionalPad;       ///< @brief `true` if the joypad directional pad is mapped to the low nibble of the `JOYP` register; `false` if not.
+    Bool                    m_States[8];                    ///< @brief The state of the joypad buttons and directional pad.
 } GABLE_Joypad;
 
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
@@ -38,8 +37,7 @@ void GABLE_ResetJoypad (GABLE_Joypad* p_Joypad)
     // The `JOYP` register is reset to 0xCF (0b11001111).
     p_Joypad->m_SelectedButtons = true;
     p_Joypad->m_SelectedDirectionalPad = true;
-    p_Joypad->m_Buttons = 0x0F;
-    p_Joypad->m_DirectionalPad = 0x0F;
+    memset(p_Joypad->m_States, 0x00, sizeof(p_Joypad->m_States));
 }
 
 void GABLE_DestroyJoypad (GABLE_Joypad* p_Joypad)
@@ -61,43 +59,27 @@ void GABLE_PressButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button)
     // Check to see if the button being pressed is a directional pad button.
     Bool l_IsDirectionalPadButton = (GABLE_bit(p_Button, 2) != 0);
 
+    // Get the old state of the button.
+    Bool l_Old = l_Joypad->m_States[p_Button & 0b111];
+
+    // Change the state of the button to pressed.
+    l_Joypad->m_States[p_Button & 0b111] = true;
+
     // Clear the bit in the appropriate button state.
     if (l_IsDirectionalPadButton == true)
     {
-        // Before clearing the bit, get the old state of the directional pad.
-        Uint8 l_OldDirectionalPad = l_Joypad->m_DirectionalPad;
-        GABLE_clearbit(l_Joypad->m_DirectionalPad, p_Button & 0b11);
-        
-        // Request a joypad interrupt if...
-        // - The directional pad buttons are selected (bit 4 of the JOYP register is clear).
-        // - The button was not already pressed (bit was set in the old state).
-        // - The button is now pressed (bit is clear in the new state).
-        if (
-            l_Joypad->m_SelectedDirectionalPad == true &&
-            GABLE_bit(l_OldDirectionalPad, p_Button & 0b11) == true &&
-            GABLE_bit(l_Joypad->m_DirectionalPad, p_Button & 0b11) == false
-        )
+        // If the button was not pressed before, and the DPAD group is selected, then trigger the joypad interrupt.
+        if (l_Joypad->m_SelectedDirectionalPad == true && l_Old == false)
         {
-            GABLE_RequestInterrupt(l_Joypad->m_Engine, GABLE_INT_JOYPAD);
+            GABLE_RequestInterrupt(p_Engine, GABLE_INT_JOYPAD);
         }
     }
     else
     {
-        // Before clearing the bit, get the old state of the buttons.
-        Uint8 l_OldButtons = l_Joypad->m_Buttons;
-        GABLE_clearbit(l_Joypad->m_Buttons, p_Button & 0b11);
-
-        // Request a joypad interrupt if...
-        // - The face buttons are selected (bit 5 of the JOYP register is clear).
-        // - The button was not already pressed (bit was set in the old state).
-        // - The button is now pressed (bit is clear in the new state).
-        if (
-            l_Joypad->m_SelectedButtons == true &&
-            GABLE_bit(l_OldButtons, p_Button & 0b11) == true &&
-            GABLE_bit(l_Joypad->m_Buttons, p_Button & 0b11) == false
-        )
+        // If the button was not pressed before, and the BUTTON group is selected, then trigger the joypad interrupt.
+        if (l_Joypad->m_SelectedButtons == true && l_Old == false)
         {
-            GABLE_RequestInterrupt(l_Joypad->m_Engine, GABLE_INT_JOYPAD);
+            GABLE_RequestInterrupt(p_Engine, GABLE_INT_JOYPAD);
         }
     }
 }
@@ -109,21 +91,9 @@ void GABLE_ReleaseButton (GABLE_Engine* p_Engine, GABLE_JoypadButton p_Button)
     // Get the joypad component from the engine.
     GABLE_Joypad* l_Joypad = GABLE_GetJoypad(p_Engine);
 
-    // Check to see if the button being released is a directional pad button.
-    Bool l_IsDirectionalPadButton = (GABLE_bit(p_Button, 2) != 0);
-
-    // Set the bit in the appropriate button state.
-    if (l_IsDirectionalPadButton == true)
-    {
-        // Set the bit in the directional pad state to release the button.
-        // Button releases do not trigger joypad interrupts.
-        GABLE_setbit(l_Joypad->m_DirectionalPad, p_Button & 0b11);
-    }
-    else
-    {
-        // Set the bit in the button state to release the button.
-        GABLE_setbit(l_Joypad->m_Buttons, p_Button & 0b11);
-    }
+    // Set the button state to released.
+    // Releasing a button does not trigger an interrupt.
+    l_Joypad->m_States[p_Button & 0b111] = false;
 }
 
 // Public Functions - Hardware Register Getters ////////////////////////////////////////////////////
@@ -133,7 +103,7 @@ Uint8 GABLE_ReadJOYP (const GABLE_Joypad* p_Joypad)
     GABLE_pexpect(p_Joypad != NULL, "Joypad component is NULL");
 
     // Set up the value to be returned.
-    Uint8 l_JOYP = 0b00000000;
+    Uint8 l_JOYP = 0xCF;
 
     // Get the watch state of the face buttons and directional pad.
     // - If the face buttons are selected, then clear bit 5; otherwise, set it.
@@ -145,11 +115,25 @@ Uint8 GABLE_ReadJOYP (const GABLE_Joypad* p_Joypad)
     // Otherwise, copy the directional pad state to bits 3-0.
     if (p_Joypad->m_SelectedButtons == true)
     {
-        l_JOYP |= (p_Joypad->m_Buttons & 0b00001111);
+        if (p_Joypad->m_States[GABLE_JB_START] == true)
+            l_JOYP &= ~(1 << 3);
+        if (p_Joypad->m_States[GABLE_JB_SELECT] == true)
+            l_JOYP &= ~(1 << 2);
+        if (p_Joypad->m_States[GABLE_JB_B] == true)
+            l_JOYP &= ~(1 << 1);
+        if (p_Joypad->m_States[GABLE_JB_A] == true)
+            l_JOYP &= ~(1 << 0);
     }
     else
     {
-        l_JOYP |= (p_Joypad->m_DirectionalPad & 0b00001111);
+        if (p_Joypad->m_States[GABLE_JB_DOWN] == true)
+            l_JOYP &= ~(1 << 3);
+        if (p_Joypad->m_States[GABLE_JB_UP] == true)
+            l_JOYP &= ~(1 << 2);
+        if (p_Joypad->m_States[GABLE_JB_LEFT] == true)
+            l_JOYP &= ~(1 << 1);
+        if (p_Joypad->m_States[GABLE_JB_RIGHT] == true)
+            l_JOYP &= ~(1 << 0);
     }
 
     return l_JOYP;

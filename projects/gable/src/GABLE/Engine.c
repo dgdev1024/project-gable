@@ -33,6 +33,10 @@ typedef struct GABLE_Engine
     void*                   m_Userdata;     ///< @brief User data associated with the engine.
 } GABLE_Engine;
 
+// Static Members //////////////////////////////////////////////////////////////////////////////////
+
+static GABLE_Engine* s_CurrentEngine = NULL; ///< @brief The current GABLE Engine instance.
+
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
 
 GABLE_Engine* GABLE_CreateEngine ()
@@ -104,6 +108,21 @@ void GABLE_DestroyEngine (GABLE_Engine* p_Engine)
         // Free the engine instance.
         GABLE_free(p_Engine);
     }
+}
+
+void GABLE_MakeEngineCurrent (GABLE_Engine* p_Engine)
+{
+    s_CurrentEngine = p_Engine;
+}
+
+GABLE_Engine* GABLE_GetCurrentEngine ()
+{
+    return s_CurrentEngine;
+}
+
+Bool GABLE_IsCurrentEngineSet ()
+{
+    return s_CurrentEngine != NULL;
 }
 
 Bool GABLE_CycleEngine (GABLE_Engine* p_Engine, Count p_Cycles)

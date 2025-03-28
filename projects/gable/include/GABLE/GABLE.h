@@ -20,6 +20,7 @@ extern "C" {
 #include <GABLE/Joypad.h>
 #include <GABLE/Network.h>
 #include <GABLE/Instructions.h>
+#include <GABLE/Stdlib.h>
 
 #if defined(__cplusplus)
 }

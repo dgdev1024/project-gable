@@ -6,39 +6,7 @@
 #pragma once
 #include <GABLE/Common.h>
 
-// Typedefs and Forward Declarations ///////////////////////////////////////////////////////////////
-
-/**
- * @brief A forward-declaration of the GABLE Engine structure.
- */
-typedef struct GABLE_Engine GABLE_Engine;
-
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
-
-/**
- * @brief Makes the specified GABLE Engine the current engine.
- * 
- * This function sets the specified GABLE Engine as the current engine, which means that all
- * subsequent calls to instruction simulation functions, and other shortform functions (`G_*`), will
- * use the specified engine.
- * 
- * @param p_Engine A pointer to the GABLE Engine structure.
- */
-void GABLE_MakeEngineCurrent (GABLE_Engine* p_Engine);
-
-/**
- * @brief Gets the current GABLE Engine instance.
- * 
- * @return A pointer to the current GABLE Engine instance, or `NULL` if no engine is set.
- */
-GABLE_Engine* GABLE_GetCurrentEngine ();
-
-/**
- * @brief Checks if a GABLE Engine is currently set as the current engine used for shortform functions.
- * 
- * @return `true` if a GABLE Engine instance is currently set, `false` otherwise.
- */
-Bool GABLE_IsCurrentEngineSet ();
 
 /**
  * @group Instruction Simulation Functions

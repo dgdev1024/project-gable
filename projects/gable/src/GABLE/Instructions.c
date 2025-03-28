@@ -6,14 +6,13 @@
 #include <GABLE/InterruptContext.h>
 #include <GABLE/Instructions.h>
 
-// Static Members //////////////////////////////////////////////////////////////////////////////////
-
-static GABLE_Engine* s_CurrentEngine = NULL;
-
 // Static Functions ////////////////////////////////////////////////////////////////////////////////
 
 Bool GABLE_CheckCondition (GABLE_ConditionType p_Condition)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
+    GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
+    
     switch (p_Condition)
     {
         case GABLE_CT_NONE: return true;
@@ -27,23 +26,9 @@ Bool GABLE_CheckCondition (GABLE_ConditionType p_Condition)
 
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
 
-void GABLE_MakeEngineCurrent (GABLE_Engine* p_Engine)
-{
-    s_CurrentEngine = p_Engine;
-}
-
-GABLE_Engine* GABLE_GetCurrentEngine ()
-{
-    return s_CurrentEngine;
-}
-
-Bool GABLE_IsCurrentEngineSet ()
-{
-    return s_CurrentEngine != NULL;
-}
-
 Bool G_ADC_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -68,6 +53,7 @@ Bool G_ADC_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_ADC_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -95,6 +81,7 @@ Bool G_ADC_A_HL ()
 
 Bool G_ADC_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -116,6 +103,7 @@ Bool G_ADC_A_N8 (Uint8 p_Src)
 
 Bool G_ADD_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -139,6 +127,7 @@ Bool G_ADD_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_ADD_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -165,6 +154,7 @@ Bool G_ADD_A_HL ()
 
 Bool G_ADD_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -185,6 +175,7 @@ Bool G_ADD_A_N8 (Uint8 p_Src)
 
 Bool G_ADD_HL_R16 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Src = 0;
@@ -208,6 +199,7 @@ Bool G_ADD_HL_R16 (GABLE_RegisterType p_Src)
 
 Bool G_ADD_HL_SP ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_SP = 0;
@@ -231,6 +223,7 @@ Bool G_ADD_HL_SP ()
 
 Bool G_ADD_SP_E8 (Int8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_SP = 0;
@@ -252,6 +245,7 @@ Bool G_ADD_SP_E8 (Int8 p_Src)
 
 Bool G_AND_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -274,6 +268,7 @@ Bool G_AND_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_AND_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -299,6 +294,7 @@ Bool G_AND_A_HL ()
 
 Bool G_AND_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -318,6 +314,7 @@ Bool G_AND_A_N8 (Uint8 p_Src)
 
 Bool G_BIT_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     if (p_Bit > 7)
@@ -340,6 +337,7 @@ Bool G_BIT_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Src)
 
 Bool G_BIT_U3_HL (Uint8 p_Bit)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     if (p_Bit > 7)
@@ -365,6 +363,7 @@ Bool G_BIT_U3_HL (Uint8 p_Bit)
 
 Bool G_CALL (GABLE_ConditionType p_Cond)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     // The simulation of this instruction does not do anything except for cycle the engine.
@@ -387,6 +386,7 @@ Bool G_CALL (GABLE_ConditionType p_Cond)
 
 Bool G_CCF ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Bool l_Carry = GABLE_GetFlag(s_CurrentEngine, GABLE_FT_C);
@@ -400,6 +400,7 @@ Bool G_CCF ()
 
 Bool G_CP_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -421,6 +422,7 @@ Bool G_CP_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_CP_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -445,6 +447,7 @@ Bool G_CP_A_HL ()
 
 Bool G_CP_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -463,6 +466,7 @@ Bool G_CP_A_N8 (Uint8 p_Src)
 
 Bool G_CPL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -480,6 +484,7 @@ Bool G_CPL ()
 
 Bool G_DAA ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -509,6 +514,7 @@ Bool G_DAA ()
 
 Bool G_DEC_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -527,6 +533,7 @@ Bool G_DEC_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_DEC_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -548,6 +555,7 @@ Bool G_DEC_HL ()
 
 Bool G_DEC_R16 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Dst = 0;
@@ -562,6 +570,7 @@ Bool G_DEC_R16 (GABLE_RegisterType p_Dst)
 
 Bool G_DEC_SP ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_SP = 0;
@@ -576,6 +585,7 @@ Bool G_DEC_SP ()
 
 Bool G_DI ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     GABLE_SetInterruptMasterEnable(s_CurrentEngine, false);
@@ -585,6 +595,7 @@ Bool G_DI ()
 
 Bool G_EI ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     GABLE_SetInterruptMasterEnable(s_CurrentEngine, true);
@@ -594,6 +605,7 @@ Bool G_EI ()
 
 Bool G_HALT ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
     
     // This instruction does nothing.
@@ -602,6 +614,7 @@ Bool G_HALT ()
 
 Bool G_INC_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -620,6 +633,7 @@ Bool G_INC_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_INC_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -641,6 +655,7 @@ Bool G_INC_HL ()
 
 Bool G_INC_R16 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Dst = 0;
@@ -655,6 +670,7 @@ Bool G_INC_R16 (GABLE_RegisterType p_Dst)
 
 Bool G_INC_SP ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_SP = 0;
@@ -669,6 +685,7 @@ Bool G_INC_SP ()
 
 Bool G_JP (GABLE_ConditionType p_Cond)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     // The simulation of this instruction does not do anything except for cycle the engine.
@@ -691,6 +708,7 @@ Bool G_JP (GABLE_ConditionType p_Cond)
 
 Bool G_JR (GABLE_ConditionType p_Cond)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     // The simulation of this instruction does not do anything except for cycle the engine.
@@ -713,6 +731,7 @@ Bool G_JR (GABLE_ConditionType p_Cond)
 
 Bool G_LD_R8_R8 (GABLE_RegisterType p_Dst, GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -725,6 +744,7 @@ Bool G_LD_R8_R8 (GABLE_RegisterType p_Dst, GABLE_RegisterType p_Src)
 
 Bool G_LD_R8_N8 (GABLE_RegisterType p_Dst, Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     return 
@@ -734,6 +754,7 @@ Bool G_LD_R8_N8 (GABLE_RegisterType p_Dst, Uint8 p_Src)
 
 Bool G_LD_R16_N16 (GABLE_RegisterType p_Dst, Uint16 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     return 
@@ -743,6 +764,7 @@ Bool G_LD_R16_N16 (GABLE_RegisterType p_Dst, Uint16 p_Src)
 
 Bool G_LD_HL_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -758,6 +780,7 @@ Bool G_LD_HL_R8 (GABLE_RegisterType p_Src)
 
 Bool G_LD_HL_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -770,6 +793,7 @@ Bool G_LD_HL_N8 (Uint8 p_Src)
 
 Bool G_LD_R8_HL (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -785,6 +809,7 @@ Bool G_LD_R8_HL (GABLE_RegisterType p_Dst)
 
 Bool G_LD_RP16_A (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Dst = 0;
@@ -800,6 +825,7 @@ Bool G_LD_RP16_A (GABLE_RegisterType p_Dst)
 
 Bool G_LD_A16_A (Uint16 p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -812,6 +838,7 @@ Bool G_LD_A16_A (Uint16 p_Dst)
 
 Bool G_LDH_A8_A (Uint8 p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -824,6 +851,7 @@ Bool G_LDH_A8_A (Uint8 p_Dst)
 
 Bool G_LDH_C_A ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -839,6 +867,7 @@ Bool G_LDH_C_A ()
 
 Bool G_LD_A_RP16 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Src = 0;
@@ -854,6 +883,7 @@ Bool G_LD_A_RP16 (GABLE_RegisterType p_Src)
 
 Bool G_LD_A_A16 (Uint16 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -866,6 +896,7 @@ Bool G_LD_A_A16 (Uint16 p_Src)
 
 Bool G_LDH_A_A8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -878,6 +909,7 @@ Bool G_LDH_A_A8 (Uint8 p_Src)
 
 Bool G_LDH_A_C ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_C = 0;
@@ -893,6 +925,7 @@ Bool G_LDH_A_C ()
 
 Bool G_LD_HLI_A ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -909,6 +942,7 @@ Bool G_LD_HLI_A ()
 
 Bool G_LD_HLD_A ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -925,6 +959,7 @@ Bool G_LD_HLD_A ()
 
 Bool G_LD_A_HLI ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -941,6 +976,7 @@ Bool G_LD_A_HLI ()
 
 Bool G_LD_A_HLD ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -957,6 +993,7 @@ Bool G_LD_A_HLD ()
 
 Bool G_LD_SP_N16 (Uint16 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     return 
@@ -966,6 +1003,7 @@ Bool G_LD_SP_N16 (Uint16 p_Src)
 
 Bool G_LD_A16_SP (Uint16 p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_SP = 0;
@@ -979,6 +1017,7 @@ Bool G_LD_A16_SP (Uint16 p_Dst)
 
 Bool G_LD_HL_SP_E8 (Int8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_SP = 0;
@@ -1000,6 +1039,7 @@ Bool G_LD_HL_SP_E8 (Int8 p_Src)
 
 Bool G_LD_SP_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_HL = 0;
@@ -1012,6 +1052,7 @@ Bool G_LD_SP_HL ()
 
 Bool G_NOP ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     // This instruction does nothing.
@@ -1020,6 +1061,7 @@ Bool G_NOP ()
 
 Bool G_OR_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -1042,6 +1084,7 @@ Bool G_OR_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_OR_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1067,6 +1110,7 @@ Bool G_OR_A_HL ()
 
 Bool G_OR_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1086,6 +1130,7 @@ Bool G_OR_A_N8 (Uint8 p_Src)
 
 Bool G_POP_R16 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Popped = 0;
@@ -1098,6 +1143,7 @@ Bool G_POP_R16 (GABLE_RegisterType p_Dst)
 
 Bool G_PUSH_R16 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Src = 0;
@@ -1110,6 +1156,7 @@ Bool G_PUSH_R16 (GABLE_RegisterType p_Src)
 
 Bool G_RES_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     if (p_Bit > 7)
@@ -1130,6 +1177,7 @@ Bool G_RES_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Dst)
 
 Bool G_RES_U3_HL (Uint8 p_Bit)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     if (p_Bit > 7)
@@ -1153,6 +1201,7 @@ Bool G_RES_U3_HL (Uint8 p_Bit)
 
 Bool G_RET (GABLE_ConditionType p_Cond)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     // The simulation of this instruction does not do anything except for cycle the engine.
@@ -1182,6 +1231,7 @@ Bool G_RET (GABLE_ConditionType p_Cond)
 
 Bool G_RETI ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     return GABLE_ReturnFromInterrupt(s_CurrentEngine) && GABLE_CycleEngine(s_CurrentEngine, 4);
@@ -1189,6 +1239,7 @@ Bool G_RETI ()
 
 Bool G_RL_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1211,6 +1262,7 @@ Bool G_RL_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_RL_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1236,6 +1288,7 @@ Bool G_RL_HL ()
 
 Bool G_RLA ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1258,6 +1311,7 @@ Bool G_RLA ()
 
 Bool G_RLC_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1279,6 +1333,7 @@ Bool G_RLC_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_RLC_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1303,6 +1358,7 @@ Bool G_RLC_HL ()
 
 Bool G_RLCA ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1324,6 +1380,7 @@ Bool G_RLCA ()
 
 Bool G_RR_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1346,6 +1403,7 @@ Bool G_RR_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_RR_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1371,6 +1429,7 @@ Bool G_RR_HL ()
 
 Bool G_RRA ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1393,6 +1452,7 @@ Bool G_RRA ()
 
 Bool G_RRC_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1414,6 +1474,7 @@ Bool G_RRC_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_RRC_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1438,6 +1499,7 @@ Bool G_RRC_HL ()
 
 Bool G_RRCA ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1459,6 +1521,7 @@ Bool G_RRCA ()
 
 Bool G_RST_U3 (Uint8 p_Vector)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     return
@@ -1468,6 +1531,7 @@ Bool G_RST_U3 (Uint8 p_Vector)
 
 Bool G_SBC_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -1492,6 +1556,7 @@ Bool G_SBC_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_SBC_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1519,6 +1584,7 @@ Bool G_SBC_A_HL ()
 
 Bool G_SBC_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1540,6 +1606,7 @@ Bool G_SBC_A_N8 (Uint8 p_Src)
 
 Bool G_SCF ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     GABLE_SetFlag(s_CurrentEngine, GABLE_FT_N, false);
@@ -1551,6 +1618,7 @@ Bool G_SCF ()
 
 Bool G_SET_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     if (p_Bit > 7)
@@ -1571,6 +1639,7 @@ Bool G_SET_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Dst)
 
 Bool G_SET_U3_HL (Uint8 p_Bit)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     if (p_Bit > 7)
@@ -1594,6 +1663,7 @@ Bool G_SET_U3_HL (Uint8 p_Bit)
 
 Bool G_SLA_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1615,6 +1685,7 @@ Bool G_SLA_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_SLA_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1639,6 +1710,7 @@ Bool G_SLA_HL ()
 
 Bool G_SRA_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1660,6 +1732,7 @@ Bool G_SRA_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_SRA_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1684,6 +1757,7 @@ Bool G_SRA_HL ()
 
 Bool G_SRL_R8 (GABLE_RegisterType p_Dst)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Dst = 0;
@@ -1705,6 +1779,7 @@ Bool G_SRL_R8 (GABLE_RegisterType p_Dst)
 
 Bool G_SRL_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1729,6 +1804,7 @@ Bool G_SRL_HL ()
 
 Bool G_STOP ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     // This instruction does nothing.
@@ -1737,6 +1813,7 @@ Bool G_STOP ()
 
 Bool G_SUB_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -1760,6 +1837,7 @@ Bool G_SUB_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_SUB_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1786,6 +1864,7 @@ Bool G_SUB_A_HL ()
 
 Bool G_SUB_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;
@@ -1804,8 +1883,52 @@ Bool G_SUB_A_N8 (Uint8 p_Src)
         GABLE_CycleEngine(s_CurrentEngine, 2);
 }
 
+Bool G_SWAP_R8 (GABLE_RegisterType p_Dst)
+{
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
+    GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
+
+    Uint8 l_Dst = 0;
+    GABLE_expect(GABLE_ReadByteRegister(s_CurrentEngine, p_Dst, &l_Dst), "Failed to read destination register.");
+
+    Uint8 l_Result = ((l_Dst & 0x0F) << 4) | ((l_Dst & 0xF0) >> 4);
+
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_Z, l_Result == 0);
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_N, false);
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_H, false);
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_C, false);
+
+    return 
+        GABLE_WriteByteRegister(s_CurrentEngine, p_Dst, l_Result) &&
+        GABLE_CycleEngine(s_CurrentEngine, 2);
+}
+
+Bool G_SWAP_HL ()
+{
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
+    GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
+
+    Uint16 l_Address = 0;
+    GABLE_expect(GABLE_ReadWordRegister(s_CurrentEngine, GABLE_RT_HL, &l_Address), "Failed to read register HL.");
+
+    Uint8 l_Dst = 0;
+    GABLE_expect(GABLE_ReadByte(s_CurrentEngine, l_Address, &l_Dst), "Failed to read memory at address $%04X.", l_Address);
+
+    Uint8 l_Result = ((l_Dst & 0x0F) << 4) | ((l_Dst & 0xF0) >> 4);
+
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_Z, l_Result == 0);
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_N, false);
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_H, false);
+    GABLE_SetFlag(s_CurrentEngine, GABLE_FT_C, false);
+
+    return 
+        GABLE_WriteByte(s_CurrentEngine, l_Address, l_Result) &&
+        GABLE_CycleEngine(s_CurrentEngine, 4);
+}
+
 Bool G_XOR_A_R8 (GABLE_RegisterType p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_Src = 0;
@@ -1828,6 +1951,7 @@ Bool G_XOR_A_R8 (GABLE_RegisterType p_Src)
 
 Bool G_XOR_A_HL ()
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint16 l_Address = 0;
@@ -1853,6 +1977,7 @@ Bool G_XOR_A_HL ()
 
 Bool G_XOR_A_N8 (Uint8 p_Src)
 {
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
     GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
 
     Uint8 l_A = 0;

@@ -166,6 +166,15 @@ typedef time_t      Time;
 #define GABLE_GB_ROM_SIZE        0x8000
 
 #define GABLE_GB_VRAM_START      0x8000
+#define GABLE_GB_TDATA_START     0x8000
+#define GABLE_GB_TDATA0_START    0x8000
+#define GABLE_GB_TDATA1_START    0x8800
+#define GABLE_GB_TDATA2_START    0x9000
+#define GABLE_GB_TDATA_END       0x97FF
+#define GABLE_GB_SCRN_START      0x9800
+#define GABLE_GB_SCRN0_START     0x9800
+#define GABLE_GB_SCRN1_START     0x9C00
+#define GABLE_GB_SCRN_END        0x9FFF
 #define GABLE_GB_VRAM_END        0x9FFF
 
 #define GABLE_GB_SRAM_START      0xA000
@@ -334,6 +343,20 @@ typedef enum GABLE_HardwarePort
     GABLE_HP_IE        = 0xFFFF     ///< @brief `IE` - Interrupt Enable
 } GABLE_HardwarePort;
 
+// Shortform Macros - General Memory Region Constants //////////////////////////////////////////////
+
+#define G_VRAM                  GABLE_GB_VRAM_START
+#define G_SCRN0                 GABLE_GB_SCRN0_START
+#define G_SCRN1                 GABLE_GB_SCRN1_START
+#define G_SRAM                  GABLE_GB_SRAM_START
+#define G_RAM                   GABLE_GB_WRAM_START
+#define G_RAMBANK               GABLE_GB_WRAMX_START
+#define G_OAMRAM                GABLE_GB_OAM_START
+#define G_NETRAM                GABLE_NETRAM_START
+#define G_IO                    GABLE_GB_IO_START
+#define G_AUD3WAVERAM           GABLE_GB_WAVE_START
+#define G_HRAM                  GABLE_GB_HRAM_START
+
 // Shortform Macros - Memory-Mapped Registers //////////////////////////////////////////////////////
 
 /*
@@ -349,74 +372,74 @@ typedef enum GABLE_HardwarePort
         `https://creativecommons.org/publicdomain/zero/1.0/`
 */
 
-#define G_P1                GABLE_HP_JOYP
-#define G_NTC               GABLE_HP_NTC
-#define G_NTS               GABLE_HP_NTS
-#define G_DIV               GABLE_HP_DIV
-#define G_TIMA              GABLE_HP_TIMA
-#define G_TMA               GABLE_HP_TMA
-#define G_TAC               GABLE_HP_TAC
-#define G_RTCS              GABLE_HP_RTCS
-#define G_RTCM              GABLE_HP_RTCM
-#define G_RTCH              GABLE_HP_RTCH
-#define G_RTCDH             GABLE_HP_RTCDH
-#define G_RTCDL             GABLE_HP_RTCDL
-#define G_RTCL              GABLE_HP_RTCL
-#define G_IF                GABLE_HP_IF
-#define G_NR10              GABLE_HP_NR10
-#define G_NR11              GABLE_HP_NR11
-#define G_NR12              GABLE_HP_NR12
-#define G_NR13              GABLE_HP_NR13
-#define G_NR14              GABLE_HP_NR14
-#define G_NR21              GABLE_HP_NR21
-#define G_NR22              GABLE_HP_NR22
-#define G_NR23              GABLE_HP_NR23
-#define G_NR24              GABLE_HP_NR24
-#define G_NR30              GABLE_HP_NR30
-#define G_NR31              GABLE_HP_NR31
-#define G_NR32              GABLE_HP_NR32
-#define G_NR33              GABLE_HP_NR33
-#define G_NR34              GABLE_HP_NR34
-#define G_NR41              GABLE_HP_NR41
-#define G_NR42              GABLE_HP_NR42
-#define G_NR43              GABLE_HP_NR43
-#define G_NR44              GABLE_HP_NR44
-#define G_NR50              GABLE_HP_NR50
-#define G_NR51              GABLE_HP_NR51
-#define G_NR52              GABLE_HP_NR52
-#define G_LCDC              GABLE_HP_LCDC
-#define G_STAT              GABLE_HP_STAT
-#define G_SCY               GABLE_HP_SCY
-#define G_SCX               GABLE_HP_SCX
-#define G_LY                GABLE_HP_LY
-#define G_LYC               GABLE_HP_LYC
-#define G_DMA               GABLE_HP_DMA
-#define G_BGP               GABLE_HP_BGP
-#define G_OBP0              GABLE_HP_OBP0
-#define G_OBP1              GABLE_HP_OBP1
-#define G_WY                GABLE_HP_WY
-#define G_WX                GABLE_HP_WX
-#define G_KEY1              GABLE_HP_KEY1
-#define G_VBK               GABLE_HP_VBK
-#define G_HDMA1             GABLE_HP_HDMA1 
-#define G_HDMA2             GABLE_HP_HDMA2
-#define G_HDMA3             GABLE_HP_HDMA3 
-#define G_HDMA4             GABLE_HP_HDMA4
-#define G_HDMA5             GABLE_HP_HDMA5
-#define G_RP                GABLE_HP_RP
-#define G_BGPI              GABLE_HP_BGPI
-#define G_BGPD              GABLE_HP_BGPD
-#define G_OBPI              GABLE_HP_OBPI
-#define G_OBPD              GABLE_HP_OBPD
-#define G_OPRI              GABLE_HP_OPRI
-#define G_GRPM              GABLE_HP_GRPM
-#define G_SVBK              GABLE_HP_SVBK
-#define G_SSBK              GABLE_HP_SSBK
-#define G_DSBKH             GABLE_HP_DSBKH
-#define G_DSBKL             GABLE_HP_DSBKL
-#define G_PCM12             GABLE_HP_PCM12
-#define G_PCM34             GABLE_HP_PCM34
-#define G_IE                GABLE_HP_IE
+#define G_P1                (GABLE_HP_JOYP & 0xFF)
+#define G_NTC               (GABLE_HP_NTC & 0xFF)
+#define G_NTS               (GABLE_HP_NTS & 0xFF)
+#define G_DIV               (GABLE_HP_DIV & 0xFF)
+#define G_TIMA              (GABLE_HP_TIMA & 0xFF)
+#define G_TMA               (GABLE_HP_TMA & 0xFF)
+#define G_TAC               (GABLE_HP_TAC & 0xFF)
+#define G_RTCS              (GABLE_HP_RTCS & 0xFF)
+#define G_RTCM              (GABLE_HP_RTCM & 0xFF)
+#define G_RTCH              (GABLE_HP_RTCH & 0xFF)
+#define G_RTCDH             (GABLE_HP_RTCDH & 0xFF)
+#define G_RTCDL             (GABLE_HP_RTCDL & 0xFF)
+#define G_RTCL              (GABLE_HP_RTCL & 0xFF)
+#define G_IF                (GABLE_HP_IF & 0xFF)
+#define G_NR10              (GABLE_HP_NR10 & 0xFF)
+#define G_NR11              (GABLE_HP_NR11 & 0xFF)
+#define G_NR12              (GABLE_HP_NR12 & 0xFF)
+#define G_NR13              (GABLE_HP_NR13 & 0xFF)
+#define G_NR14              (GABLE_HP_NR14 & 0xFF)
+#define G_NR21              (GABLE_HP_NR21 & 0xFF)
+#define G_NR22              (GABLE_HP_NR22 & 0xFF)
+#define G_NR23              (GABLE_HP_NR23 & 0xFF)
+#define G_NR24              (GABLE_HP_NR24 & 0xFF)
+#define G_NR30              (GABLE_HP_NR30 & 0xFF)
+#define G_NR31              (GABLE_HP_NR31 & 0xFF)
+#define G_NR32              (GABLE_HP_NR32 & 0xFF)
+#define G_NR33              (GABLE_HP_NR33 & 0xFF)
+#define G_NR34              (GABLE_HP_NR34 & 0xFF)
+#define G_NR41              (GABLE_HP_NR41 & 0xFF)
+#define G_NR42              (GABLE_HP_NR42 & 0xFF)
+#define G_NR43              (GABLE_HP_NR43 & 0xFF)
+#define G_NR44              (GABLE_HP_NR44 & 0xFF)
+#define G_NR50              (GABLE_HP_NR50 & 0xFF)
+#define G_NR51              (GABLE_HP_NR51 & 0xFF)
+#define G_NR52              (GABLE_HP_NR52 & 0xFF)
+#define G_LCDC              (GABLE_HP_LCDC & 0xFF)
+#define G_STAT              (GABLE_HP_STAT & 0xFF)
+#define G_SCY               (GABLE_HP_SCY & 0xFF)
+#define G_SCX               (GABLE_HP_SCX & 0xFF)
+#define G_LY                (GABLE_HP_LY & 0xFF)
+#define G_LYC               (GABLE_HP_LYC & 0xFF)
+#define G_DMA               (GABLE_HP_DMA & 0xFF)
+#define G_BGP               (GABLE_HP_BGP & 0xFF)
+#define G_OBP0              (GABLE_HP_OBP0 & 0xFF)
+#define G_OBP1              (GABLE_HP_OBP1 & 0xFF)
+#define G_WY                (GABLE_HP_WY & 0xFF)
+#define G_WX                (GABLE_HP_WX & 0xFF)
+#define G_KEY1              (GABLE_HP_KEY1 & 0xFF)
+#define G_VBK               (GABLE_HP_VBK & 0xFF)
+#define G_HDMA1             (GABLE_HP_HDMA1 & 0xFF) 
+#define G_HDMA2             (GABLE_HP_HDMA2 & 0xFF)
+#define G_HDMA3             (GABLE_HP_HDMA3 & 0xFF) 
+#define G_HDMA4             (GABLE_HP_HDMA4 & 0xFF)
+#define G_HDMA5             (GABLE_HP_HDMA5 & 0xFF)
+#define G_RP                (GABLE_HP_RP & 0xFF)
+#define G_BGPI              (GABLE_HP_BGPI & 0xFF)
+#define G_BGPD              (GABLE_HP_BGPD & 0xFF)
+#define G_OBPI              (GABLE_HP_OBPI & 0xFF)
+#define G_OBPD              (GABLE_HP_OBPD & 0xFF)
+#define G_OPRI              (GABLE_HP_OPRI & 0xFF)
+#define G_GRPM              (GABLE_HP_GRPM & 0xFF)
+#define G_SVBK              (GABLE_HP_SVBK & 0xFF)
+#define G_SSBK              (GABLE_HP_SSBK & 0xFF)
+#define G_DSBKH             (GABLE_HP_DSBKH & 0xFF)
+#define G_DSBKL             (GABLE_HP_DSBKL & 0xFF)
+#define G_PCM12             (GABLE_HP_PCM12 & 0xFF)
+#define G_PCM34             (GABLE_HP_PCM34 & 0xFF)
+#define G_IE                (GABLE_HP_IE & 0xFF)
 
 #define G_AUD1SWEEP         G_NR10
 #define G_AUD1LEN           G_NR11
