@@ -321,7 +321,7 @@ static void UB_Main ()
     static const Uint16 wBallVelY = G_RAM + 4;
 
     // Don't turn the LCD off outside of VBlank
-    G_WaitVBlank();
+    G_CALL_FUNC(G_NOCOND, G_WaitVBlank());
 
     // Turn the LCD off.
     G_LD_R8_N8(G_A, G_LCDCF_OFF);
@@ -331,28 +331,28 @@ static void UB_Main ()
     G_LD_R16_N16(G_DE, s_Tiles->m_Address);
     G_LD_R16_N16(G_HL, 0x9000);
     G_LD_R16_N16(G_BC, s_Tiles->m_Length);
-    G_CopyBytes();
+    G_CALL_FUNC(G_NOCOND, G_CopyBytes());
 
     // Copy the tilemap to VRAM
     G_LD_R16_N16(G_DE, s_Tilemap->m_Address);
     G_LD_R16_N16(G_HL, 0x9800);
     G_LD_R16_N16(G_BC, s_Tilemap->m_Length);
-    G_CopyBytes();
+    G_CALL_FUNC(G_NOCOND, G_CopyBytes());
 
     // Copy the paddle sprite to VRAM
     G_LD_R16_N16(G_DE, s_Paddle->m_Address);
     G_LD_R16_N16(G_HL, 0x8000);
     G_LD_R16_N16(G_BC, s_Paddle->m_Length);
-    G_CopyBytes();
+    G_CALL_FUNC(G_NOCOND, G_CopyBytes());
 
     // Copy the ball sprite to VRAM
     G_LD_R16_N16(G_DE, s_Ball->m_Address);
     G_LD_R16_N16(G_HL, 0x8000 + s_Paddle->m_Length);
     G_LD_R16_N16(G_BC, s_Ball->m_Length);
-    G_CopyBytes();
+    G_CALL_FUNC(G_NOCOND, G_CopyBytes());
 
     // Clear OAM.
-    G_ClearOAM();
+    G_CALL_FUNC(G_NOCOND, G_ClearOAM());
 
     // Set up the paddle sprite.
     G_LD_R16_N16(G_HL, G_OAMRAM);
@@ -402,8 +402,8 @@ static void UB_Main ()
 
     // Main loop
     UB_Main__Loop:
-        G_WaitAfterVBlank();
-        G_WaitVBlank();
+        G_CALL_FUNC(G_NOCOND, G_WaitAfterVBlank());
+        G_CALL_FUNC(G_NOCOND, G_WaitVBlank());
 
         // Add the ball sprite's velocity to its position.
         G_LD_A_A16(wBallVelX);
@@ -498,7 +498,7 @@ static void UB_Main ()
             G_LD_A16_A(wBallVelY);
 
         UB_Main__PaddleBounceDone:
-            G_UpdateKeys(wCurKeys, wNewKeys);
+            G_CALL_FUNC(G_NOCOND, G_UpdateKeys(wCurKeys, wNewKeys));
 
         UB_Main__CheckLeft:
             G_LD_A_A16(wCurKeys);

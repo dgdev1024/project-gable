@@ -95,64 +95,42 @@ static void H_Main ()
 {
     // Shut down audio circuitry.
     G_LD_R8_N8(G_A, G_AUDENA_OFF);
-    G_LD_A16_A(G_NR52);
+    G_LDH_A8_A(G_NR52);
 
     // Enable VBlank interrupt.
     G_LD_R8_N8(G_A, G_IEF_VBLANK);
-    G_LD_A16_A(G_IE);
+    G_LDH_A8_A(G_IE);
     G_EI();
 
     // Do not turn the LCD off outside of VBlank
-    do
-    {
-        G_LD_A_A16(G_LY);
-        G_CP_A_N8(G_SCRN_Y);
-    } while (G_JR(G_COND_C));
+    G_CALL_FUNC(G_NOCOND, G_WaitVBlank());
 
     // Turn the LCD off.
     G_LD_R8_N8(G_A, G_LCDCF_OFF);
-    G_LD_A16_A(G_LCDC);
+    G_LDH_A8_A(G_LCDC);
 
     // Set graphics mode to DMG.
-    G_LD_A16_A(G_GRPM);
+    G_LDH_A8_A(G_GRPM);
 
     // Copy the tile data.
     G_LD_R16_N16(G_DE, s_TileData->m_Address);
     G_LD_R16_N16(G_HL, 0x9000);
     G_LD_R16_N16(G_BC, s_TileData->m_Length);
-    
-    do
-    {
-        G_LD_A_RP16(G_DE);
-        G_LD_HLI_A();
-        G_INC_R16(G_DE);
-        G_DEC_R16(G_BC);
-        G_LD_R8_R8(G_A, G_B);
-        G_OR_A_R8(G_C);
-    } while (G_JR(G_COND_NZ));
+    G_CALL_FUNC(G_NOCOND, G_CopyBytes());
 
     // Copy the tile map.
     G_LD_R16_N16(G_DE, s_TileMap->m_Address);
     G_LD_R16_N16(G_HL, 0x9800);
     G_LD_R16_N16(G_BC, s_TileMap->m_Length);
-    
-    do
-    {
-        G_LD_A_RP16(G_DE);
-        G_LD_HLI_A();
-        G_INC_R16(G_DE);
-        G_DEC_R16(G_BC);
-        G_LD_R8_R8(G_A, G_B);
-        G_OR_A_R8(G_C);
-    } while (G_JR(G_COND_NZ));
+    G_CALL_FUNC(G_NOCOND, G_CopyBytes());
 
     // Turn the LCD on.
     G_LD_R8_N8(G_A, G_LCDCF_ON | G_LCDCF_BGON);   // LCD On, BG On
-    G_LD_A16_A(G_LCDC);
+    G_LDH_A8_A(G_LCDC);
 
     // During the first (blank) frame, initialize display registers.
     G_LD_R8_N8(G_A, 0b11100100);
-    G_LD_A16_A(G_BGP);
+    G_LDH_A8_A(G_BGP);
 
     do
     {
