@@ -11,6 +11,7 @@
 #include <GABLE/PPU.h>
 #include <GABLE/Joypad.h>
 #include <GABLE/Network.h>
+#include <GABLE/Instructions.h>
 #include <GABLE/Engine.h>
 
 // GABLE Engine Structure //////////////////////////////////////////////////////////////////////////
@@ -66,6 +67,12 @@ GABLE_Engine* GABLE_CreateEngine ()
     // Initialize the engine's properties.
     l_Engine->m_Cycles = 0;
 
+    // If there is no current engine set, make this engine the current engine.
+    if (GABLE_IsCurrentEngineSet() == false)
+    {
+        GABLE_MakeEngineCurrent(l_Engine);
+    }
+
     // Return the new engine instance.
     return l_Engine;
 }
@@ -74,6 +81,12 @@ void GABLE_DestroyEngine (GABLE_Engine* p_Engine)
 {
     if (p_Engine != NULL)
     {
+        // If this engine is the current engine for shortforms, un-set it.
+        if (GABLE_GetCurrentEngine() == p_Engine)
+        {
+            GABLE_MakeEngineCurrent(NULL);
+        }
+
         // Un-set the user data pointer.
         p_Engine->m_Userdata = NULL;
 

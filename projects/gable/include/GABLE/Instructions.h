@@ -16,6 +16,31 @@ typedef struct GABLE_Engine GABLE_Engine;
 // Public Functions ////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * @brief Makes the specified GABLE Engine the current engine.
+ * 
+ * This function sets the specified GABLE Engine as the current engine, which means that all
+ * subsequent calls to instruction simulation functions, and other shortform functions (`G_*`), will
+ * use the specified engine.
+ * 
+ * @param p_Engine A pointer to the GABLE Engine structure.
+ */
+void GABLE_MakeEngineCurrent (GABLE_Engine* p_Engine);
+
+/**
+ * @brief Gets the current GABLE Engine instance.
+ * 
+ * @return A pointer to the current GABLE Engine instance, or `NULL` if no engine is set.
+ */
+GABLE_Engine* GABLE_GetCurrentEngine ();
+
+/**
+ * @brief Checks if a GABLE Engine is currently set as the current engine used for shortform functions.
+ * 
+ * @return `true` if a GABLE Engine instance is currently set, `false` otherwise.
+ */
+Bool GABLE_IsCurrentEngineSet ();
+
+/**
  * @group Instruction Simulation Functions
  * 
  * The functions below simulate the execution of the instructions found in the instruction set of
@@ -36,111 +61,111 @@ typedef struct GABLE_Engine GABLE_Engine;
  * enables interrupts, however).
  */
 
-Bool G_ADC_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_ADC_A_HL (GABLE_Engine* p_Engine);
-Bool G_ADC_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_ADD_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_ADD_A_HL (GABLE_Engine* p_Engine);
-Bool G_ADD_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_ADD_HL_R16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_ADD_HL_SP (GABLE_Engine* p_Engine);
-Bool G_ADD_SP_E8 (GABLE_Engine* p_Engine, Int8 p_Src);
-Bool G_AND_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_AND_A_HL (GABLE_Engine* p_Engine);
-Bool G_AND_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_BIT_U3_R8 (GABLE_Engine* p_Engine, Uint8 p_Bit, GABLE_RegisterType p_Src);
-Bool G_BIT_U3_HL (GABLE_Engine* p_Engine, Uint8 p_Bit);
-Bool G_CALL (GABLE_Engine* p_Engine, GABLE_ConditionType p_Condition);
-Bool G_CCF (GABLE_Engine* p_Engine);
-Bool G_CP_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_CP_A_HL (GABLE_Engine* p_Engine);
-Bool G_CP_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_CPL (GABLE_Engine* p_Engine);
-Bool G_DAA (GABLE_Engine* p_Engine);
-Bool G_DEC_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_DEC_HL (GABLE_Engine* p_Engine);
-Bool G_DEC_R16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_DEC_SP (GABLE_Engine* p_Engine);
-Bool G_DI (GABLE_Engine* p_Engine);
-Bool G_EI (GABLE_Engine* p_Engine);
-Bool G_HALT (GABLE_Engine* p_Engine);
-Bool G_INC_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_INC_HL (GABLE_Engine* p_Engine);
-Bool G_INC_R16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_INC_SP (GABLE_Engine* p_Engine);
-Bool G_JP (GABLE_Engine* p_Engine, GABLE_ConditionType p_Condition);
-Bool G_JR (GABLE_Engine* p_Engine, GABLE_ConditionType p_Condition);
-Bool G_LD_R8_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst, GABLE_RegisterType p_Src);
-Bool G_LD_R8_N8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst, Uint8 p_Src);
-Bool G_LD_R16_N16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst, Uint16 p_Src);
-Bool G_LD_HL_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_LD_HL_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_LD_R8_HL (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_LD_RP16_A (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_LD_A16_A (GABLE_Engine* p_Engine, Uint16 p_Dst);
-Bool G_LDH_A8_A (GABLE_Engine* p_Engine, Uint8 p_Dst);
-Bool G_LDH_C_A (GABLE_Engine* p_Engine);
-Bool G_LD_A_RP16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_LD_A_A16 (GABLE_Engine* p_Engine, Uint16 p_Src);
-Bool G_LDH_A_A8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_LDH_A_C (GABLE_Engine* p_Engine);
-Bool G_LD_HLI_A (GABLE_Engine* p_Engine);
-Bool G_LD_HLD_A (GABLE_Engine* p_Engine);
-Bool G_LD_A_HLI (GABLE_Engine* p_Engine);
-Bool G_LD_A_HLD (GABLE_Engine* p_Engine);
-Bool G_LD_SP_N16 (GABLE_Engine* p_Engine, Uint16 p_Src);
-Bool G_LD_A16_SP (GABLE_Engine* p_Engine, Uint16 p_Dst);
-Bool G_LD_HL_SP_E8 (GABLE_Engine* p_Engine, Int8 p_Src);
-Bool G_LD_SP_HL (GABLE_Engine* p_Engine);
-Bool G_NOP (GABLE_Engine* p_Engine);
-Bool G_OR_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_OR_A_HL (GABLE_Engine* p_Engine);
-Bool G_OR_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_POP_R16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_PUSH_R16 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_RES_U3_R8 (GABLE_Engine* p_Engine, Uint8 p_Bit, GABLE_RegisterType p_Dst);
-Bool G_RES_U3_HL (GABLE_Engine* p_Engine, Uint8 p_Bit);
-Bool G_RET (GABLE_Engine* p_Engine, GABLE_ConditionType p_Condition);
-Bool G_RETI (GABLE_Engine* p_Engine);
-Bool G_RL_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_RL_HL (GABLE_Engine* p_Engine);
-Bool G_RLA (GABLE_Engine* p_Engine);
-Bool G_RLC_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_RLC_HL (GABLE_Engine* p_Engine);
-Bool G_RLCA (GABLE_Engine* p_Engine);
-Bool G_RR_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_RR_HL (GABLE_Engine* p_Engine);
-Bool G_RRA (GABLE_Engine* p_Engine);
-Bool G_RRC_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_RRC_HL (GABLE_Engine* p_Engine);
-Bool G_RRCA (GABLE_Engine* p_Engine);
-Bool G_RST_U3 (GABLE_Engine* p_Engine, Uint8 p_Vector);
-Bool G_SBC_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_SBC_A_HL (GABLE_Engine* p_Engine);
-Bool G_SBC_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_SCF (GABLE_Engine* p_Engine);
-Bool G_SET_U3_R8 (GABLE_Engine* p_Engine, Uint8 p_Bit, GABLE_RegisterType p_Dst);
-Bool G_SET_U3_HL (GABLE_Engine* p_Engine, Uint8 p_Bit);
-Bool G_SLA_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_SLA_HL (GABLE_Engine* p_Engine);
-Bool G_SRA_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_SRA_HL (GABLE_Engine* p_Engine);
-Bool G_SRL_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_SRL_HL (GABLE_Engine* p_Engine);
-Bool G_STOP (GABLE_Engine* p_Engine);
-Bool G_SUB_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_SUB_A_HL (GABLE_Engine* p_Engine);
-Bool G_SUB_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
-Bool G_SWAP_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Dst);
-Bool G_SWAP_HL (GABLE_Engine* p_Engine);
-Bool G_XOR_A_R8 (GABLE_Engine* p_Engine, GABLE_RegisterType p_Src);
-Bool G_XOR_A_HL (GABLE_Engine* p_Engine);
-Bool G_XOR_A_N8 (GABLE_Engine* p_Engine, Uint8 p_Src);
+Bool G_ADC_A_R8 (GABLE_RegisterType p_Src);
+Bool G_ADC_A_HL ();
+Bool G_ADC_A_N8 (Uint8 p_Src);
+Bool G_ADD_A_R8 (GABLE_RegisterType p_Src);
+Bool G_ADD_A_HL ();
+Bool G_ADD_A_N8 (Uint8 p_Src);
+Bool G_ADD_HL_R16 (GABLE_RegisterType p_Src);
+Bool G_ADD_HL_SP ();
+Bool G_ADD_SP_E8 (Int8 p_Src);
+Bool G_AND_A_R8 (GABLE_RegisterType p_Src);
+Bool G_AND_A_HL ();
+Bool G_AND_A_N8 (Uint8 p_Src);
+Bool G_BIT_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Src);
+Bool G_BIT_U3_HL (Uint8 p_Bit);
+Bool G_CALL (GABLE_ConditionType p_Condition);
+Bool G_CCF ();
+Bool G_CP_A_R8 (GABLE_RegisterType p_Src);
+Bool G_CP_A_HL ();
+Bool G_CP_A_N8 (Uint8 p_Src);
+Bool G_CPL ();
+Bool G_DAA ();
+Bool G_DEC_R8 (GABLE_RegisterType p_Dst);
+Bool G_DEC_HL ();
+Bool G_DEC_R16 (GABLE_RegisterType p_Dst);
+Bool G_DEC_SP ();
+Bool G_DI ();
+Bool G_EI ();
+Bool G_HALT ();
+Bool G_INC_R8 (GABLE_RegisterType p_Dst);
+Bool G_INC_HL ();
+Bool G_INC_R16 (GABLE_RegisterType p_Dst);
+Bool G_INC_SP ();
+Bool G_JP (GABLE_ConditionType p_Condition);
+Bool G_JR (GABLE_ConditionType p_Condition);
+Bool G_LD_R8_R8 (GABLE_RegisterType p_Dst, GABLE_RegisterType p_Src);
+Bool G_LD_R8_N8 (GABLE_RegisterType p_Dst, Uint8 p_Src);
+Bool G_LD_R16_N16 (GABLE_RegisterType p_Dst, Uint16 p_Src);
+Bool G_LD_HL_R8 (GABLE_RegisterType p_Src);
+Bool G_LD_HL_N8 (Uint8 p_Src);
+Bool G_LD_R8_HL (GABLE_RegisterType p_Dst);
+Bool G_LD_RP16_A (GABLE_RegisterType p_Dst);
+Bool G_LD_A16_A (Uint16 p_Dst);
+Bool G_LDH_A8_A (Uint8 p_Dst);
+Bool G_LDH_C_A ();
+Bool G_LD_A_RP16 (GABLE_RegisterType p_Src);
+Bool G_LD_A_A16 (Uint16 p_Src);
+Bool G_LDH_A_A8 (Uint8 p_Src);
+Bool G_LDH_A_C ();
+Bool G_LD_HLI_A ();
+Bool G_LD_HLD_A ();
+Bool G_LD_A_HLI ();
+Bool G_LD_A_HLD ();
+Bool G_LD_SP_N16 (Uint16 p_Src);
+Bool G_LD_A16_SP (Uint16 p_Dst);
+Bool G_LD_HL_SP_E8 (Int8 p_Src);
+Bool G_LD_SP_HL ();
+Bool G_NOP ();
+Bool G_OR_A_R8 (GABLE_RegisterType p_Src);
+Bool G_OR_A_HL ();
+Bool G_OR_A_N8 (Uint8 p_Src);
+Bool G_POP_R16 (GABLE_RegisterType p_Dst);
+Bool G_PUSH_R16 (GABLE_RegisterType p_Src);
+Bool G_RES_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Dst);
+Bool G_RES_U3_HL (Uint8 p_Bit);
+Bool G_RET (GABLE_ConditionType p_Condition);
+Bool G_RETI ();
+Bool G_RL_R8 (GABLE_RegisterType p_Dst);
+Bool G_RL_HL ();
+Bool G_RLA ();
+Bool G_RLC_R8 (GABLE_RegisterType p_Dst);
+Bool G_RLC_HL ();
+Bool G_RLCA ();
+Bool G_RR_R8 (GABLE_RegisterType p_Dst);
+Bool G_RR_HL ();
+Bool G_RRA ();
+Bool G_RRC_R8 (GABLE_RegisterType p_Dst);
+Bool G_RRC_HL ();
+Bool G_RRCA ();
+Bool G_RST_U3 (Uint8 p_Vector);
+Bool G_SBC_A_R8 (GABLE_RegisterType p_Src);
+Bool G_SBC_A_HL ();
+Bool G_SBC_A_N8 (Uint8 p_Src);
+Bool G_SCF ();
+Bool G_SET_U3_R8 (Uint8 p_Bit, GABLE_RegisterType p_Dst);
+Bool G_SET_U3_HL (Uint8 p_Bit);
+Bool G_SLA_R8 (GABLE_RegisterType p_Dst);
+Bool G_SLA_HL ();
+Bool G_SRA_R8 (GABLE_RegisterType p_Dst);
+Bool G_SRA_HL ();
+Bool G_SRL_R8 (GABLE_RegisterType p_Dst);
+Bool G_SRL_HL ();
+Bool G_STOP ();
+Bool G_SUB_A_R8 (GABLE_RegisterType p_Src);
+Bool G_SUB_A_HL ();
+Bool G_SUB_A_N8 (Uint8 p_Src);
+Bool G_SWAP_R8 (GABLE_RegisterType p_Dst);
+Bool G_SWAP_HL ();
+Bool G_XOR_A_R8 (GABLE_RegisterType p_Src);
+Bool G_XOR_A_HL ();
+Bool G_XOR_A_N8 (Uint8 p_Src);
 
 /**
  * @endgroup
  */
 
-#define G_JP_GOTO(E, C, L) if (G_JP(E, C)) { goto L; }
-#define G_JR_GOTO(E, C, L) if (G_JR(E, C)) { goto L; }
-#define G_CALL_FUNC(E, C, F) if (G_CALL(E, C)) { F; }
+#define G_JP_GOTO(C, L) if (G_JP(C)) { goto L; }
+#define G_JR_GOTO(C, L) if (G_JR(C)) { goto L; }
+#define G_CALL_FUNC(C, F) if (G_CALL(C)) { F; }
