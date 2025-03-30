@@ -706,6 +706,49 @@ Bool G_JP (GABLE_ConditionType p_Cond)
     return GABLE_CycleEngine(s_CurrentEngine, l_Condition ? 4 : 3) && l_Condition;
 }
 
+Bool G_JP_HL (Uint16* p_HL)
+{
+    GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();
+    GABLE_expect(s_CurrentEngine != NULL, "No current engine context set!");
+
+    Uint16 l_HL = 0;
+    GABLE_expect(GABLE_ReadWordRegister(s_CurrentEngine, GABLE_RT_HL, &l_HL), "Failed to read register HL.");
+
+    if (p_HL != NULL)
+    {
+        *p_HL = l_HL;
+    }
+
+    // In Game Boy development, the `JP HL` instruction is most often used to implement a jump
+    // table - a list of addresses to jump to based on the value of the HL register. In the GABLE
+    // engine, the simulation of this instruction does not do anything except for cycle the engine,
+    // but also accepts a pointer which, if not NULL, will be set to the value of HL. This allows
+    // the caller to implement a jump table in their code, using the pointed-to value in a switch
+    // statement or similar construct.
+    //
+    // The intended use of this function is to call it just before the switch statement in your
+    // program. This function will cycle the engine and return the value of HL:
+    //
+    // ```
+    // Uint16 l_HL = 0;
+    // G_JP_HL(&l_HL);
+    // switch (l_HL)
+    // {
+    //     case 0x1234:
+    //         MyFunction1();   // or `goto MyLabel1;`
+    //         break;
+    //     case 0x5678:
+    //         MyFunction2();   // or `goto MyLabel2;`
+    //         break;
+    //     default:
+    //         MyFunction3();   // or `goto MyLabel3;`
+    //         break;
+    // }
+    // ```
+    
+    return GABLE_CycleEngine(s_CurrentEngine, 1);
+}
+
 Bool G_JR (GABLE_ConditionType p_Cond)
 {
     GABLE_Engine* s_CurrentEngine = GABLE_GetCurrentEngine();

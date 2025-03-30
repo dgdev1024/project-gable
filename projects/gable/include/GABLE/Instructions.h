@@ -62,6 +62,7 @@ Bool G_INC_HL ();
 Bool G_INC_R16 (GABLE_RegisterType p_Dst);
 Bool G_INC_SP ();
 Bool G_JP (GABLE_ConditionType p_Condition);
+Bool G_JP_HL (Uint16* p_HL);
 Bool G_JR (GABLE_ConditionType p_Condition);
 Bool G_LD_R8_R8 (GABLE_RegisterType p_Dst, GABLE_RegisterType p_Src);
 Bool G_LD_R8_N8 (GABLE_RegisterType p_Dst, Uint8 p_Src);
@@ -137,3 +138,9 @@ Bool G_XOR_A_N8 (Uint8 p_Src);
 #define G_JP_GOTO(C, L) if (G_JP(C)) { goto L; }
 #define G_JR_GOTO(C, L) if (G_JR(C)) { goto L; }
 #define G_CALL_FUNC(C, F) if (G_CALL(C)) { F; }
+#define G_JUMPTABLE(...) \
+    Uint16 l_HL = 0; \
+    G_JP_HL(&l_HL); \
+    switch (l_HL) { \
+        __VA_ARGS__ \
+    }

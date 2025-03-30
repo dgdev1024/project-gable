@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
@@ -679,3 +680,39 @@ typedef enum GABLE_HardwarePort
 #define G_COND_Z                GABLE_CT_Z
 #define G_COND_NC               GABLE_CT_NC
 #define G_COND_C                GABLE_CT_C
+
+// Shortform Macros - Internal Macros //////////////////////////////////////////////////////////////
+
+#define __G_MERGE2__(A, B) A##B
+#define __G_MERGE3__(A, B, C) A##B##C
+#define __G_NEXTU_LABEL__(A, B) __G_MERGE3__(A, __NEXTU, B)
+#define __G_RSSET_LABEL__(A) __G_MERGE2__(__RSSET, A)
+
+// Shortform Macros - RAM Enumeration Macros ///////////////////////////////////////////////////////
+
+#define G_STRUCT(K) K##_OFFSET, K##_STARTS = (K##_OFFSET - 1),
+#define G_DB(K) K##_OFFSET,
+#define G_DW(K) K##_OFFSET, K##_END = K##_OFFSET + 1,
+#define G_DL(K) K##_OFFSET, K##_END = K##_OFFSET + 3,
+#define G_DS(K, C) K##_OFFSET, K##_END = K##_OFFSET + (C - 1),
+#define G_UNION(K) K##__UNION, K##__STARTU = (K##__UNION - 1),
+#define G_NEXTU(K) __G_NEXTU_LABEL__(K, __LINE__) = (K##__UNION - 1),
+#define G_ENDU(K, M) K##__ENDU = (K##__STARTU + M),
+
+#define G_WADDR(K) (GABLE_GB_WRAM0_START + K##_OFFSET)
+#define G_W0ADDR(K) (GABLE_GB_WRAM0_START + K##_OFFSET)
+#define G_WXADDR(K) (GABLE_GB_WRAMX_START + K##_OFFSET)
+#define G_VADDR(K) (GABLE_GB_VRAM_START + K##_OFFSET)
+#define G_SADDR(K) (GABLE_GB_SRAM_START + K##_OFFSET)
+#define G_HADDR(K) (GABLE_GB_HRAM_START + K##_OFFSET)
+
+// Shortform Macros - Structure Offset Macros //////////////////////////////////////////////////////
+
+#define G_RSSET(C)              __G_RSSET_LABEL__(__LINE__) = (C - 1),
+#define G_RSRESET               G_RSSET(0)
+#define G_RBS(K, C)             K, K##__END = K + C,
+#define G_RB(K)                 G_RBS(K, 1)
+#define G_RWS(K, C)             K, K##__END = K + (C * 2),
+#define G_RW(K)                 G_RWS(K, 1)
+#define G_RLS(K, C)             K, K##__END = K + (C * 4),
+#define G_RL(K)                 G_RLS(K, 1)
