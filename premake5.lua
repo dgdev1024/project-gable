@@ -55,6 +55,11 @@ workspace "project-gable"
         "unused-result"
     }
 
+    -- Ignore warnings due to compiler bugs:
+    disablewarnings {
+        "stringop-truncation",
+    }
+
     -- Treat Warnings as Errors
     flags { "FatalWarnings" }
 

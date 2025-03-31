@@ -1252,6 +1252,37 @@ GABUILD_Syntax* GABUILD_ParseIncbinStatement ()
     return l_IncbinSyntax;
 }
 
+GABUILD_Syntax* GABUILD_ParseAssertStatement ()
+{
+    // Store the assert token.
+    const GABUILD_Token* l_AssertToken = GABUILD_PeekToken(0);
+
+    // Parse the assert's condition expression.
+    GABUILD_Syntax* l_ConditionExpr = GABUILD_ParseExpression();
+    if (l_ConditionExpr == NULL)
+    {
+        return NULL;
+    }
+
+    // Parse the assert's failure message expression.
+    GABUILD_Syntax* l_FailureMessageExpr = NULL;
+    if (GABUILD_AdvanceTokenIfType(GABUILD_TOKEN_COMMA) != NULL)
+    {
+        l_FailureMessageExpr = GABUILD_ParseExpression();
+        if (l_FailureMessageExpr == NULL)
+        {
+            return NULL;
+        }
+    }
+
+    // Create the assert syntax node.
+    GABUILD_Syntax* l_AssertSyntax = GABUILD_CreateSyntax(GABUILD_ST_ASSERT, l_AssertToken);
+    l_AssertSyntax->m_CondExpr = l_ConditionExpr;
+    l_AssertSyntax->m_RightExpr = l_FailureMessageExpr;
+
+    return l_AssertSyntax;
+}
+
 GABUILD_Syntax* GABUILD_ParseStatement ()
 {
     // Skip any newline tokens.
@@ -1320,6 +1351,11 @@ GABUILD_Syntax* GABUILD_ParseStatement ()
         else if (l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_INCBIN)
         {
             return GABUILD_ParseIncbinStatement();
+        }
+
+        else if (l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_ASSERT)
+        {
+            return GABUILD_ParseAssertStatement();
         }
 
         else

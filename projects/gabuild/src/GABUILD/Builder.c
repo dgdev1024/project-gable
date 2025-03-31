@@ -462,6 +462,33 @@ static GABUILD_Value* GABUILD_PerformBinaryOperation (const GABUILD_Value* p_Lef
                     return NULL;
             }
         }
+        else if (p_RightValue->m_Type == GABUILD_VT_STRING)
+        {
+            // Convert the number to a string.
+            Char l_Buffer[32];
+            if (p_LeftValue->m_FractionalPart == 0)
+            {
+                snprintf(l_Buffer, sizeof(l_Buffer), "%ld", p_LeftValue->m_IntegerPart);
+            }
+            else
+            {
+                snprintf(l_Buffer, sizeof(l_Buffer), "%lf", p_LeftValue->m_Number);
+            }
+
+            switch (p_Operator)
+            {
+                case GABUILD_TOKEN_PLUS:
+                {
+                    GABUILD_Value* l_LeftValueString = GABUILD_CreateStringValue(l_Buffer);
+                    GABUILD_Value* l_Result = GABUILD_ConcatenateStringValues(l_LeftValueString, p_RightValue);
+                    GABUILD_DestroyValue(l_LeftValueString);
+                    return l_Result;
+                }
+                default:
+                    GABLE_error("Invalid operator type for number-vs-string binary operation.");
+                    return NULL;
+            }
+        }
         else
         {
             GABLE_error("Invalid righthand value type for binary operation.");
@@ -482,6 +509,33 @@ static GABUILD_Value* GABUILD_PerformBinaryOperation (const GABUILD_Value* p_Lef
                 }
                 default:
                     GABLE_error("Invalid operator type for string-vs-string binary operation.");
+                    return NULL;
+            }
+        }
+        else if (p_RightValue->m_Type == GABUILD_VT_NUMBER)
+        {
+            // Convert the number to a string.
+            Char l_Buffer[32];
+            if (p_RightValue->m_FractionalPart == 0)
+            {
+                snprintf(l_Buffer, sizeof(l_Buffer), "%ld", p_RightValue->m_IntegerPart);
+            }
+            else
+            {
+                snprintf(l_Buffer, sizeof(l_Buffer), "%lf", p_RightValue->m_Number);
+            }
+
+            switch (p_Operator)
+            {
+                case GABUILD_TOKEN_PLUS:
+                {
+                    GABUILD_Value* l_RightValueString = GABUILD_CreateStringValue(l_Buffer);
+                    GABUILD_Value* l_Result = GABUILD_ConcatenateStringValues(p_LeftValue, l_RightValueString);
+                    GABUILD_DestroyValue(l_RightValueString);
+                    return l_Result;
+                }
+                default:
+                    GABLE_error("Invalid operator type for string-vs-number binary operation.");
                     return NULL;
             }
         }
@@ -1322,6 +1376,63 @@ GABUILD_Value* GABUILD_EvaluateIncbinStatement (const GABUILD_Syntax* p_SyntaxNo
     return GABUILD_CreateVoidValue();
 }
 
+GABUILD_Value* GABUILD_EvaluateAssert (const GABUILD_Syntax* p_SyntaxNode)
+{
+    // Evaluate the condition expression.
+    GABUILD_Value* l_ConditionValue = GABUILD_Evaluate(p_SyntaxNode->m_CondExpr);
+    if (l_ConditionValue == NULL)
+    {
+        return NULL;
+    }
+
+    // Check the type of the value. It must be a number.
+    if (l_ConditionValue->m_Type != GABUILD_VT_NUMBER)
+    {
+        GABLE_error("Unexpected value type for condition expression in 'assert' statement.");
+        GABUILD_DestroyValue(l_ConditionValue);
+        return NULL;
+    }
+
+    // Check if the condition is false.
+    if (l_ConditionValue->m_Number == 0)
+    {
+        if (p_SyntaxNode->m_RightExpr != NULL)
+        {
+            // Evaluate the error message expression.
+            GABUILD_Value* l_ErrorMessageValue = GABUILD_Evaluate(p_SyntaxNode->m_RightExpr);
+            if (l_ErrorMessageValue == NULL)
+            {
+                GABUILD_DestroyValue(l_ConditionValue);
+                return NULL;
+            }
+
+            // Check the type of the value. It must be a string.
+            if (l_ErrorMessageValue->m_Type != GABUILD_VT_STRING)
+            {
+                GABLE_error("Unexpected value type for error message expression in 'assert' statement.");
+                GABUILD_DestroyValue(l_ErrorMessageValue);
+                GABUILD_DestroyValue(l_ConditionValue);
+                return NULL;
+            }
+
+            // Print the error message.
+            fprintf(stderr, "Assertion failed: %s\n", l_ErrorMessageValue->m_String);
+            GABUILD_DestroyValue(l_ErrorMessageValue);
+        }
+        else
+        {
+            // Print a generic error message.
+            fprintf(stderr, "Assertion failed.\n");
+        }
+
+        GABUILD_DestroyValue(l_ConditionValue);
+        return NULL;
+    }
+
+    GABUILD_DestroyValue(l_ConditionValue);
+    return GABUILD_CreateVoidValue();
+}
+
 GABUILD_Value* GABUILD_EvaluateBlock (const GABUILD_Syntax* p_SyntaxNode)
 {
     // Create a new value to hold the result of the block.
@@ -1419,6 +1530,10 @@ GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode)
 
         case GABUILD_ST_INCBIN:
             l_Result = GABUILD_EvaluateIncbinStatement(p_SyntaxNode);
+            break;
+
+        case GABUILD_ST_ASSERT:
+            l_Result = GABUILD_EvaluateAssert(p_SyntaxNode);
             break;
 
         default:

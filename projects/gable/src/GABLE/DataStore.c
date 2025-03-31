@@ -228,7 +228,7 @@ const GABLE_DataHandle* GABLE_LoadDataFromBuffer (GABLE_Engine* p_Engine, const 
     // Create a new data handle instance. Resize the data handle array if necessary.
     GABLE_ResizeDataHandles(l_DataStore);
     GABLE_DataHandle* l_Handle = &l_DataStore->m_Handles[l_DataStore->m_HandleCount++];
-    strncpy(l_Handle->m_Name, p_Name, GABLE_DS_NAME_STRLEN);
+    strncpy(l_Handle->m_Name, p_Name, GABLE_DS_NAME_STRLEN - 1);
     l_Handle->m_Length = p_Size;
     l_Handle->m_Address = l_BankSize;
     l_Handle->m_BankHigh = (p_BankNumber >> 8) & 0xFF;
@@ -322,7 +322,7 @@ const GABLE_DataHandle* GABLE_LoadDataFromFile (GABLE_Engine* p_Engine, const Ch
     // Create a new data handle instance. Resize the data handle array if necessary.
     GABLE_ResizeDataHandles(l_DataStore);
     GABLE_DataHandle* l_Handle = &l_DataStore->m_Handles[l_DataStore->m_HandleCount++];
-    strncpy(l_Handle->m_Name, p_Name, GABLE_DS_NAME_STRLEN);
+    strncpy(l_Handle->m_Name, p_Name, GABLE_DS_NAME_STRLEN - 1);
     l_Handle->m_Length = l_FileSize;
     l_Handle->m_Address = l_BankSize;
     l_Handle->m_BankHigh = (p_BankNumber >> 8) & 0xFF;

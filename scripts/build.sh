@@ -1,4 +1,5 @@
 #!/bin/bash
 
 ./tools/premake5 gmake
-make -C generated/
+make -C generated/ $@
+ 

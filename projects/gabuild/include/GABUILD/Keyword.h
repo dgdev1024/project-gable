@@ -16,6 +16,7 @@
 typedef enum GABUILD_KeywordType
 {
     GABUILD_KT_NONE = 0,                ///< @brief No keyword type.
+    GABUILD_KT_ASSERT,                  ///< @brief "Assert" keyword (eg. `assert x == 0`).
     GABUILD_KT_DB,                      ///< @brief "Define Byte" keyword (eg. `db 0x00`).
     GABUILD_KT_DW,                      ///< @brief "Define Word" keyword (eg. `dw 0x0000`).
     GABUILD_KT_DL,                      ///< @brief "Define Long" keyword (eg. `dl 0x00000000`).

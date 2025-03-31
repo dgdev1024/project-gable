@@ -7,6 +7,7 @@
 // Keyword Lookup Table ////////////////////////////////////////////////////////////////////////////
 
 static const GABUILD_Keyword GABUILD_KEYWORD_TABLE[] = {
+    { "ASSERT",     GABUILD_KT_ASSERT,     0 },
     { "DB",         GABUILD_KT_DB,         0 },
     { "DW",         GABUILD_KT_DW,         0 },
     { "DL",         GABUILD_KT_DL,         0 },
@@ -49,6 +50,7 @@ const Char* GABUILD_StringifyKeywordType (GABUILD_KeywordType p_Type)
 {
     switch (p_Type)
     {
+        case GABUILD_KT_ASSERT:     return "ASSERT";
         case GABUILD_KT_DB:         return "DB";
         case GABUILD_KT_DW:         return "DW";
         case GABUILD_KT_DL:         return "DL";
