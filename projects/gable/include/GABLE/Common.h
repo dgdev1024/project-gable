@@ -706,13 +706,20 @@ typedef enum GABLE_HardwarePort
 #define G_SADDR(K) (GABLE_GB_SRAM_START + K##_OFFSET)
 #define G_HADDR(K) (GABLE_GB_HRAM_START + K##_OFFSET)
 
+#define G_WADDRS(K, M) (GABLE_GB_WRAM0_START + K##_OFFSET + M##__STRUCT_OFFSET)
+#define G_W0ADDRS(K, M) (GABLE_GB_WRAM0_START + K##_OFFSET + M##__STRUCT_OFFSET)
+#define G_WXADDRS(K, M) (GABLE_GB_WRAMX_START + K##_OFFSET + M##__STRUCT_OFFSET)
+#define G_VADDRS(K, M) (GABLE_GB_VRAM_START + K##_OFFSET + M##__STRUCT_OFFSET)
+#define G_SADDRS(K, M) (GABLE_GB_SRAM_START + K##_OFFSET + M##__STRUCT_OFFSET)
+#define G_HADDRS(K, M) (GABLE_GB_HRAM_START + K##_OFFSET + M##__STRUCT_OFFSET)
+
 // Shortform Macros - Structure Offset Macros //////////////////////////////////////////////////////
 
 #define G_RSSET(C)              __G_RSSET_LABEL__(__LINE__) = (C - 1),
 #define G_RSRESET               G_RSSET(0)
-#define G_RBS(K, C)             K, K##__END = K + C,
+#define G_RBS(K, C)             K##__STRUCT_OFFSET, K##__END = K##__STRUCT_OFFSET + C,
 #define G_RB(K)                 G_RBS(K, 1)
-#define G_RWS(K, C)             K, K##__END = K + (C * 2),
+#define G_RWS(K, C)             K##__STRUCT_OFFSET, K##__END = K##__STRUCT_OFFSET + (C * 2),
 #define G_RW(K)                 G_RWS(K, 1)
-#define G_RLS(K, C)             K, K##__END = K + (C * 4),
+#define G_RLS(K, C)             K##__STRUCT_OFFSET, K##__END = K##__STRUCT_OFFSET + (C * 4),
 #define G_RL(K)                 G_RLS(K, 1)

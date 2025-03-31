@@ -315,15 +315,15 @@ static void UB_CheckAndHandleBrick ()
 enum
 {
     G_RSRESET
-    G_RB(X)
-    G_RB(Y)
+    G_RB(VelX)
+    G_RB(VelY)
 };
 
 enum
 {
     G_RSRESET
-    G_RB(Current)
-    G_RB(New)
+    G_RB(KeysCurrent)
+    G_RB(KeysNew)
 };
 
 #define UB_BALLVEL_STRUCT(K) \
@@ -427,14 +427,14 @@ static void UB_Main ()
     // Initialize RAM variables.
     G_LD_R8_N8(G_A, 0);
     G_LD_A16_A(G_WADDR(wFrameCounter));
-    G_LD_A16_A(G_WADDR(wKeysCurrent));
-    G_LD_A16_A(G_WADDR(wKeysNew));
+    G_LD_A16_A(G_WADDRS(wKeys, KeysCurrent));
+    G_LD_A16_A(G_WADDRS(wKeys, KeysNew));
 
     // Set up the ball sprite to go up and to the right.
     G_LD_R8_N8(G_A, 1);
-    G_LD_A16_A(G_WADDR(wBallVelX));
+    G_LD_A16_A(G_WADDRS(wBallVel, VelX));
     G_LD_R8_N8(G_A, -1);
-    G_LD_A16_A(G_WADDR(wBallVelY));
+    G_LD_A16_A(G_WADDRS(wBallVel, VelY));
 
     // Main loop
     UB_Main__Loop:
@@ -442,12 +442,12 @@ static void UB_Main ()
         G_CALL_FUNC(G_NOCOND, G_WaitVBlank());
 
         // Add the ball sprite's velocity to its position.
-        G_LD_A_A16(G_WADDR(wBallVelX));
+        G_LD_A_A16(G_WADDRS(wBallVel, VelX));
         G_LD_R8_R8(G_B, G_A);
         G_LD_A_A16(G_OAMRAM + 5);
         G_ADD_A_R8(G_B);
         G_LD_A16_A(G_OAMRAM + 5);
-        G_LD_A_A16(G_WADDR(wBallVelY));
+        G_LD_A_A16(G_WADDRS(wBallVel, VelY));
         G_LD_R8_R8(G_B, G_A);
         G_LD_A_A16(G_OAMRAM + 4);
         G_ADD_A_R8(G_B);
@@ -467,7 +467,7 @@ static void UB_Main ()
             G_JP_GOTO(G_COND_NZ, UB_Main__BounceOnRight);
             G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
             G_LD_R8_N8(G_A, 1);
-            G_LD_A16_A(G_WADDR(wBallVelY));
+            G_LD_A16_A(G_WADDRS(wBallVel, VelY));
 
         UB_Main__BounceOnRight:
             G_LD_A_A16(G_OAMRAM + 4);
@@ -482,7 +482,7 @@ static void UB_Main ()
             G_JP_GOTO(G_COND_NZ, UB_Main__BounceOnLeft);
             G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
             G_LD_R8_N8(G_A, -1);
-            G_LD_A16_A(G_WADDR(wBallVelX));
+            G_LD_A16_A(G_WADDRS(wBallVel, VelX));
 
         UB_Main__BounceOnLeft:
             G_LD_A_A16(G_OAMRAM + 4);
@@ -497,7 +497,7 @@ static void UB_Main ()
             G_JP_GOTO(G_COND_NZ, UB_Main__BounceOnBottom);
             G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
             G_LD_R8_N8(G_A, 1);
-            G_LD_A16_A(G_WADDR(wBallVelX));
+            G_LD_A16_A(G_WADDRS(wBallVel, VelX));
 
         UB_Main__BounceOnBottom:
             G_LD_A_A16(G_OAMRAM + 4);
@@ -512,7 +512,7 @@ static void UB_Main ()
             G_JP_GOTO(G_COND_NZ, UB_Main__BounceDone);
             G_CALL_FUNC(G_NOCOND, UB_CheckAndHandleBrick());
             G_LD_R8_N8(G_A, -1);
-            G_LD_A16_A(G_WADDR(wBallVelY));
+            G_LD_A16_A(G_WADDRS(wBallVel, VelY));
 
         UB_Main__BounceDone:
             G_LD_A_A16(G_OAMRAM);
@@ -531,7 +531,7 @@ static void UB_Main ()
             G_CP_A_R8(G_B);
             G_JP_GOTO(G_COND_C, UB_Main__PaddleBounceDone);
             G_LD_R8_N8(G_A, -1);
-            G_LD_A16_A(G_WADDR(wBallVelY));
+            G_LD_A16_A(G_WADDRS(wBallVel, VelY));
 
         UB_Main__PaddleBounceDone:
             G_CALL_FUNC(G_NOCOND, G_UpdateKeys(G_WADDR(wKeysCurrent), G_WADDR(wKeysNew)));
