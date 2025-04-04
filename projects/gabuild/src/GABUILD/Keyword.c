@@ -11,6 +11,8 @@ static const GABUILD_Keyword GABUILD_KEYWORD_TABLE[] = {
     { "DB",         GABUILD_KT_DB,         0 },
     { "DW",         GABUILD_KT_DW,         0 },
     { "DL",         GABUILD_KT_DL,         0 },
+    { "DQ",         GABUILD_KT_DQ,         0 },
+    { "DF",         GABUILD_KT_DF,         0 },
     { "DS",         GABUILD_KT_DS,         0 },
     { "INCLUDE",    GABUILD_KT_INCLUDE,    0 },
     { "INCBIN",     GABUILD_KT_INCBIN,     0 },
@@ -54,9 +56,9 @@ const Char* GABUILD_StringifyKeywordType (GABUILD_KeywordType p_Type)
         case GABUILD_KT_DB:         return "DB";
         case GABUILD_KT_DW:         return "DW";
         case GABUILD_KT_DL:         return "DL";
+        case GABUILD_KT_DQ:         return "DQ";
         case GABUILD_KT_DS:         return "DS";
         case GABUILD_KT_DF:         return "DF";
-        case GABUILD_KT_DD:         return "DD";
         case GABUILD_KT_INCLUDE:    return "INCLUDE";
         case GABUILD_KT_INCBIN:     return "INCBIN";
         case GABUILD_KT_DEF:        return "DEF";

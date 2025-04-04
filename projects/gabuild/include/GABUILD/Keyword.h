@@ -20,9 +20,9 @@ typedef enum GABUILD_KeywordType
     GABUILD_KT_DB,                      ///< @brief "Define Byte" keyword (eg. `db 0x00`).
     GABUILD_KT_DW,                      ///< @brief "Define Word" keyword (eg. `dw 0x0000`).
     GABUILD_KT_DL,                      ///< @brief "Define Long" keyword (eg. `dl 0x00000000`).
+    GABUILD_KT_DQ,                      ///< @brief "Define Quad" keyword (eg. `dq 0x0000000000000000`).
     GABUILD_KT_DS,                      ///< @brief "Define Sequence" keyword (eg. `ds 3, 0x00, 0x11`, `ds 5, 0x44`).
     GABUILD_KT_DF,                      ///< @brief "Define Float" keyword (eg. `df 3.14`).
-    GABUILD_KT_DD,                      ///< @brief "Define Double" keyword (eg. `dd 3.14159`).
     GABUILD_KT_INCLUDE,                 ///< @brief "Include" keyword (eg. `include "file.asm"`).
     GABUILD_KT_INCBIN,                  ///< @brief "Include Binary" keyword (eg. `incbin "file.bin"`).
     GABUILD_KT_DEF,                     ///< @brief "Define" keyword (eg. `def x = 0x00`).

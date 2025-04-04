@@ -1309,6 +1309,8 @@ GABUILD_Syntax* GABUILD_ParseStatement ()
             l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DB ||
             l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DW ||
             l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DL ||
+            l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DQ ||
+            l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DF ||
             l_KeywordToken->m_Keyword->m_Type == GABUILD_KT_DS
         )
         {

@@ -9,7 +9,7 @@
 // Constants ///////////////////////////////////////////////////////////////////////////////////////
 
 #define GABUILD_BUILDER_INITIAL_CAPACITY 8
-#define GABUILD_BUILDER_OUTPUT_CAPACITY 0x4000
+#define GABUILD_BUILDER_OUTPUT_CAPACITY 0x0400
 #define GABUILD_BUILDER_CALL_STACK_SIZE 32
 
 // Label Structure /////////////////////////////////////////////////////////////////////////////////
@@ -17,10 +17,10 @@
 typedef struct GABUILD_Label
 {
     Char*       m_Name;
-    Uint16*     m_References;
+    Uint64*     m_References;
     Size        m_ReferenceCount;
     Size        m_ReferenceCapacity;
-    Uint16      m_Address;
+    Uint64      m_Address;
     Bool        m_Resolved;
 } GABUILD_Label;
 
@@ -46,7 +46,10 @@ typedef struct GABUILD_MacroCall
 
 static struct
 {
-    Uint8               m_Output[GABUILD_BUILDER_OUTPUT_CAPACITY];
+    Uint8*              m_Output;
+    Size                m_OutputSize;
+    Size                m_OutputCapacity;
+
     GABUILD_Value*      m_Result;
 
     GABUILD_Label*      m_Labels;
@@ -64,10 +67,10 @@ static struct
 
     GABUILD_MacroCall*  m_MacroCallStack[GABUILD_BUILDER_CALL_STACK_SIZE];
     Size                m_MacroCallStackIndex;
-
-    Size                m_OutputSize;
 } s_Builder = {
-    .m_Output = { 0 },
+    .m_Output = NULL,
+    .m_OutputSize = 0,
+    .m_OutputCapacity = 0,
     .m_Result = NULL,
     .m_Labels = NULL,
     .m_LabelCount = 0,
@@ -80,8 +83,7 @@ static struct
     .m_DefineCount = 0,
     .m_DefineCapacity = 0,
     .m_MacroCallStack = { 0 },
-    .m_MacroCallStackIndex = 0,
-    .m_OutputSize = 0
+    .m_MacroCallStackIndex = 0
 };
 
 // Static Function Prototypes //////////////////////////////////////////////////////////////////////
@@ -124,12 +126,32 @@ static void GABUILD_DestroyMacroCall (GABUILD_MacroCall* p_MacroCall)
 
 // Static Functions - Internal Array Management ////////////////////////////////////////////////////
 
+static void GABUILD_ResizeOutputBuffer (Size p_NextWriteSize)
+{
+    Size l_NewCapacity = s_Builder.m_OutputCapacity;
+    while (s_Builder.m_OutputSize + p_NextWriteSize >= l_NewCapacity)
+    {
+        l_NewCapacity += (l_NewCapacity * 0.5);
+    }
+
+    if (l_NewCapacity == s_Builder.m_OutputCapacity)
+    {
+        return;
+    }
+
+    Uint8* l_NewOutput = GABLE_realloc(s_Builder.m_Output, l_NewCapacity, Uint8);
+    GABLE_pexpect(l_NewOutput != NULL, "Failed to reallocate memory for the builder's output buffer");
+
+    s_Builder.m_Output         = l_NewOutput;
+    s_Builder.m_OutputCapacity = l_NewCapacity;
+}
+
 static void GABUILD_ResizeLabelReferences (GABUILD_Label* p_Label)
 {
     if (p_Label->m_ReferenceCount + 1 >= p_Label->m_ReferenceCapacity)
     {
         Size l_NewCapacity      = p_Label->m_ReferenceCapacity * 2;
-        Uint16* l_NewReferences = GABLE_realloc(p_Label->m_References, l_NewCapacity, Uint16);
+        Uint64* l_NewReferences = GABLE_realloc(p_Label->m_References, l_NewCapacity, Uint64);
         GABLE_pexpect(l_NewReferences != NULL, "Failed to reallocate memory for label references array");
 
         p_Label->m_References           = l_NewReferences;
@@ -185,11 +207,7 @@ static void GABUILD_ResizeDefinesArrays ()
 
 static Bool GABUILD_DefineByte (Uint8 p_Value)
 {
-    if (s_Builder.m_OutputSize + 1 >= GABUILD_BUILDER_OUTPUT_CAPACITY)
-    {
-        GABLE_error("Output buffer overflowed while defining a byte.");
-        return false;
-    }
+    GABUILD_ResizeOutputBuffer(1);
 
     s_Builder.m_Output[s_Builder.m_OutputSize++] = p_Value;
     return true;
@@ -197,11 +215,7 @@ static Bool GABUILD_DefineByte (Uint8 p_Value)
 
 static Bool GABUILD_DefineWord (Uint16 p_Value)
 {
-    if (s_Builder.m_OutputSize + 2 >= GABUILD_BUILDER_OUTPUT_CAPACITY)
-    {
-        GABLE_error("Output buffer overflowed while defining a word.");
-        return false;
-    }
+    GABUILD_ResizeOutputBuffer(2);
 
     s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) (p_Value & 0xFF);
     s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 8) & 0xFF);
@@ -210,11 +224,7 @@ static Bool GABUILD_DefineWord (Uint16 p_Value)
 
 static Bool GABUILD_DefineLong (Uint32 p_Value)
 {
-    if (s_Builder.m_OutputSize + 4 >= GABUILD_BUILDER_OUTPUT_CAPACITY)
-    {
-        GABLE_error("Output buffer overflowed while defining a long.");
-        return false;
-    }
+    GABUILD_ResizeOutputBuffer(4);
 
     s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) (p_Value & 0xFF);
     s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 8) & 0xFF);
@@ -223,14 +233,25 @@ static Bool GABUILD_DefineLong (Uint32 p_Value)
     return true;
 }
 
+static Bool GABUILD_DefineQuad (Uint64 p_Value)
+{
+    GABUILD_ResizeOutputBuffer(8);
+
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) (p_Value & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 8) & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 16) & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 24) & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 32) & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 40) & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 48) & 0xFF);
+    s_Builder.m_Output[s_Builder.m_OutputSize++] = (Uint8) ((p_Value >> 56) & 0xFF);
+    return true;
+}
+
 static Bool GABUILD_DefineStringASCII (const Char* p_String)
 {
     Size l_Length = strlen(p_String);
-    if (s_Builder.m_OutputSize + l_Length + 1 >= GABUILD_BUILDER_OUTPUT_CAPACITY)
-    {
-        GABLE_error("Output buffer overflowed while defining an ASCII string.");
-        return false;
-    }
+    GABUILD_ResizeOutputBuffer(l_Length + 1);
 
     for (Size i = 0; i < l_Length; ++i)
     {
@@ -276,13 +297,8 @@ static Bool GABUILD_DefineBinaryFile (const Char* p_Filename, Size p_Offset, Siz
         return false;
     }
 
-    // Ensure the output buffer has enough space for the binary data.
-    if (s_Builder.m_OutputSize + p_Length >= GABUILD_BUILDER_OUTPUT_CAPACITY)
-    {
-        GABLE_error("Output buffer overflowed while including a binary file.");
-        fclose(l_File);
-        return false;
-    }
+    // Resize the output buffer, if necessary, to accommodate the new data.
+    GABUILD_ResizeOutputBuffer(p_Length);
 
     // Read the binary data from the file into the output buffer.
     fseek(l_File, p_Offset, SEEK_SET);
@@ -674,7 +690,7 @@ static GABUILD_Value* GABUILD_EvaluateIdentifier (const GABUILD_Syntax* p_Syntax
         strncpy(l_LabelName, p_SyntaxNode->m_String, l_LabelStrlen);
 
         // Allocate memory for the label's references array.
-        Uint16* l_LabelReferences = GABLE_calloc(GABUILD_BUILDER_INITIAL_CAPACITY, Uint16);
+        Uint64* l_LabelReferences = GABLE_calloc(GABUILD_BUILDER_INITIAL_CAPACITY, Uint64);
         GABLE_pexpect(l_LabelReferences != NULL, "Failed to allocate memory for label references array");
 
         // Point to the next available label.
@@ -723,7 +739,7 @@ static GABUILD_Value* GABUILD_EvaluateLabel (const GABUILD_Syntax* p_SyntaxNode)
         GABLE_pexpect(l_LabelName != NULL, "Failed to allocate memory for label name string");
 
         // Allocate memory for the label's references array.
-        Uint16* l_LabelReferences = GABLE_calloc(GABUILD_BUILDER_INITIAL_CAPACITY, Uint16);
+        Uint64* l_LabelReferences = GABLE_calloc(GABUILD_BUILDER_INITIAL_CAPACITY, Uint64);
         GABLE_pexpect(l_LabelReferences != NULL, "Failed to allocate memory for label references array");
 
         // Point to the next available label.
@@ -749,9 +765,17 @@ static GABUILD_Value* GABUILD_EvaluateLabel (const GABUILD_Syntax* p_SyntaxNode)
             l_Label->m_Resolved = true;
             for (Index i = 0; i < l_Label->m_ReferenceCount; ++i)
             {
-                Uint16 l_Reference = l_Label->m_References[i];
+                Uint64 l_Reference = l_Label->m_References[i];
+                
+                // Write the label's address to the output buffer.
                 s_Builder.m_Output[l_Reference] = (Uint8) (l_Label->m_Address & 0xFF);
                 s_Builder.m_Output[l_Reference + 1] = (Uint8) ((l_Label->m_Address >> 8) & 0xFF);
+                s_Builder.m_Output[l_Reference + 2] = (Uint8) ((l_Label->m_Address >> 16) & 0xFF);
+                s_Builder.m_Output[l_Reference + 3] = (Uint8) ((l_Label->m_Address >> 24) & 0xFF);
+                s_Builder.m_Output[l_Reference + 4] = (Uint8) ((l_Label->m_Address >> 32) & 0xFF);
+                s_Builder.m_Output[l_Reference + 5] = (Uint8) ((l_Label->m_Address >> 40) & 0xFF);
+                s_Builder.m_Output[l_Reference + 6] = (Uint8) ((l_Label->m_Address >> 48) & 0xFF);
+                s_Builder.m_Output[l_Reference + 7] = (Uint8) ((l_Label->m_Address >> 56) & 0xFF);
             }
         }
     }
@@ -867,6 +891,68 @@ static GABUILD_Value* GABUILD_EvaluateData (const GABUILD_Syntax* p_SyntaxNode)
                 else
                 {
                     GABLE_error("Unexpected value type in 'dl' statement.");
+                    GABUILD_DestroyValue(l_Value);
+                    return NULL;
+                }
+
+                GABUILD_DestroyValue(l_Value);
+            }
+            break;
+        }
+        case GABUILD_KT_DQ: // Define Quads
+        {
+            // Evaluate each expression in the data syntax node.
+            for (Index i = 0; i < p_SyntaxNode->m_BodySize; ++i)
+            {
+                GABUILD_Value* l_Value = GABUILD_Evaluate(p_SyntaxNode->m_Body[i]);
+                if (l_Value == NULL)
+                {
+                    return NULL;
+                }
+
+                // Check the type of the value. It must be a number.
+                if (l_Value->m_Type == GABUILD_VT_NUMBER)
+                {
+                    if (GABUILD_DefineQuad(l_Value->m_IntegerPart) == false)
+                    {
+                        GABUILD_DestroyValue(l_Value);
+                        return NULL;
+                    }
+                }
+                else
+                {
+                    GABLE_error("Unexpected value type in 'dq' statement.");
+                    GABUILD_DestroyValue(l_Value);
+                    return NULL;
+                }
+
+                GABUILD_DestroyValue(l_Value);
+            }
+            break;
+        }
+        case GABUILD_KT_DF: // Define Float
+        {
+            // Evaluate each expression in the data syntax node.
+            for (Index i = 0; i < p_SyntaxNode->m_BodySize; ++i)
+            {
+                GABUILD_Value* l_Value = GABUILD_Evaluate(p_SyntaxNode->m_Body[i]);
+                if (l_Value == NULL)
+                {
+                    return NULL;
+                }
+
+                // Check the type of the value. It must be a number.
+                if (l_Value->m_Type == GABUILD_VT_NUMBER)
+                {
+                    if (GABUILD_DefineLong(l_Value->m_IntegerPart) == false)
+                    {
+                        GABUILD_DestroyValue(l_Value);
+                        return NULL;
+                    }
+                }
+                else
+                {
+                    GABLE_error("Unexpected value type in 'df' statement.");
                     GABUILD_DestroyValue(l_Value);
                     return NULL;
                 }
@@ -1557,6 +1643,12 @@ GABUILD_Value* GABUILD_Evaluate (const GABUILD_Syntax* p_SyntaxNode)
 
 void GABUILD_InitBuilder ()
 {
+    // Initialize the output buffer.
+    s_Builder.m_Output = GABLE_malloc(GABUILD_BUILDER_INITIAL_CAPACITY, Uint8);
+    GABLE_pexpect(s_Builder.m_Output != NULL, "Failed to allocate memory for the builder's output buffer");
+    s_Builder.m_OutputSize = 0;
+    s_Builder.m_OutputCapacity = GABUILD_BUILDER_INITIAL_CAPACITY;
+
     // Initialize labels.
     s_Builder.m_Labels = GABLE_malloc(GABUILD_BUILDER_INITIAL_CAPACITY, GABUILD_Label);
     GABLE_pexpect(s_Builder.m_Labels != NULL, "Failed to allocate memory for the builder's address labels array");
@@ -1611,6 +1703,12 @@ void GABUILD_ShutdownBuilder ()
     }
     GABLE_free(s_Builder.m_Labels);
 
+    // Free the output buffer.
+    GABLE_free(s_Builder.m_Output);
+    s_Builder.m_Output = NULL;
+    s_Builder.m_OutputSize = 0;
+    s_Builder.m_OutputCapacity = 0;
+
     // Free the result value.
     GABUILD_DestroyValue(s_Builder.m_Result);
 }
@@ -1631,6 +1729,16 @@ Bool GABUILD_SaveBinary (const char* p_OutputPath)
     {
         GABLE_error("Output path is blank.");
         return false;
+    }
+
+    // Before attempting to save the output, make sure all labels have been resolved.
+    for (Index i = 0; i < s_Builder.m_LabelCount; ++i)
+    {
+        if (s_Builder.m_Labels[i].m_Resolved == false)
+        {
+            GABLE_error("Label '%s' has not been resolved.", s_Builder.m_Labels[i].m_Name);
+            return false;
+        }
     }
 
     // Attempt to open the output file for writing.
