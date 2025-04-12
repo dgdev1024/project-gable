@@ -493,12 +493,12 @@ Bool G_DAA ()
     Uint8 l_Carry = GABLE_GetFlag(s_CurrentEngine, GABLE_FT_C);
     Uint8 l_HalfCarry = GABLE_GetFlag(s_CurrentEngine, GABLE_FT_H);
 
-    if (l_HalfCarry || (l_A & 0x0F) > 9)
+    if (l_HalfCarry || (l_A & 0x0F) > 0x09)
     {
         l_A += 0x06;
     }
 
-    if (l_Carry || l_A > 0x9F)
+    if (l_Carry || (l_A & 0xF0) > 0x90)
     {
         l_A += 0x60;
         GABLE_SetFlag(s_CurrentEngine, GABLE_FT_C, true);
